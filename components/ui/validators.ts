@@ -62,8 +62,8 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   },
 
   'text': {
-    validate: () => true,
-    errorMessage: '',
+    validate: (v) => v.trim().length > 0,
+    errorMessage: 'This field is required',
   },
 
   'email': {
@@ -125,20 +125,20 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   },
 
   'arp-number': {
-    validate: (v) => /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(v),
-    errorMessage: 'ARP must be XXXX-XXXX-XXXX-XXXX (16 chars)',
+    validate: (v) => /^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$/.test(v),
+    errorMessage: 'ARP must be XXXX-XXXX-XXXX-XXXX (16 digits)',
   },
 
   'lot-number': {
-    validate: (v) => /^[A-Z0-9-]{1,12}$/.test(v) && !/^-+$/.test(v),
-    errorMessage: 'Lot/Block must be alphanumeric, max 12 chars',
+    validate: (v) => /^[0-9-]{1,12}$/.test(v) && !/^-+$/.test(v),
+    errorMessage: 'Lot/Block must be numeric, max 12 chars',
   },
 
   'decimal-numeric': {
     validate: (v) => {
       const num = parseFloat(v.replace(/,/g, ''));
-      return Number.isFinite(num) && num >= 0;
+      return Number.isFinite(num) && num > 0;
     },
-    errorMessage: 'Must be a valid positive decimal number',
+    errorMessage: 'Must be a valid decimal number > 0',
   },
 };

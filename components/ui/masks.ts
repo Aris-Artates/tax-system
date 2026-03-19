@@ -208,9 +208,9 @@ export function maskPin(raw: string): string {
   return parts.join('-');
 }
 
-// ── ARP Number: XXXX-XXXX-XXXX-XXXX (alphanum, 4 groups)
+// ── ARP Number: XXXX-XXXX-XXXX-XXXX (numeric, 4 groups)
 export function maskArpNumber(raw: string): string {
-  const cleaned = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+  const cleaned = raw.toUpperCase().replace(/[^0-9]/g, '').slice(0, 16);
   if (!cleaned) return '';
   const parts: string[] = [];
   for (let i = 0; i < cleaned.length; i += 4) {
@@ -219,16 +219,16 @@ export function maskArpNumber(raw: string): string {
   return parts.join('-');
 }
 
-// ── Lot/Block/Survey: LOT-12 (alphanum + optional dash num)
+// ── Lot/Block/Survey: LOT-12 (numeric + optional dash num)
 export function maskLotNumber(raw: string): string {
-  const cleaned = raw.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 12);
+  const cleaned = raw.toUpperCase().replace(/[^0-9-]/g, '').slice(0, 12);
   return cleaned.replace(/-+/g, '-').replace(/^-+/, '');
 }
 
 // ── Decimal Numeric: 1,234.56 (comma groups, decimal, max digits)
 export function maskDecimalNumeric(raw: string, options: {maxInt: number, maxDec: number, allowDec?: boolean} = {maxInt: 12, maxDec: 2, allowDec: true}): string {
   const {maxInt, maxDec, allowDec} = options;
-  const cleaned = raw.replace(/,/g, '').replace(/[^\d.]/g, '');
+  let cleaned = raw.replace(/,/g, '').replace(/[^\d.]/g, '').replace(/^0+/, '');
   
   if (!allowDec) {
     const intPart = cleaned.replace(/\./g, '').slice(0, maxInt);

@@ -286,30 +286,28 @@ export default function NewTaxDeclarationPage() {
 
   const [classification, setClassification] = useState("Residential");
   const [actualUse, setActualUse] = useState("");
-  const [landArea, setLandArea] = useState("0");
-  const [landUnitValue, setLandUnitValue] = useState("0");
+  const [landArea, setLandArea] = useState("");
+  const [landUnitValue, setLandUnitValue] = useState("");
   const [landMarketValue, setLandMarketValue] = useState("");
-  const [landAssessLevel, setLandAssessLevel] = useState("0");
+  const [landAssessLevel, setLandAssessLevel] = useState("");
   const [landAssessedValue, setLandAssessedValue] = useState("");
 
   const [buildingKind, setBuildingKind] = useState("");
   const [structuralType, setStructuralType] = useState("");
-  const [floorArea, setFloorArea] = useState("0");
+  const [floorArea, setFloorArea] = useState("");
   const [yearBuilt, setYearBuilt] = useState("");
-  const [bldgMarketValue, setBldgMarketValue] = useState("0");
-  const [bldgAssessLevel, setBldgAssessLevel] = useState("0");
+  const [bldgMarketValue, setBldgMarketValue] = useState("");
+  const [bldgAssessLevel, setBldgAssessLevel] = useState("");
   const [bldgAssessedValue, setBldgAssessedValue] = useState("");
 
   const [effectivityYear, setEffectivityYear] = useState("");
   const [effectivityQuarter, setEffectivityQuarter] = useState("1st");
 
-  useEffect(() => {
-    const year = new Date().getFullYear();
-    setTdNumber(`${year}-`);
-    setPrevTd("");
-  }, []);
-
-  const fullTdNumber = tdNumber.trim() ? `TD-${tdNumber.trim()}` : "";
+  const fullTdNumber = tdNumber.trim()
+    ? tdNumber.startsWith("TD-")
+      ? tdNumber.trim()
+      : `TD-${tdNumber.trim()}`
+    : "";
 
   useEffect(() => {
     if (!taxpayerId) return;
@@ -701,23 +699,28 @@ export default function NewTaxDeclarationPage() {
                   </p>
                 </div>
 
-                <ValidatedInput
-                  type="tin"
-                  label="Tax Identification Number (TIN)"
-                  placeholder="Auto-filled from taxpayer"
-                  value={tin}
-                  onChange={setTin}
-                  readOnly
-                />
-                <div className="sm:col-span-2">
-                  <ValidatedInput
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                    Tax Identification Number (TIN)
+                  </label>
+                  <input
                     type="text"
-                    label="Owner Address"
-                    placeholder="Complete address of owner"
-                    value={ownerAddress}
-                    onChange={setOwnerAddress}
-                    required
+                    value={tin}
                     readOnly
+                    placeholder="Auto-filled from taxpayer"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                    Owner Address <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={ownerAddress}
+                    readOnly
+                    placeholder="Complete address of owner"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60"
                   />
                 </div>
 
@@ -843,14 +846,18 @@ export default function NewTaxDeclarationPage() {
                   onChange={(v) => setLandUnitValue(v)}
                   required
                 />
-                <ValidatedInput
-                  type="decimal-numeric"
-                  label="Land Market Value (₱)"
-                  placeholder="Auto-computed"
-                  value={landMarketValue}
-                  onChange={setLandMarketValue}
-                  readOnly
-                />
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600">
+                    Land Market Value (₱)
+                  </label>
+                  <input
+                    type="text"
+                    value={landMarketValue}
+                    readOnly
+                    placeholder="Auto-computed"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60 mt-1"
+                  />
+                </div>
                 <ValidatedInput
                   type="decimal-numeric"
                   label="Assessment Level (%)"
@@ -859,14 +866,18 @@ export default function NewTaxDeclarationPage() {
                   onChange={(v) => setLandAssessLevel(v)}
                   required
                 />
-                <ValidatedInput
-                  type="decimal-numeric"
-                  label="Land Assessed Value (₱)"
-                  placeholder="Auto-computed"
-                  value={landAssessedValue}
-                  onChange={setLandAssessedValue}
-                  readOnly
-                />
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600">
+                    Land Assessed Value (₱)
+                  </label>
+                  <input
+                    type="text"
+                    value={landAssessedValue}
+                    readOnly
+                    placeholder="Auto-computed"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60 mt-1"
+                  />
+                </div>
               </div>
             </Section>
 
@@ -926,14 +937,18 @@ export default function NewTaxDeclarationPage() {
                   value={bldgAssessLevel}
                   onChange={(v) => setBldgAssessLevel(v)}
                 />
-                <ValidatedInput
-                  type="decimal-numeric"
-                  label="Building Assessed Value (₱)"
-                  placeholder="Auto-computed"
-                  value={bldgAssessedValue}
-                  onChange={setBldgAssessedValue}
-                  readOnly
-                />
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                    Building Assessed Value (₱)
+                  </label>
+                  <input
+                    type="text"
+                    value={bldgAssessedValue}
+                    readOnly
+                    placeholder="Auto-computed"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60"
+                  />
+                </div>
               </div>
             </Section>
 
