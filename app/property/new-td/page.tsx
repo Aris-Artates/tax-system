@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/select";
 
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
-import { cn } from "@/lib/utils";
 
 import {
   TaxDeclarationPrint,
@@ -55,13 +54,6 @@ function parseNumericString(v: string | undefined | null): number {
   if (!v) return 0;
   const parsed = parseNumeric(v);
   return parsed !== null ? parsed : 0;
-}
-
-function formatNumeric(rawNum: number, decimals = 2): string {
-  return rawNum.toLocaleString("en-PH", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
 }
 
 function normalizeBarangayName(name: string): string {
@@ -274,64 +266,43 @@ export default function NewTaxDeclarationPage() {
     loadReferenceData();
   }, []);
 
-  // ── Form state ───────────────────────────────────────────────────────────
-  // Declaration Info
   const [tdNumber, setTdNumber] = useState("");
-  const [tdNumberValid, setTdNumberValid] = useState(false);
   const [pin, setPin] = useState("");
-  const [pinValid, setPinValid] = useState(false);
   const [prevTd, setPrevTd] = useState("");
-  const [prevTdValid, setPrevTdValid] = useState(false);
   const [declarationType, setDeclarationType] = useState("New");
   const [arpNumber, setArpNumber] = useState("");
-  const [arpValid, setArpValid] = useState(false);
   const [taxYear, setTaxYear] = useState("");
 
-  // Owner Info — taxpayerId links to the selected taxpayer in the DB
   const [taxpayerId, setTaxpayerId] = useState("");
   const [tin, setTin] = useState("");
   const [ownerAddress, setOwnerAddress] = useState("");
   const [ownerType, setOwnerType] = useState("Individual");
 
-  // Property Location
   const [barangayId, setBarangayId] = useState("");
   const [street, setStreet] = useState("");
   const [lotNumber, setLotNumber] = useState("");
-  const [lotValid, setLotValid] = useState(false);
   const [blockNumber, setBlockNumber] = useState("");
-  const [blockValid, setBlockValid] = useState(false);
   const [surveyNumber, setSurveyNumber] = useState("");
-  const [surveyValid, setSurveyValid] = useState(false);
 
-  // Land Details
   const [classification, setClassification] = useState("Residential");
   const [actualUse, setActualUse] = useState("");
   const [landArea, setLandArea] = useState("0");
-  const [landAreaValid, setLandAreaValid] = useState(false);
   const [landUnitValue, setLandUnitValue] = useState("0");
-  const [landUnitValid, setLandUnitValid] = useState(false);
   const [landMarketValue, setLandMarketValue] = useState("");
   const [landAssessLevel, setLandAssessLevel] = useState("0");
-  const [landAssessValid, setLandAssessValid] = useState(false);
   const [landAssessedValue, setLandAssessedValue] = useState("");
 
-  // Building Details
   const [buildingKind, setBuildingKind] = useState("");
   const [structuralType, setStructuralType] = useState("");
   const [floorArea, setFloorArea] = useState("0");
-  const [floorValid, setFloorValid] = useState(false);
   const [yearBuilt, setYearBuilt] = useState("");
   const [bldgMarketValue, setBldgMarketValue] = useState("0");
-  const [bldgMarketValid, setBldgMarketValid] = useState(false);
   const [bldgAssessLevel, setBldgAssessLevel] = useState("0");
-  const [bldgAssessValid, setBldgAssessValid] = useState(false);
   const [bldgAssessedValue, setBldgAssessedValue] = useState("");
 
-  // Effectivity
   const [effectivityYear, setEffectivityYear] = useState("");
   const [effectivityQuarter, setEffectivityQuarter] = useState("1st");
 
-  // ── Auto-generate TD prefixes on mount ───────────────────────────────────
   useEffect(() => {
     const year = new Date().getFullYear();
     setTdNumber(`${year}-`);
@@ -340,7 +311,6 @@ export default function NewTaxDeclarationPage() {
 
   const fullTdNumber = tdNumber.trim() ? `TD-${tdNumber.trim()}` : "";
 
-  // ── Derived: auto-fill owner details when a taxpayer is selected ─────────
   useEffect(() => {
     if (!taxpayerId) return;
     const found = taxpayerMap.get(taxpayerId);
@@ -357,7 +327,6 @@ export default function NewTaxDeclarationPage() {
     );
   }, [taxpayerId, taxpayerMap]);
 
-  // ── Derived: auto-calculate land market value ────────────────────────────
   useEffect(() => {
     const area = parseNumeric(landArea);
     const unitValue = parseNumeric(landUnitValue);
@@ -375,7 +344,6 @@ export default function NewTaxDeclarationPage() {
     setLandMarketValue((area! * unitValue!).toFixed(2));
   }, [landArea, landUnitValue]);
 
-  // ── Derived: auto-calculate land assessed value ──────────────────────────
   useEffect(() => {
     const marketValue = parseNumericString(landMarketValue);
     const assessmentLevel = parseNumericString(landAssessLevel);
@@ -393,7 +361,6 @@ export default function NewTaxDeclarationPage() {
     setLandAssessedValue((marketValue * (assessmentLevel / 100)).toFixed(2));
   }, [landMarketValue, landAssessLevel]);
 
-  // ── Derived: auto-calculate building assessed value ─────────────────────
   useEffect(() => {
     const buildingArea = parseNumericString(floorArea);
     const marketValue = parseNumericString(bldgMarketValue);
@@ -414,7 +381,6 @@ export default function NewTaxDeclarationPage() {
     setBldgAssessedValue((marketValue * (assessmentLevel / 100)).toFixed(2));
   }, [floorArea, bldgMarketValue, bldgAssessLevel]);
 
-  // ── Derived: display labels for summary sidebar ──────────────────────────
   const selectedBarangayLabel =
     barangayOptions.find((b) => b.value === barangayId)?.label ?? "";
   const selectedTaxpayerLabel =
@@ -424,18 +390,12 @@ export default function NewTaxDeclarationPage() {
   const totalAssessedValue =
     (parseFloat(landAssessedValue) || 0) + (parseFloat(bldgAssessedValue) || 0);
 
-  // ── Print state — null until the button is clicked ───────────────────────
-  // TaxDeclarationPrint is NOT mounted until handlePrint() fires.
-  // It is unmounted again via the browser's afterprint event.
   const [printData, setPrintData] = useState<TaxDeclarationData | null>(null);
 
-  // Fire window.print() one tick after printData is set so React has time
-  // to flush TaxDeclarationPrint into the DOM first.
   useEffect(() => {
     if (!printData) return;
     const t = setTimeout(() => {
       window.print();
-      // Clean up: unmount TaxDeclarationPrint after the dialog closes
       window.addEventListener("afterprint", () => setPrintData(null), {
         once: true,
       });
@@ -443,8 +403,6 @@ export default function NewTaxDeclarationPage() {
     return () => clearTimeout(t);
   }, [printData]);
 
-  // ── Build a snapshot of the form at the moment the button is clicked ──────
-  // Only called on demand — never runs during normal typing / re-renders.
   function buildPrintSnapshot(): TaxDeclarationData {
     return {
       id: 0,
@@ -645,7 +603,6 @@ export default function NewTaxDeclarationPage() {
             </div>
           </div>
 
-          {/* Mounted only while printing — unmounted by the afterprint event */}
           {printData && (
             <div className="sr-only print:not-sr-only">
               <TaxDeclarationPrint data={printData} />
@@ -653,7 +610,6 @@ export default function NewTaxDeclarationPage() {
           )}
 
           <div className="space-y-6 lg:col-span-2">
-            {/* Declaration Information */}
             <div className="lg:-mt-3">
               <Section
                 icon={<FileText className="h-5 w-5 text-[#00154A]" />}
@@ -683,8 +639,6 @@ export default function NewTaxDeclarationPage() {
                     value={prevTd}
                     onChange={(v) => setPrevTd(v)}
                   />
-
-                  {/* Declaration Type — Combobox */}
                   <Combobox
                     label="Declaration Type"
                     placeholder="Select type"
@@ -694,7 +648,6 @@ export default function NewTaxDeclarationPage() {
                     onChange={setDeclarationType}
                     required
                   />
-
                   <ValidatedInput
                     type="arp-number"
                     label="ARP Number"
@@ -715,13 +668,11 @@ export default function NewTaxDeclarationPage() {
               </Section>
             </div>
 
-            {/* Owner Information */}
             <Section
               icon={<User className="h-5 w-5 text-[#00154A]" />}
               title="Owner Information"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Taxpayer search — the primary combobox for this module */}
                 <div className="sm:col-span-2">
                   <Combobox
                     label="Owner / Taxpayer"
@@ -770,7 +721,6 @@ export default function NewTaxDeclarationPage() {
                   />
                 </div>
 
-                {/* Owner Type — toggle buttons (3 options, no search needed) */}
                 <div>
                   <label className="font-inter text-xs font-medium text-slate-600">
                     Owner Type <span className="text-rose-500">*</span>
@@ -793,13 +743,11 @@ export default function NewTaxDeclarationPage() {
               </div>
             </Section>
 
-            {/* Property Location */}
             <Section
               icon={<MapPin className="h-5 w-5 text-[#00154A]" />}
               title="Property Location"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Municipality — fixed, read-only */}
                 <div>
                   <label className="font-inter text-xs font-medium text-slate-600">
                     Municipality <span className="text-rose-500">*</span>
@@ -811,7 +759,6 @@ export default function NewTaxDeclarationPage() {
                   </div>
                 </div>
 
-                {/* Barangay — Combobox */}
                 <Combobox
                   label="Barangay"
                   placeholder={
@@ -856,13 +803,11 @@ export default function NewTaxDeclarationPage() {
               </div>
             </Section>
 
-            {/* Land Details */}
             <Section
               icon={<Layers className="h-5 w-5 text-[#00154A]" />}
               title="Land Details"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Classification — Combobox */}
                 <Combobox
                   label="Classification"
                   placeholder="Select classification"
@@ -925,7 +870,6 @@ export default function NewTaxDeclarationPage() {
               </div>
             </Section>
 
-            {/* Building / Improvement Details */}
             <Section
               icon={<Home className="h-5 w-5 text-[#00154A]" />}
               title="Building / Improvement Details"
