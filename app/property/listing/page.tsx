@@ -9,6 +9,13 @@ import {
   TaxDeclarationPrint,
   type TaxDeclarationData,
 } from '@/components/print/TaxDeclarationPrint';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const STATUS_OPTIONS: ComboboxOption[] = [
   { value: 'Active',    label: 'Active' },
@@ -614,11 +621,12 @@ export default function PropertyListingPage() {
         </div>
       </div>
 
-      {isViewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={closeViewModal}>
-          <div className="swal2-show max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-lexend mb-1 text-lg font-semibold text-[#0F172A]">Property Details</h2>
-            <p className="font-inter mb-4 text-sm text-slate-500">Linked property, declarations, and taxpayer information.</p>
+      <Dialog open={isViewOpen} onOpenChange={(open) => !open && closeViewModal()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6 bg-white gap-0 border-0 shadow-lg">
+          <DialogHeader className="mb-4 text-left border-b-0 px-0 pt-0">
+            <DialogTitle className="font-lexend text-lg font-semibold text-[#0F172A]">Property Details</DialogTitle>
+            <DialogDescription className="font-inter text-sm text-slate-500">Linked property, declarations, and taxpayer information.</DialogDescription>
+          </DialogHeader>
 
             {viewLoading ? (
               <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-6 text-center font-inter text-sm text-slate-500">
@@ -715,15 +723,15 @@ export default function PropertyListingPage() {
                 Close
               </button>
             </div>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={closeEditModal}>
-          <div className="swal2-show w-full max-w-lg rounded-xl bg-white p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <h2 className="font-lexend mb-2 text-lg font-semibold text-[#0F172A]">Edit Property</h2>
-              <p className="font-inter mb-4 text-sm text-slate-500">Update property details and click save to apply changes.</p>
+      <Dialog open={isEditOpen} onOpenChange={(open) => !open && closeEditModal()}>
+        <DialogContent className="max-w-lg bg-white p-6 gap-0 border-0 shadow-lg">
+          <DialogHeader className="mb-4 text-left border-b-0 px-0 pt-0">
+            <DialogTitle className="font-lexend text-lg font-semibold text-[#0F172A]">Edit Property</DialogTitle>
+            <DialogDescription className="font-inter text-sm text-slate-500">Update property details and click save to apply changes.</DialogDescription>
+          </DialogHeader>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <ModalField
@@ -808,9 +816,8 @@ export default function PropertyListingPage() {
                   Save Changes
                 </button>
               </div>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
