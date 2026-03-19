@@ -1,11 +1,14 @@
 "use client";
 
-import AnalyticsCard from '@/components/AnalyticsCard';
-import MonthlyCollectionComponent from '@/components/MonthlyCollectionComponent';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import AnalyticsCard from "@/components/AnalyticsCard";
+import MonthlyCollectionComponent from "@/components/MonthlyCollectionComponent";
+import { useRouter } from "next/navigation";
+import { GenerateReportModal } from "@/components/GenerateReportModal";
 
 export default function Dashboard() {
   const router = useRouter();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   return (
     <main>
       <div className="w-full mb-6">
@@ -14,6 +17,7 @@ export default function Dashboard() {
             Dashboard Overview
           </h1>
           <button
+            onClick={() => setIsReportModalOpen(true)}
             className={`font-inter bg-[#0f1729] text-[#9fa2aa] px-4 py-2 rounded text-sm font-medium hover:bg-gray-700 transition-colors cursor-pointer`}
           >
             Generate Report
@@ -49,12 +53,24 @@ export default function Dashboard() {
           </ul>
 
           <div className="mt-10">
-            <button onClick={() => router.push('/taxpayers/view-delinquencies')} className={`font-inter w-full bg-[#0f1729] hover:bg-slate-800 text-[#949ba3] text-xs font-semibold py-2 px-4 rounded-sm transition-colors shadow-sm cursor-pointer `}>
+            <button
+              onClick={() => router.push("/taxpayers/view-delinquencies")}
+              className={`font-inter w-full bg-[#0f1729] hover:bg-slate-800 text-[#949ba3] text-xs font-semibold py-2 px-4 rounded-sm transition-colors shadow-sm cursor-pointer `}
+            >
               View Delinquencies
             </button>
           </div>
         </div>
       </div>
+
+      <GenerateReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onExport={(format, config) => {
+          console.log("Export triggered:", format, config);
+          // In a real app, this would trigger an API call to download the PDF/CSV
+        }}
+      />
     </main>
   );
 }
