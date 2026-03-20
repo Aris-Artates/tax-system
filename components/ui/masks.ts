@@ -23,8 +23,11 @@ export type MaskKey =
   | 'ORnumber' 
   | 'name'
   | 'account-number'
+  | 'permission-&-role-name'
   | 'pin'
-  | 'permission-&-role-name';
+  | 'arp-number'
+  | 'lot-number'
+  | 'decimal-numeric';
 
 
 export type MaskFn = (raw: string) => string;
@@ -190,16 +193,59 @@ export function maskPermissionRole(raw: string): string {
   });
 }
 
-// ── PIN ───────────────────────────────────────────────────────────────────────
-// Format: 000-00-000-00-000 (13 digits)
-
+// ── PIN: 088-01-001-01-001 (3-2-3-2-3 digits)
 export function maskPin(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(0, 13);
-  if (d.length <= 3) return d;
-  if (d.length <= 5) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  if (d.length <= 8) return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
-  if (d.length <= 10) return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5, 8)}-${d.slice(8)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5, 8)}-${d.slice(8, 10)}-${d.slice(10)}`;
+  const digits = raw.replace(/\D/g, '').slice(0, 13);
+  if (!digits) return '';
+  const groups = [3, 2, 3, 2, 3];
+  const parts: string[] = [];
+  let idx = 0;
+  for (const len of groups) {
+    if (idx >= digits.length) break;
+    parts.push(digits.slice(idx, idx + len));
+    idx += len;
+  }
+  return parts.join('-');
+}
+
+// ── ARP Number: XXXX-XXXX-XXXX-XXXX (numeric, 4 groups)
+export function maskArpNumber(raw: string): string {
+  const cleaned = raw.toUpperCase().replace(/[^0-9]/g, '').slice(0, 16);
+  if (!cleaned) return '';
+  const parts: string[] = [];
+  for (let i = 0; i < cleaned.length; i += 4) {
+    parts.push(cleaned.slice(i, i + 4));
+  }
+  return parts.join('-');
+}
+
+// ── Lot/Block/Survey: LOT-12 (numeric + optional dash num)
+export function maskLotNumber(raw: string): string {
+  const cleaned = raw.toUpperCase().replace(/[^0-9-]/g, '').slice(0, 12);
+  return cleaned.replace(/-+/g, '-').replace(/^-+/, '');
+}
+
+// ── Decimal Numeric: 1,234.56 (comma groups, decimal, max digits)
+export function maskDecimalNumeric(raw: string, options: {maxInt: number, maxDec: number, allowDec?: boolean} = {maxInt: 12, maxDec: 2, allowDec: true}): string {
+  const {maxInt, maxDec, allowDec} = options;
+  let cleaned = raw.replace(/,/g, '').replace(/[^\d.]/g, '').replace(/^0+/, '');
+  
+  if (!allowDec) {
+    const intPart = cleaned.replace(/\./g, '').slice(0, maxInt);
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return grouped;
+  }
+  
+  const dotIdx = cleaned.indexOf('.');
+  let intPart = dotIdx > 0 ? cleaned.slice(0, dotIdx) : cleaned;
+  let decPart = dotIdx > 0 ? cleaned.slice(dotIdx + 1) : '';
+  
+  intPart = intPart.slice(0, maxInt);
+  decPart = decPart.slice(0, maxDec);
+  
+  const groupedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (!decPart) return groupedInt;
+  return `${groupedInt}.${decPart}`;
 }
 
 // ── Registry ──────────────────────────────────────────────────────────────────
@@ -218,5 +264,10 @@ export const MASKS: Record<MaskKey, MaskFn> = {
   'account-number': maskAccountNumber,
   'pin': maskPin,
   'permission-&-role-name': maskPermissionRole,
+  'arp-number': maskArpNumber,
+  'lot-number': maskLotNumber,
+  // decimal-numeric takes options param, but MaskFn is (raw: string) => string
+  // Use wrapper for compatibility
+  'decimal-numeric': ((raw) => maskDecimalNumeric(raw, {maxInt: 12, maxDec: 2, allowDec: true})) as MaskFn,
 };
 
