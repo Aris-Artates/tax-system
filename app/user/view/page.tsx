@@ -37,6 +37,14 @@ import { Combobox } from "@/components/ui/combobox";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { confirmDelete } from "@/components/DeleteUserAction";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
@@ -287,6 +295,9 @@ export default function ViewUserPage() {
   const [showTempPassword, setShowTempPassword] = useState(false);
   const [empIDError, setEmpIDError] = useState<string | null>(null);
   const [checkingEmpID, setCheckingEmpID] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -371,11 +382,15 @@ export default function ViewUserPage() {
   const updateField = <K extends keyof FormState>(
     key: K,
     value: FormState[K],
+    isValid?: boolean,
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === "empID") {
       setEmpIDError(null);
       setCheckingEmpID(false);
+    }
+    if (isValid !== undefined) {
+      setValidationErrors((prev) => ({ ...prev, [key]: !isValid }));
     }
   };
 
@@ -462,6 +477,7 @@ export default function ViewUserPage() {
       setForm(mapped);
       setInitialLoadedForm(mapped);
       setEmpIDError(null);
+      setValidationErrors({});
     } catch {
       toast.error("Connection error. Failed to load user details.");
       setIsEditModalOpen(false);
@@ -474,6 +490,7 @@ export default function ViewUserPage() {
     if (isSaving) return;
     setIsEditModalOpen(false);
     setForm(initialFormState);
+    setValidationErrors({});
   };
 
   const hasFormChanges = useMemo(() => {
@@ -508,6 +525,16 @@ export default function ViewUserPage() {
 
     if (!hasFormChanges) {
       toast.error("No changes detected.");
+      return;
+    }
+
+    if (empIDError) {
+      toast.error(empIDError);
+      return;
+    }
+
+    if (Object.values(validationErrors).some((v) => v)) {
+      toast.error("Please fix validation errors before saving.");
       return;
     }
 
@@ -862,289 +889,302 @@ export default function ViewUserPage() {
       </main>
 
       {/* Edit User Modal */}
-      {isEditModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={handleCloseEditModal}
-        >
-          <div
-            className="swal2-show w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-lexend text-lg font-semibold text-[#0F172A]">
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-xl">
+          <div className="flex flex-col max-h-[85vh] bg-white">
+            {/* Fixed Header */}
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle className="font-lexend text-xl font-bold text-[#0F172A]">
                 Edit User
-              </h2>
+              </DialogTitle>
+              <DialogDescription className="font-inter text-sm text-slate-500">
+                Update user information and account settings. Click save to
+                apply changes.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+              {isLoadingUser ? (
+                <div className="py-12 text-center text-slate-400 font-inter text-sm">
+                  Loading user data...
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Personal Information */}
+                  <div>
+                    <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                      Personal Information
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <ValidatedInput
+                        label="Emp ID"
+                        required
+                        value={form.empID}
+                        maxLength={9}
+                        validator="employee-Id"
+                        type="employee-Id"
+                        onChange={(v, isValid) =>
+                          updateField("empID", v, isValid)
+                        }
+                        errorMessage={empIDError}
+                      />
+                      <Field
+                        label="Username"
+                        required
+                        value={form.username}
+                        onChange={(v) => updateField("username", v)}
+                      />
+                      <ValidatedInput
+                        label="First Name"
+                        required
+                        value={form.firstname}
+                        validator="name"
+                        type="name"
+                        onChange={(v, isValid) =>
+                          updateField("firstname", v, isValid)
+                        }
+                      />
+                      <ValidatedInput
+                        label="Middle Name"
+                        value={form.middlename}
+                        validator="name"
+                        type="name"
+                        onChange={(v, isValid) =>
+                          updateField("middlename", v, isValid)
+                        }
+                      />
+                      <ValidatedInput
+                        label="Last Name"
+                        required
+                        value={form.lastname}
+                        validator="name"
+                        type="name"
+                        onChange={(v, isValid) =>
+                          updateField("lastname", v, isValid)
+                        }
+                      />
+                      <div className="pt-2">
+                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                          Suffix
+                        </label>
+                        <Combobox
+                          options={SuffixOptions.map((s) => ({
+                            value: s,
+                            label: s,
+                          }))}
+                          value={form.suffix}
+                          onChange={(val) => updateField("suffix", val)}
+                          placeholder="Select suffix"
+                          searchPlaceholder="Search suffix..."
+                          triggerClassName="h-9 text-xs"
+                        />
+                      </div>
+                      <div className="pt-2.5">
+                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                          Birthdate <span className="text-rose-500">*</span>
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full h-9 justify-start text-left font-normal cursor-pointer text-xs"
+                            >
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5 text-slate-400" />
+                              {form.birthdate ? (
+                                format(form.birthdate, "yyyy-MM-dd")
+                              ) : (
+                                <span className="text-slate-400">
+                                  Pick a date
+                                </span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              disabled={(date) => date > new Date()}
+                              mode="single"
+                              selected={form.birthdate}
+                              onSelect={(date) =>
+                                updateField("birthdate", date)
+                              }
+                              fromYear={1950}
+                              toYear={new Date().getFullYear()}
+                              initialFocus
+                              className="bg-white border rounded-lg shadow-xl"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <Field
+                        label="Age"
+                        required
+                        readOnly
+                        value={form.age}
+                        onChange={(v) => updateField("age", v)}
+                      />
+                      <div>
+                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                          Sex <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <BooleanChip
+                            label="Male"
+                            checked={form.sex}
+                            onClick={() => updateField("sex", true)}
+                          />
+                          <BooleanChip
+                            label="Female"
+                            checked={!form.sex}
+                            onClick={() => updateField("sex", false)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact & Professional Details */}
+                  <div>
+                    <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                      Contact & Professional Details
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <ValidatedInput
+                        label="Email"
+                        type="email"
+                        required
+                        value={form.email}
+                        leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
+                        onChange={(v, isValid) =>
+                          updateField("email", v, isValid)
+                        }
+                      />
+                      <ValidatedInput
+                        label="Phone"
+                        type="phone"
+                        required
+                        value={form.phone}
+                        leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
+                        onChange={(v, isValid) =>
+                          updateField("phone", v, isValid)
+                        }
+                      />
+                      <div className="pt-2.5">
+                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                          Role <span className="text-rose-500">*</span>
+                        </label>
+                        <Combobox
+                          options={roles.map((r) => ({
+                            value: String(r.id),
+                            label: r.name,
+                          }))}
+                          value={form.role_id}
+                          onChange={(val) => updateField("role_id", val)}
+                          placeholder="Select role"
+                          searchPlaceholder="Search role..."
+                          triggerClassName="h-9 text-xs"
+                        />
+                      </div>
+                      <Field
+                        label="Department"
+                        required
+                        value={form.department}
+                        leftIcon={
+                          <Building2 className="h-4 w-4 text-slate-400" />
+                        }
+                        onChange={(v) => updateField("department", v)}
+                      />
+                      <Field
+                        label="Position"
+                        required
+                        value={form.position}
+                        onChange={(v) => updateField("position", v)}
+                      />
+                      <div className="pt-2.5">
+                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                          Status <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <BooleanChip
+                            label="Active"
+                            checked={form.status}
+                            onClick={() => updateField("status", true)}
+                          />
+                          <BooleanChip
+                            label="Inactive"
+                            checked={!form.status}
+                            onClick={() => updateField("status", false)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security (Credentials) */}
+                  <div>
+                    <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                      Security Credentials (Optional)
+                    </h3>
+                    <p className="font-inter text-[10px] text-slate-400 mb-3">
+                      Only fill if you want to reset the user's password.
+                    </p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <PasswordField
+                        label="Temp Pass"
+                        value={form.temp_pass}
+                        show={showTempPassword}
+                        onToggle={() => setShowTempPassword((v) => !v)}
+                        onChange={(v) => updateField("temp_pass", v)}
+                      />
+                      <PasswordField
+                        label="Password"
+                        value={form.password}
+                        show={showPassword}
+                        onToggle={() => setShowPassword((v) => !v)}
+                        onChange={(v) => updateField("password", v)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Fixed Footer Actions */}
+            <div className="p-6 pt-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="font-inter px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+              </DialogClose>
               <button
-                onClick={handleCloseEditModal}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                type="button"
+                disabled={
+                  isSaving ||
+                  !hasFormChanges ||
+                  !!empIDError ||
+                  checkingEmpID ||
+                  Object.values(validationErrors).some((v) => v)
+                }
+                onClick={handleSaveUser}
+                className="font-inter h-10 inline-flex items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <X className="h-5 w-5" />
+                {isSaving ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <FilePenLine className="h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
               </button>
             </div>
-            <p className="font-inter mb-6 text-sm text-slate-500">
-              Update user information and account settings. Click save to apply
-              changes.
-            </p>
-
-            {isLoadingUser ? (
-              <div className="py-12 text-center text-slate-400 font-inter text-sm">
-                Loading user data...
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Personal Information */}
-                <div>
-                  <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                    Personal Information
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ValidatedInput
-                      label="Emp ID"
-                      required
-                      value={form.empID}
-                      maxLength={9}
-                      validator="employee-Id"
-                      type="employee-Id"
-                      onChange={(v) => updateField("empID", v)}
-                      errorMessage={empIDError}
-                    />
-                    <Field
-                      label="Username"
-                      required
-                      value={form.username}
-                      onChange={(v) => updateField("username", v)}
-                    />
-                    <ValidatedInput
-                      label="First Name"
-                      required
-                      value={form.firstname}
-                      validator="name"
-                      type="name"
-                      onChange={(v) => updateField("firstname", v)}
-                    />
-                    <ValidatedInput
-                      label="Middle Name"
-                      value={form.middlename}
-                      validator="name"
-                      type="name"
-                      onChange={(v) => updateField("middlename", v)}
-                    />
-                    <ValidatedInput
-                      label="Last Name"
-                      required
-                      value={form.lastname}
-                      validator="name"
-                      type="name"
-                      onChange={(v) => updateField("lastname", v)}
-                    />
-                    <div>
-                      <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                        Suffix
-                      </label>
-                      <Combobox
-                        options={SuffixOptions.map((s) => ({
-                          value: s,
-                          label: s,
-                        }))}
-                        value={form.suffix}
-                        onChange={(val) => updateField("suffix", val)}
-                        placeholder="Select suffix"
-                        searchPlaceholder="Search suffix..."
-                        triggerClassName="h-9 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                        Birthdate <span className="text-rose-500">*</span>
-                      </label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full h-9 justify-start text-left font-normal cursor-pointer text-xs"
-                          >
-                            <CalendarIcon className="mr-2 h-3.5 w-3.5 text-slate-400" />
-                            {form.birthdate ? (
-                              format(form.birthdate, "yyyy-MM-dd")
-                            ) : (
-                              <span className="text-slate-400">
-                                Pick a date
-                              </span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            disabled={(date) => date > new Date()}
-                            mode="single"
-                            selected={form.birthdate}
-                            onSelect={(date) => updateField("birthdate", date)}
-                            fromYear={1950}
-                            toYear={new Date().getFullYear()}
-                            initialFocus
-                            className="bg-white border rounded-lg shadow-xl"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <Field
-                      label="Age"
-                      required
-                      readOnly
-                      value={form.age}
-                      onChange={(v) => updateField("age", v)}
-                    />
-                    <div>
-                      <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                        Sex <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <BooleanChip
-                          label="Male"
-                          checked={form.sex}
-                          onClick={() => updateField("sex", true)}
-                        />
-                        <BooleanChip
-                          label="Female"
-                          checked={!form.sex}
-                          onClick={() => updateField("sex", false)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact & Professional Details */}
-                <div>
-                  <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                    Contact & Professional Details
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ValidatedInput
-                      label="Email"
-                      type="email"
-                      required
-                      value={form.email}
-                      leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
-                      onChange={(v) => updateField("email", v)}
-                    />
-                    <ValidatedInput
-                      label="Phone"
-                      type="phone"
-                      required
-                      value={form.phone}
-                      leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
-                      onChange={(value) => updateField("phone", value)}
-                    />
-                    <div>
-                      <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                        Role <span className="text-rose-500">*</span>
-                      </label>
-                      <Combobox
-                        options={roles.map((r) => ({
-                          value: String(r.id),
-                          label: r.name,
-                        }))}
-                        value={form.role_id}
-                        onChange={(val) => updateField("role_id", val)}
-                        placeholder="Select role"
-                        searchPlaceholder="Search role..."
-                        triggerClassName="h-9 text-xs"
-                      />
-                    </div>
-                    <Field
-                      label="Department"
-                      required
-                      value={form.department}
-                      leftIcon={
-                        <Building2 className="h-4 w-4 text-slate-400" />
-                      }
-                      onChange={(v) => updateField("department", v)}
-                    />
-                    <Field
-                      label="Position"
-                      required
-                      value={form.position}
-                      onChange={(v) => updateField("position", v)}
-                    />
-                    <div>
-                      <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                        Status <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <BooleanChip
-                          label="Active"
-                          checked={form.status}
-                          onClick={() => updateField("status", true)}
-                        />
-                        <BooleanChip
-                          label="Inactive"
-                          checked={!form.status}
-                          onClick={() => updateField("status", false)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Security (Credentials) */}
-                <div>
-                  <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                    Security Credentials (Optional)
-                  </h3>
-                  <p className="font-inter text-[10px] text-slate-400 mb-3">
-                    Only fill if you want to reset the user's password.
-                  </p>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <PasswordField
-                      label="Temp Pass"
-                      value={form.temp_pass}
-                      show={showTempPassword}
-                      onToggle={() => setShowTempPassword((v) => !v)}
-                      onChange={(v) => updateField("temp_pass", v)}
-                    />
-                    <PasswordField
-                      label="Password"
-                      value={form.password}
-                      show={showPassword}
-                      onToggle={() => setShowPassword((v) => !v)}
-                      onChange={(v) => updateField("password", v)}
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="font-inter px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-md transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSaving || !hasFormChanges}
-                    onClick={handleSaveUser}
-                    className="font-inter h-10 inline-flex items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSaving ? (
-                      "Saving..."
-                    ) : (
-                      <>
-                        <FilePenLine className="h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

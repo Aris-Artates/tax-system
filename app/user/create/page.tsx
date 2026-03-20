@@ -122,6 +122,9 @@ function CreateUserForm() {
   );
   const [empIDError, setEmpIDError] = useState<string | null>(null);
   const [checkingEmpID, setCheckingEmpID] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     if (!form.birthdate) {
@@ -145,11 +148,15 @@ function CreateUserForm() {
   const updateField = <K extends keyof FormState>(
     key: K,
     value: FormState[K],
+    isValid?: boolean,
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (key === 'empID') {
+    if (key === "empID") {
       setEmpIDError(null);
       setCheckingEmpID(false);
+    }
+    if (isValid !== undefined) {
+      setValidationErrors((prev) => ({ ...prev, [key]: !isValid }));
     }
   };
 
@@ -370,6 +377,16 @@ function CreateUserForm() {
       return;
     }
 
+    if (empIDError) {
+      toast.error(empIDError);
+      return;
+    }
+
+    if (Object.values(validationErrors).some((v) => v)) {
+      toast.error("Please fix validation errors before saving.");
+      return;
+    }
+
     // REMOVED: Length, Uppercase, and Number restrictions.
     // KEPT: Match check to ensure the user didn't make a typo.
     if (!isEditMode && form.temp_pass !== form.password) {
@@ -536,7 +553,7 @@ function CreateUserForm() {
                 maxLength={9}
                 validator="employee-Id"
                 type="employee-Id"
-                onChange={(v) => updateField("empID", v)}
+                onChange={(v, isValid) => updateField("empID", v, isValid)}
                 errorMessage={empIDError}
               />
               <Field
@@ -551,14 +568,14 @@ function CreateUserForm() {
                 value={form.firstname}
                 validator="name"
                 type="name"
-                onChange={(v) => updateField("firstname", v)}
+                onChange={(v, isValid) => updateField("firstname", v, isValid)}
               />
               <ValidatedInput
                 label="Middle Name"
                 value={form.middlename}
                 validator="name"
                 type="name"
-                onChange={(v) => updateField("middlename", v)}
+                onChange={(v, isValid) => updateField("middlename", v, isValid)}
               />
               <ValidatedInput
                 label="Last Name"
@@ -566,7 +583,7 @@ function CreateUserForm() {
                 value={form.lastname}
                 validator="name"
                 type="name"
-                onChange={(v) => updateField("lastname", v)}
+                onChange={(v, isValid) => updateField("lastname", v, isValid)}
               />
               <div>
                 <label className="font-inter text-xs font-medium text-slate-600">
@@ -669,7 +686,7 @@ function CreateUserForm() {
                 required
                 value={form.email}
                 leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
-                onChange={(v) => updateField("email", v)}
+                onChange={(v, isValid) => updateField("email", v, isValid)}
               />
               <ValidatedInput
                 label="Phone"
@@ -678,7 +695,7 @@ function CreateUserForm() {
                 required
                 value={form.phone}
                 leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
-                onChange={(value) => updateField("phone", value)}
+                onChange={(v, isValid) => updateField("phone", v, isValid)}
               />
               {/* Role Combobox */}
               <div>
@@ -787,7 +804,13 @@ function CreateUserForm() {
 
               <button
                 type="button"
-                disabled={isSubmitting || isLoadingUser}
+                disabled={
+                  isSubmitting ||
+                  isLoadingUser ||
+                  !!empIDError ||
+                  checkingEmpID ||
+                  Object.values(validationErrors).some((v) => v)
+                }
                 className="flex-1 justify-center md:flex-none font-inter h-10 inline-flex cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={handleSave}
               >
