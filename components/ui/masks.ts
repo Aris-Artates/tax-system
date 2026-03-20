@@ -262,8 +262,8 @@ export const MASKS: Record<MaskKey, MaskFn> = {
   'name': maskName,
   'ORnumber': maskORNumber,
   'account-number': maskAccountNumber,
-  'permission-&-role-name': maskPermissionRole,
   'pin': maskPin,
+  'permission-&-role-name': maskPermissionRole,
   'arp-number': maskArpNumber,
   'lot-number': maskLotNumber,
   // decimal-numeric takes options param, but MaskFn is (raw: string) => string

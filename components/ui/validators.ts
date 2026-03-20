@@ -108,7 +108,7 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
     errorMessage: 'Account number must be XXXX-XXXX-XX format (10 digits)',
   },
 
-'permission-&-role-name': {
+ 'permission-&-role-name': {
   validate: (v) => {
     const isRightLength = v.length >= 2 && v.length <= 50;
     // Fix: Explicitly escape the dot, space, underscore, and hyphen
