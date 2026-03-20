@@ -93,7 +93,10 @@ export function ValidatedInput({
   const isTextField = 
     resolvedValidator === "name" || 
     resolvedValidator === "email" || 
-    resolvedValidator === "permission-&-role-name";
+    resolvedValidator === "permission-&-role-name" ||
+    resolvedValidator === "text" ||
+    resolvedValidator === "lot-number" ||
+    resolvedValidator === "arp-number";
 
   useLayoutEffect(() => {
     if (pendingCursor.current !== null && inputRef.current) {
@@ -155,8 +158,14 @@ export function ValidatedInput({
         return;
       }
 
-      // 2. Custom Text Fields (Names/Permissions): Masking without digit-only cursor math
-      if (resolvedValidator === "name" || resolvedValidator === "permission-&-role-name") {
+      // 2. Custom Text Fields: Masking without digit-only cursor math
+      if (
+        resolvedValidator === "name" || 
+        resolvedValidator === "permission-&-role-name" ||
+        resolvedValidator === "text" ||
+        resolvedValidator === "lot-number" ||
+        resolvedValidator === "arp-number"
+      ) {
         const masked = maskFn(raw);
         if (!validateOnBlur) setTouched(true);
         onChange(masked, validatorRule.validate(masked));

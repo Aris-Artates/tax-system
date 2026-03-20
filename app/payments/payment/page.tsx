@@ -139,6 +139,7 @@ export default function RecordPaymentPage() {
                   placeholder="TD-2024-0001"
                   onChange={setTdn}
                   className="font-inter mt-1"
+                  prefix="TD-"
                 />
               </div>
               <div>

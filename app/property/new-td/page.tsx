@@ -35,10 +35,30 @@ import {
   SelectValue,
   SelectViewport,
 } from "@/components/ui/select";
+
+import { ValidatedInput } from "@/components/ui/ValidatedInput";
+
 import {
   TaxDeclarationPrint,
   type TaxDeclarationData,
 } from "@/components/print/TaxDeclarationPrint";
+
+function parseNumeric(v: string): number | null {
+  const cleaned = v.replace(/,/g, "").trim();
+  if (!cleaned) return null;
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : null;
+}
+
+function parseNumericString(v: string | undefined | null): number {
+  if (!v) return 0;
+  const parsed = parseNumeric(v);
+  return parsed !== null ? parsed : 0;
+}
+
+function normalizeBarangayName(name: string): string {
+  return name.trim().toLowerCase();
+}
 
 // ── Static option sets (small, no DB fetch needed) ────────────────────────────
 const DECLARATION_TYPES: ComboboxOption[] = [
@@ -157,132 +177,6 @@ const STA_RITA_BARANGAY_COORDINATES: Array<{
   { name: "Santan Poblacion (Zone V)", coordinates: [11.4515928, 124.9407345] },
 ];
 
-function normalizeBarangayName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\(.*?\)/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-type NumericInputOptions = {
-  allowDecimal?: boolean;
-  maxIntegerDigits: number;
-  maxDecimalDigits?: number;
-};
-
-function sanitizeNumericInput(
-  raw: string,
-  options: NumericInputOptions,
-): string {
-  const {
-    allowDecimal = false,
-    maxIntegerDigits,
-    maxDecimalDigits = 0,
-  } = options;
-  const cleaned = raw
-    .replace(/,/g, "")
-    .replace(allowDecimal ? /[^\d.]/g : /\D/g, "");
-
-  if (!allowDecimal) {
-    return cleaned.slice(0, maxIntegerDigits);
-  }
-
-  const firstDot = cleaned.indexOf(".");
-  const normalized =
-    firstDot >= 0
-      ? `${cleaned.slice(0, firstDot)}.${cleaned.slice(firstDot + 1).replace(/\./g, "")}`
-      : cleaned;
-
-  const [intPartRaw = "", decPartRaw = ""] = normalized.split(".");
-  const intPart = intPartRaw.slice(0, maxIntegerDigits);
-  const hasDot = normalized.includes(".");
-  const decPart = decPartRaw.slice(0, maxDecimalDigits);
-
-  if (!hasDot) return intPart;
-  return `${intPart}.${decPart}`;
-}
-
-function formatNumericInput(raw: string, options: NumericInputOptions): string {
-  const sanitized = sanitizeNumericInput(raw, options);
-  if (!sanitized) return "";
-
-  const hasTrailingDot = sanitized.endsWith(".");
-  const [intPart = "", decPart] = sanitized.split(".");
-  const groupedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-  if (!options.allowDecimal) return groupedInt;
-  if (hasTrailingDot) return `${groupedInt}.`;
-  if (decPart !== undefined) return `${groupedInt}.${decPart}`;
-  return groupedInt;
-}
-
-function parseNumericString(value: string): number {
-  return Number(value.replace(/,/g, "").trim());
-}
-
-function normalizeTdInput(raw: string): string {
-  return raw.replace(/^\s*[Tt][Dd]-?\s*/, "").trimStart();
-}
-
-function formatTdInput(raw: string): string {
-  const digits = normalizeTdInput(raw).replace(/\D/g, "").slice(0, 20);
-  if (!digits) return "";
-
-  const parts: string[] = [];
-  for (let i = 0; i < digits.length; i += 4) {
-    parts.push(digits.slice(i, i + 4));
-  }
-  return parts.join("-");
-}
-
-function formatPinInput(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 13);
-  if (!digits) return "";
-
-  const groups = [3, 2, 3, 2, 3];
-  const parts: string[] = [];
-  let index = 0;
-
-  for (const group of groups) {
-    if (index >= digits.length) break;
-    parts.push(digits.slice(index, index + group));
-    index += group;
-  }
-
-  return parts.join("-");
-}
-
-function formatArpInput(raw: string): string {
-  const normalized = raw
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 16);
-
-  if (!normalized) return "";
-
-  const parts: string[] = [];
-  for (let i = 0; i < normalized.length; i += 4) {
-    parts.push(normalized.slice(i, i + 4));
-  }
-
-  return parts.join("-");
-}
-
-function formatLotInput(raw: string): string {
-  const normalized = raw
-    .toUpperCase()
-    .replace(/[^A-Z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-/, "")
-    .slice(0, 12);
-
-  return normalized;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function NewTaxDeclarationPage() {
   const router = useRouter();
 
@@ -372,8 +266,6 @@ export default function NewTaxDeclarationPage() {
     loadReferenceData();
   }, []);
 
-  // ── Form state ───────────────────────────────────────────────────────────
-  // Declaration Info
   const [tdNumber, setTdNumber] = useState("");
   const [pin, setPin] = useState("");
   const [prevTd, setPrevTd] = useState("");
@@ -381,20 +273,17 @@ export default function NewTaxDeclarationPage() {
   const [arpNumber, setArpNumber] = useState("");
   const [taxYear, setTaxYear] = useState("");
 
-  // Owner Info — taxpayerId links to the selected taxpayer in the DB
   const [taxpayerId, setTaxpayerId] = useState("");
   const [tin, setTin] = useState("");
   const [ownerAddress, setOwnerAddress] = useState("");
   const [ownerType, setOwnerType] = useState("Individual");
 
-  // Property Location
   const [barangayId, setBarangayId] = useState("");
   const [street, setStreet] = useState("");
   const [lotNumber, setLotNumber] = useState("");
   const [blockNumber, setBlockNumber] = useState("");
   const [surveyNumber, setSurveyNumber] = useState("");
 
-  // Land Details
   const [classification, setClassification] = useState("Residential");
   const [actualUse, setActualUse] = useState("");
   const [landArea, setLandArea] = useState("");
@@ -403,7 +292,6 @@ export default function NewTaxDeclarationPage() {
   const [landAssessLevel, setLandAssessLevel] = useState("");
   const [landAssessedValue, setLandAssessedValue] = useState("");
 
-  // Building Details
   const [buildingKind, setBuildingKind] = useState("");
   const [structuralType, setStructuralType] = useState("");
   const [floorArea, setFloorArea] = useState("");
@@ -412,20 +300,15 @@ export default function NewTaxDeclarationPage() {
   const [bldgAssessLevel, setBldgAssessLevel] = useState("");
   const [bldgAssessedValue, setBldgAssessedValue] = useState("");
 
-  // Effectivity
   const [effectivityYear, setEffectivityYear] = useState("");
   const [effectivityQuarter, setEffectivityQuarter] = useState("1st");
 
-  // ── Auto-generate TD prefixes on mount ───────────────────────────────────
-  useEffect(() => {
-    const year = new Date().getFullYear();
-    setTdNumber(`${year}-`);
-    setPrevTd("");
-  }, []);
+  const fullTdNumber = tdNumber.trim()
+    ? tdNumber.startsWith("TD-")
+      ? tdNumber.trim()
+      : `TD-${tdNumber.trim()}`
+    : "";
 
-  const fullTdNumber = tdNumber.trim() ? `TD-${tdNumber.trim()}` : "";
-
-  // ── Derived: auto-fill owner details when a taxpayer is selected ─────────
   useEffect(() => {
     if (!taxpayerId) return;
     const found = taxpayerMap.get(taxpayerId);
@@ -442,25 +325,23 @@ export default function NewTaxDeclarationPage() {
     );
   }, [taxpayerId, taxpayerMap]);
 
-  // ── Derived: auto-calculate land market value ────────────────────────────
   useEffect(() => {
-    const area = parseNumericString(landArea);
-    const unitValue = parseNumericString(landUnitValue);
+    const area = parseNumeric(landArea);
+    const unitValue = parseNumeric(landUnitValue);
 
     if (
       !Number.isFinite(area) ||
       !Number.isFinite(unitValue) ||
-      area <= 0 ||
-      unitValue <= 0
+      area! <= 0 ||
+      unitValue! <= 0
     ) {
       setLandMarketValue("");
       return;
     }
 
-    setLandMarketValue((area * unitValue).toFixed(2));
+    setLandMarketValue((area! * unitValue!).toFixed(2));
   }, [landArea, landUnitValue]);
 
-  // ── Derived: auto-calculate land assessed value ──────────────────────────
   useEffect(() => {
     const marketValue = parseNumericString(landMarketValue);
     const assessmentLevel = parseNumericString(landAssessLevel);
@@ -478,7 +359,6 @@ export default function NewTaxDeclarationPage() {
     setLandAssessedValue((marketValue * (assessmentLevel / 100)).toFixed(2));
   }, [landMarketValue, landAssessLevel]);
 
-  // ── Derived: auto-calculate building assessed value ─────────────────────
   useEffect(() => {
     const buildingArea = parseNumericString(floorArea);
     const marketValue = parseNumericString(bldgMarketValue);
@@ -499,7 +379,6 @@ export default function NewTaxDeclarationPage() {
     setBldgAssessedValue((marketValue * (assessmentLevel / 100)).toFixed(2));
   }, [floorArea, bldgMarketValue, bldgAssessLevel]);
 
-  // ── Derived: display labels for summary sidebar ──────────────────────────
   const selectedBarangayLabel =
     barangayOptions.find((b) => b.value === barangayId)?.label ?? "";
   const selectedTaxpayerLabel =
@@ -509,18 +388,12 @@ export default function NewTaxDeclarationPage() {
   const totalAssessedValue =
     (parseFloat(landAssessedValue) || 0) + (parseFloat(bldgAssessedValue) || 0);
 
-  // ── Print state — null until the button is clicked ───────────────────────
-  // TaxDeclarationPrint is NOT mounted until handlePrint() fires.
-  // It is unmounted again via the browser's afterprint event.
   const [printData, setPrintData] = useState<TaxDeclarationData | null>(null);
 
-  // Fire window.print() one tick after printData is set so React has time
-  // to flush TaxDeclarationPrint into the DOM first.
   useEffect(() => {
     if (!printData) return;
     const t = setTimeout(() => {
       window.print();
-      // Clean up: unmount TaxDeclarationPrint after the dialog closes
       window.addEventListener("afterprint", () => setPrintData(null), {
         once: true,
       });
@@ -528,8 +401,6 @@ export default function NewTaxDeclarationPage() {
     return () => clearTimeout(t);
   }, [printData]);
 
-  // ── Build a snapshot of the form at the moment the button is clicked ──────
-  // Only called on demand — never runs during normal typing / re-renders.
   function buildPrintSnapshot(): TaxDeclarationData {
     return {
       id: 0,
@@ -616,14 +487,6 @@ export default function NewTaxDeclarationPage() {
   function handlePrint() {
     setPrintData(buildPrintSnapshot());
   }
-
-  // ── Save handler (wire to server action / API route) ─────────────────────
-  const parseNumeric = (v: string): number | null => {
-    const cleaned = v.replace(/,/g, "").trim();
-    if (!cleaned) return null;
-    const parsed = Number(cleaned);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
 
   async function handleSave() {
     const selectedBarangayId = Number(barangayId);
@@ -738,7 +601,6 @@ export default function NewTaxDeclarationPage() {
             </div>
           </div>
 
-          {/* Mounted only while printing — unmounted by the afterprint event */}
           {printData && (
             <div className="sr-only print:not-sr-only">
               <TaxDeclarationPrint data={printData} />
@@ -746,37 +608,35 @@ export default function NewTaxDeclarationPage() {
           )}
 
           <div className="space-y-6 lg:col-span-2">
-            {/* Declaration Information */}
             <div className="lg:-mt-3">
               <Section
                 icon={<FileText className="h-5 w-5 text-[#00154A]" />}
                 title="Declaration Information"
               >
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field
+                  <ValidatedInput
+                    type="td-number"
                     label="TD Number"
                     placeholder="e.g. 2024-0001"
                     value={tdNumber}
-                    onChange={(v) => setTdNumber(formatTdInput(v))}
-                    prefix="TD-"
+                    onChange={(v) => setTdNumber(v)}
                     required
                   />
-                  <Field
+                  <ValidatedInput
+                    type="pin"
                     label="Property Index Number (PIN)"
                     placeholder="e.g. 088-01-001-01-001"
                     value={pin}
-                    onChange={(v) => setPin(formatPinInput(v))}
+                    onChange={(v) => setPin(v)}
                     required
                   />
-                  <Field
+                  <ValidatedInput
+                    type="td-number"
                     label="Previous TD Number"
                     placeholder="If revision or cancellation"
                     value={prevTd}
-                    onChange={(v) => setPrevTd(formatTdInput(v))}
-                    prefix="TD-"
+                    onChange={(v) => setPrevTd(v)}
                   />
-
-                  {/* Declaration Type — Combobox */}
                   <Combobox
                     label="Declaration Type"
                     placeholder="Select type"
@@ -786,12 +646,12 @@ export default function NewTaxDeclarationPage() {
                     onChange={setDeclarationType}
                     required
                   />
-
-                  <Field
+                  <ValidatedInput
+                    type="arp-number"
                     label="ARP Number"
                     placeholder="Assessment Roll of Property #"
                     value={arpNumber}
-                    onChange={(v) => setArpNumber(formatArpInput(v))}
+                    onChange={(v) => setArpNumber(v)}
                   />
                   <Combobox
                     label="Tax Year"
@@ -806,13 +666,11 @@ export default function NewTaxDeclarationPage() {
               </Section>
             </div>
 
-            {/* Owner Information */}
             <Section
               icon={<User className="h-5 w-5 text-[#00154A]" />}
               title="Owner Information"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Taxpayer search — the primary combobox for this module */}
                 <div className="sm:col-span-2">
                   <Combobox
                     label="Owner / Taxpayer"
@@ -841,25 +699,31 @@ export default function NewTaxDeclarationPage() {
                   </p>
                 </div>
 
-                <Field
-                  label="Tax Identification Number (TIN)"
-                  placeholder="Auto-filled from taxpayer"
-                  value={tin}
-                  onChange={setTin}
-                  readOnly
-                />
-                <div className="sm:col-span-2">
-                  <Field
-                    label="Owner Address"
-                    placeholder="Complete address of owner"
-                    value={ownerAddress}
-                    onChange={setOwnerAddress}
-                    required
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                    Tax Identification Number (TIN)
+                  </label>
+                  <input
+                    type="text"
+                    value={tin}
                     readOnly
+                    placeholder="Auto-filled from taxpayer"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                    Owner Address <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={ownerAddress}
+                    readOnly
+                    placeholder="Complete address of owner"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60"
                   />
                 </div>
 
-                {/* Owner Type — toggle buttons (3 options, no search needed) */}
                 <div>
                   <label className="font-inter text-xs font-medium text-slate-600">
                     Owner Type <span className="text-rose-500">*</span>
@@ -882,13 +746,11 @@ export default function NewTaxDeclarationPage() {
               </div>
             </Section>
 
-            {/* Property Location */}
             <Section
               icon={<MapPin className="h-5 w-5 text-[#00154A]" />}
               title="Property Location"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Municipality — fixed, read-only */}
                 <div>
                   <label className="font-inter text-xs font-medium text-slate-600">
                     Municipality <span className="text-rose-500">*</span>
@@ -900,7 +762,6 @@ export default function NewTaxDeclarationPage() {
                   </div>
                 </div>
 
-                {/* Barangay — Combobox */}
                 <Combobox
                   label="Barangay"
                   placeholder={
@@ -914,43 +775,42 @@ export default function NewTaxDeclarationPage() {
                   disabled={loading}
                 />
 
-                <Field
+                <ValidatedInput
+                  type="text"
                   label="Street / Road"
                   placeholder="Street or road name"
                   value={street}
                   onChange={setStreet}
                 />
-                <Field
+                <ValidatedInput
+                  type="lot-number"
                   label="Lot Number"
                   placeholder="e.g. 12"
                   value={lotNumber}
-                  onChange={(v) => setLotNumber(formatLotInput(v))}
-                  prefix="Lot"
+                  onChange={(v) => setLotNumber(v)}
                 />
-                <Field
+                <ValidatedInput
+                  type="lot-number"
                   label="Block Number"
                   placeholder="e.g. 5"
                   value={blockNumber}
                   onChange={setBlockNumber}
-                  prefix="Block"
                 />
-                <Field
+                <ValidatedInput
+                  type="text"
                   label="Survey / Cadastral Number"
                   placeholder="e.g. 088-D"
                   value={surveyNumber}
                   onChange={setSurveyNumber}
-                  prefix="Cad."
                 />
               </div>
             </Section>
 
-            {/* Land Details */}
             <Section
               icon={<Layers className="h-5 w-5 text-[#00154A]" />}
               title="Land Details"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Classification — Combobox */}
                 <Combobox
                   label="Classification"
                   placeholder="Select classification"
@@ -970,80 +830,57 @@ export default function NewTaxDeclarationPage() {
                   onChange={setActualUse}
                   required
                 />
-                <Field
+                <ValidatedInput
+                  type="decimal-numeric"
                   label="Land Area (sqm)"
                   placeholder="e.g. 250.00"
                   value={landArea}
-                  onChange={(v) =>
-                    setLandArea(
-                      formatNumericInput(v, {
-                        allowDecimal: true,
-                        maxIntegerDigits: 10,
-                        maxDecimalDigits: 4,
-                      }),
-                    )
-                  }
-                  inputMode="decimal"
-                  maxLength={15}
+                  onChange={(v) => setLandArea(v)}
                   required
                 />
-                <Field
+                <ValidatedInput
+                  type="decimal-numeric"
                   label="Unit Value (₱ per sqm)"
                   placeholder="e.g. 5,000.00"
                   value={landUnitValue}
-                  onChange={(v) =>
-                    setLandUnitValue(
-                      formatNumericInput(v, {
-                        allowDecimal: true,
-                        maxIntegerDigits: 12,
-                        maxDecimalDigits: 2,
-                      }),
-                    )
-                  }
-                  inputMode="decimal"
-                  maxLength={15}
+                  onChange={(v) => setLandUnitValue(v)}
                   required
                 />
-                <Field
-                  label="Land Market Value (₱)"
-                  placeholder="Auto-computed"
-                  value={landMarketValue}
-                  onChange={setLandMarketValue}
-                  inputMode="decimal"
-                  maxLength={15}
-                  readOnly
-                />
-                <Field
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600">
+                    Land Market Value (₱)
+                  </label>
+                  <input
+                    type="text"
+                    value={landMarketValue}
+                    readOnly
+                    placeholder="Auto-computed"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60 mt-1"
+                  />
+                </div>
+                <ValidatedInput
+                  type="decimal-numeric"
                   label="Assessment Level (%)"
                   placeholder="e.g. 20"
                   value={landAssessLevel}
-                  onChange={(v) =>
-                    setLandAssessLevel(
-                      formatNumericInput(v, {
-                        allowDecimal: true,
-                        maxIntegerDigits: 3,
-                        maxDecimalDigits: 2,
-                      }),
-                    )
-                  }
-                  inputMode="decimal"
-                  maxLength={6}
-                  suffix="%"
+                  onChange={(v) => setLandAssessLevel(v)}
                   required
                 />
-                <Field
-                  label="Land Assessed Value (₱)"
-                  placeholder="Auto-computed"
-                  value={landAssessedValue}
-                  onChange={setLandAssessedValue}
-                  inputMode="decimal"
-                  maxLength={15}
-                  readOnly
-                />
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600">
+                    Land Assessed Value (₱)
+                  </label>
+                  <input
+                    type="text"
+                    value={landAssessedValue}
+                    readOnly
+                    placeholder="Auto-computed"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60 mt-1"
+                  />
+                </div>
               </div>
             </Section>
 
-            {/* Building / Improvement Details */}
             <Section
               icon={<Home className="h-5 w-5 text-[#00154A]" />}
               title="Building / Improvement Details"
@@ -1071,21 +908,12 @@ export default function NewTaxDeclarationPage() {
                   onChange={setStructuralType}
                 />
 
-                <Field
+                <ValidatedInput
+                  type="decimal-numeric"
                   label="Floor Area (sqm)"
                   placeholder="e.g. 120.00"
                   value={floorArea}
-                  onChange={(v) =>
-                    setFloorArea(
-                      formatNumericInput(v, {
-                        allowDecimal: true,
-                        maxIntegerDigits: 10,
-                        maxDecimalDigits: 4,
-                      }),
-                    )
-                  }
-                  inputMode="decimal"
-                  maxLength={15}
+                  onChange={(v) => setFloorArea(v)}
                 />
                 <Combobox
                   label="Year Built"
@@ -1095,48 +923,32 @@ export default function NewTaxDeclarationPage() {
                   value={yearBuilt}
                   onChange={setYearBuilt}
                 />
-                <Field
+                <ValidatedInput
+                  type="decimal-numeric"
                   label="Building Market Value (₱)"
                   placeholder="e.g. 1,200,000.00"
                   value={bldgMarketValue}
-                  onChange={(v) =>
-                    setBldgMarketValue(
-                      formatNumericInput(v, {
-                        allowDecimal: true,
-                        maxIntegerDigits: 12,
-                        maxDecimalDigits: 2,
-                      }),
-                    )
-                  }
-                  inputMode="decimal"
-                  maxLength={15}
+                  onChange={(v) => setBldgMarketValue(v)}
                 />
-                <Field
+                <ValidatedInput
+                  type="decimal-numeric"
                   label="Assessment Level (%)"
                   placeholder="e.g. 20"
                   value={bldgAssessLevel}
-                  onChange={(v) =>
-                    setBldgAssessLevel(
-                      formatNumericInput(v, {
-                        allowDecimal: true,
-                        maxIntegerDigits: 3,
-                        maxDecimalDigits: 2,
-                      }),
-                    )
-                  }
-                  inputMode="decimal"
-                  maxLength={6}
-                  suffix="%"
+                  onChange={(v) => setBldgAssessLevel(v)}
                 />
-                <Field
-                  label="Building Assessed Value (₱)"
-                  placeholder="Auto-computed"
-                  value={bldgAssessedValue}
-                  onChange={setBldgAssessedValue}
-                  inputMode="decimal"
-                  maxLength={15}
-                  readOnly
-                />
+                <div>
+                  <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                    Building Assessed Value (₱)
+                  </label>
+                  <input
+                    type="text"
+                    value={bldgAssessedValue}
+                    readOnly
+                    placeholder="Auto-computed"
+                    className="flex h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1 font-inter text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none cursor-not-allowed opacity-60"
+                  />
+                </div>
               </div>
             </Section>
 
@@ -1378,69 +1190,6 @@ function Section({
       </div>
       {children}
     </section>
-  );
-}
-
-function Field({
-  label,
-  placeholder,
-  value,
-  onChange,
-  required = false,
-  inputMode,
-  maxLength,
-  readOnly = false,
-  prefix,
-  suffix,
-}: {
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-  inputMode?:
-    | "text"
-    | "numeric"
-    | "decimal"
-    | "tel"
-    | "search"
-    | "email"
-    | "url";
-  maxLength?: number;
-  readOnly?: boolean;
-  prefix?: string;
-  suffix?: string;
-}) {
-  return (
-    <div>
-      <label className="font-inter text-xs font-medium text-slate-600">
-        {label}
-        {required && <span className="ml-1 text-rose-500">*</span>}
-      </label>
-      <div
-        className={`mt-1 flex items-center rounded-md border px-3 py-2 ${readOnly ? "border-gray-200 bg-gray-100" : "border-gray-200 bg-white focus-within:ring-2 focus-within:ring-slate-200"}`}
-      >
-        {prefix && (
-          <span className="mr-2 shrink-0 font-inter text-sm text-slate-500">
-            {prefix}
-          </span>
-        )}
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          inputMode={inputMode}
-          maxLength={maxLength}
-          readOnly={readOnly}
-          className={`w-full bg-transparent font-inter text-sm outline-none placeholder:text-slate-400 ${readOnly ? "text-slate-900 cursor-not-allowed" : "text-slate-900"} ${prefix ? "pl-1" : ""} ${suffix ? "pr-2" : ""}`}
-        />
-        {suffix && (
-          <span className="ml-2 shrink-0 font-inter text-sm text-slate-500">
-            {suffix}
-          </span>
-        )}
-      </div>
-    </div>
   );
 }
 
