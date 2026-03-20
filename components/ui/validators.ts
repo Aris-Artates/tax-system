@@ -23,7 +23,11 @@ export type ValidatorKey =
   | 'name'
   | 'account-number'
   | 'ORnumber'
-  | 'permission-&-role-name';
+  | 'permission-&-role-name'
+  | 'pin'
+  | 'arp-number'
+  | 'lot-number'
+  | 'decimal-numeric';
 
 export interface Validator {
   /** Returns true when the fully-formatted value is complete and valid. */
@@ -58,8 +62,8 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   },
 
   'text': {
-    validate: () => true,
-    errorMessage: '',
+    validate: (v) => v.trim().length > 0,
+    errorMessage: 'This field is required',
   },
 
   'email': {
@@ -113,4 +117,28 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   },
   errorMessage: 'Must start with a capital, be 2-50 chars, and use no emojis or special symbols.',
 },
+
+  // ── New from new-td/page ──────────────────────────────────────────────────
+  'pin': {
+    validate: (v) => /^\d{3}-\d{2}-\d{3}-\d{2}-\d{3}$/.test(v),
+    errorMessage: 'PIN must be ###-##-###-##-### (13 digits)',
+  },
+
+  'arp-number': {
+    validate: (v) => /^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$/.test(v),
+    errorMessage: 'ARP must be XXXX-XXXX-XXXX-XXXX (16 digits)',
+  },
+
+  'lot-number': {
+    validate: (v) => /^[0-9-]{1,12}$/.test(v) && !/^-+$/.test(v),
+    errorMessage: 'Lot/Block must be numeric, max 12 chars',
+  },
+
+  'decimal-numeric': {
+    validate: (v) => {
+      const num = parseFloat(v.replace(/,/g, ''));
+      return Number.isFinite(num) && num > 0;
+    },
+    errorMessage: 'Must be a valid decimal number > 0',
+  },
 };
