@@ -12,13 +12,24 @@ import {
   Eye,
   Forward,
   Archive,
+  CalendarDays,
+  User2,
+  Tag,
+  Hash,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 import {
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
-  getFilteredRowModel, 
+  getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
 
@@ -56,35 +67,45 @@ export default function IncomingDocumentsPage() {
   const [documents, setDocuments] = useState<ListedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [viewDoc, setViewDoc] = useState<ListedDocument | null>(null);
 
   const fetchDocuments = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/documents/incoming/list", { cache: "no-store" });
-      const data = await response.json() as { documents?: ApiIncomingDocument[] };
-      
+      const response = await fetch("/api/documents/incoming/list", {
+        cache: "no-store",
+      });
+      const data = (await response.json()) as {
+        documents?: ApiIncomingDocument[];
+      };
+
       if (!response.ok || !data.documents) {
         setDocuments([]);
         return;
       }
 
       // Map to listed format
-      const mapped = data.documents.map((doc): ListedDocument => ({
-        key: `doc-${doc.id}`,
-        id: doc.id,
-        referenceNo: doc.reference_no,
-        type: doc.type,
-        sender: doc.sender,
-        receivedDate: new Date(doc.received_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
+      const mapped = data.documents.map(
+        (doc): ListedDocument => ({
+          key: `doc-${doc.id}`,
+          id: doc.id,
+          referenceNo: doc.reference_no,
+          type: doc.type,
+          sender: doc.sender,
+          receivedDate: new Date(doc.received_date).toLocaleDateString(
+            "en-US",
+            {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          ),
+          status: doc.status,
         }),
-        status: doc.status,
-      }));
-      
+      );
+
       setDocuments(mapped);
     } catch (error) {
       console.error("Failed to fetch documents:", error);
@@ -99,77 +120,89 @@ export default function IncomingDocumentsPage() {
     fetchDocuments();
   }, []);
 
-  const columns = useMemo(() => [
-    {
-      accessorKey: "referenceNo",
-      header: "Reference No.",
-      cell: ({ row }: any) => (
-        <div className="font-mono text-sm font-medium">#{row.original.referenceNo}</div>
-      ),
-    },
-    {
-      accessorKey: "type",
-      header: "Document Type",
-      cell: ({ row }: any) => (
-        <span className="text-sm">{row.original.type}</span>
-      ),
-    },
-    {
-      accessorKey: "sender",
-      header: "Sender",
-      cell: ({ row }: any) => (
-        <div className="text-sm">{row.original.sender}</div>
-      ),
-    },
-    {
-      accessorKey: "receivedDate",
-      header: "Received",
-      cell: ({ row }: any) => (
-        <div className="text-xs text-slate-500">{row.original.receivedDate}</div>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }: any) => {
-        const status = row.original.status;
-        const color = status.includes('Pending') ? 'bg-amber-50 text-amber-800 border-amber-200' : 
-                      status === 'Reviewed' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                      'bg-slate-50 text-slate-800 border-slate-200';
-        return (
-          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium border ${color}`}>
-            {status}
-          </span>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "referenceNo",
+        header: "Reference No.",
+        cell: ({ row }: any) => (
+          <div className="font-mono text-sm font-medium">
+            #{row.original.referenceNo}
+          </div>
+        ),
       },
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }: any) => (
-        <div className="flex justify-end gap-1">
-          <button
-            title="View Details"
-            className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
-          <button
-            title="Assign/Route"
-            className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
-          >
-            <Forward className="h-4 w-4" />
-          </button>
-          <button
-            title="Archive"
-            className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
-          >
-            <Archive className="h-4 w-4" />
-          </button>
-        </div>
-      ),
-    },
-  ], []);
+      {
+        accessorKey: "type",
+        header: "Document Type",
+        cell: ({ row }: any) => (
+          <span className="text-sm">{row.original.type}</span>
+        ),
+      },
+      {
+        accessorKey: "sender",
+        header: "Sender",
+        cell: ({ row }: any) => (
+          <div className="text-sm">{row.original.sender}</div>
+        ),
+      },
+      {
+        accessorKey: "receivedDate",
+        header: "Received",
+        cell: ({ row }: any) => (
+          <div className="text-xs text-slate-500">
+            {row.original.receivedDate}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }: any) => {
+          const status = row.original.status;
+          const color = status.includes("Pending")
+            ? "bg-amber-50 text-amber-800 border-amber-200"
+            : status === "Reviewed"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-slate-50 text-slate-800 border-slate-200";
+          return (
+            <span
+              className={`inline-flex px-2 py-1 rounded-full text-xs font-medium border ${color}`}
+            >
+              {status}
+            </span>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }: any) => (
+          <div className="flex justify-end gap-1">
+            <button
+              title="View Details"
+              onClick={() => setViewDoc(row.original)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-colors"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              title="Assign/Route"
+              className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
+            >
+              <Forward className="h-4 w-4" />
+            </button>
+            <button
+              title="Archive"
+              className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors"
+            >
+              <Archive className="h-4 w-4" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const table = useReactTable({
     data: documents,
@@ -243,12 +276,15 @@ export default function IncomingDocumentsPage() {
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} align={header.id === 'actions' ? 'right' : 'left'}>
+                      <TableHead
+                        key={header.id}
+                        align={header.id === "actions" ? "right" : "left"}
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     ))}
@@ -259,30 +295,42 @@ export default function IncomingDocumentsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-slate-400">
+                    <TableCell
+                      colSpan={7}
+                      className="py-10 text-center text-slate-400"
+                    >
                       Loading incoming documents...
                     </TableCell>
                   </TableRow>
                 ) : documents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-slate-400">
+                    <TableCell
+                      colSpan={7}
+                      className="py-10 text-center text-slate-400"
+                    >
                       No incoming documents found.
                     </TableCell>
                   </TableRow>
                 ) : table.getRowModel().rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-slate-400">
+                    <TableCell
+                      colSpan={7}
+                      className="py-10 text-center text-slate-400"
+                    >
                       No documents match your search.
                     </TableCell>
                   </TableRow>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-slate-50 transition-colors">
+                    <TableRow
+                      key={row.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </TableCell>
                       ))}
@@ -296,10 +344,16 @@ export default function IncomingDocumentsPage() {
           {!isLoading && documents.length > 0 && (
             <div className="flex items-center justify-between px-2 mt-4">
               <div className="font-inter text-xs text-slate-500">
-                Page <span className="font-medium text-slate-900">{table.getState().pagination.pageIndex + 1}</span> of{" "}
-                <span className="font-medium text-slate-900">{table.getPageCount()}</span>
+                Page{" "}
+                <span className="font-medium text-slate-900">
+                  {table.getState().pagination.pageIndex + 1}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium text-slate-900">
+                  {table.getPageCount()}
+                </span>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => table.previousPage()}
@@ -322,7 +376,104 @@ export default function IncomingDocumentsPage() {
           )}
         </section>
       </main>
+
+      {/* View Document Dialog */}
+      <Dialog
+        open={!!viewDoc}
+        onOpenChange={(open) => {
+          if (!open) setViewDoc(null);
+        }}
+      >
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-lg"
+        >
+          <DialogHeader>
+            <DialogTitle className="font-lexend text-lg font-bold text-[#595a5d]">
+              Document Details
+            </DialogTitle>
+            <DialogDescription className="font-inter text-xs text-slate-400">
+              Full information for this incoming document.
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewDoc && (
+            <div className="mt-2 space-y-4">
+              {/* Status badge */}
+              <StatusBadge status={viewDoc.status} />
+
+              {/* Reference & Date */}
+              <div className="grid grid-cols-2 gap-4 rounded-lg bg-slate-50 p-4">
+                <div>
+                  <p className="font-inter mb-1 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Reference No.
+                  </p>
+                  <p className="font-mono font-bold text-sm text-slate-700 flex items-center gap-1.5">
+                    <Hash className="h-3.5 w-3.5 text-slate-400" />
+                    {viewDoc.referenceNo}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-inter mb-1 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Date Received
+                  </p>
+                  <p className="font-inter text-sm text-slate-700 flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+                    {viewDoc.receivedDate}
+                  </p>
+                </div>
+              </div>
+
+              {/* Type & Sender */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="font-inter mb-1 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Document Type
+                  </p>
+                  <p className="font-inter text-sm text-slate-700 flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-slate-400" />
+                    {viewDoc.type}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-inter mb-1 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Sender
+                  </p>
+                  <p className="font-inter text-sm text-slate-700 flex items-center gap-1.5">
+                    <User2 className="h-3.5 w-3.5 text-slate-400" />
+                    {viewDoc.sender}
+                  </p>
+                </div>
+              </div>
+
+              {/* Close */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setViewDoc(null)}
+                  className="font-inter rounded-md border border-gray-200 px-4 py-2 text-xs text-slate-600 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const color = status.includes("Pending")
+    ? "bg-amber-50 text-amber-800 border-amber-200"
+    : status === "Reviewed"
+      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+      : "bg-slate-50 text-slate-800 border-slate-200";
+
+  return (
+    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${color}`}>
+      {status}
+    </span>
+  );
+}
