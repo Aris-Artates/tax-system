@@ -62,8 +62,8 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   },
 
   'text': {
-    validate: () => true,
-    errorMessage: '',
+    validate: (v) => v.trim().length > 0,
+    errorMessage: 'This field is required',
   },
 
   'email': {
@@ -108,7 +108,7 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
     errorMessage: 'Account number must be XXXX-XXXX-XX format (10 digits)',
   },
 
- 'permission-&-role-name': {
+'permission-&-role-name': {
   validate: (v) => {
     const isRightLength = v.length >= 2 && v.length <= 50;
     // Fix: Explicitly escape the dot, space, underscore, and hyphen
@@ -118,9 +118,10 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   errorMessage: 'Must start with a capital, be 2-50 chars, and use no emojis or special symbols.',
 },
 
+  // ── New from new-td/page ──────────────────────────────────────────────────
   'pin': {
     validate: (v) => /^\d{3}-\d{2}-\d{3}-\d{2}-\d{3}$/.test(v),
-    errorMessage: 'PIN must be XXX-XX-XXX-XX-XXX (prefix defaults to 088-01)',
+    errorMessage: 'PIN must be ###-##-###-##-### (13 digits)',
   },
 
   'arp-number': {
