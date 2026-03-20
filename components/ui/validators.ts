@@ -23,6 +23,7 @@ export type ValidatorKey =
   | 'name'
   | 'account-number'
   | 'ORnumber'
+  | 'pin'
   | 'permission-&-role-name';
 
 export interface Validator {
@@ -102,6 +103,11 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
   'account-number': {
     validate: (v) => /^\d{4}-\d{4}-\d{2}$/.test(v),
     errorMessage: 'Account number must be XXXX-XXXX-XX format (10 digits)',
+  },
+
+  'pin': {
+    validate: (v: string) => /^\d{3}-\d{2}-\d{3}-\d{2}-\d{3}$/.test(v),
+    errorMessage: 'PIN must be in 000-00-000-00-000 format',
   },
 
  'permission-&-role-name': {

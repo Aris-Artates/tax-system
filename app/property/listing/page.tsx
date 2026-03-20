@@ -16,11 +16,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ValidatedInput } from '@/components/ui/ValidatedInput';
+import { VALIDATORS } from '@/components/ui/validators';
 
 const STATUS_OPTIONS: ComboboxOption[] = [
   { value: 'Active',    label: 'Active' },
   { value: 'Cancelled', label: 'Cancelled' },
   { value: 'Revised',   label: 'Revised' },
+];
+
+const CLASSIFICATIONS: ComboboxOption[] = [
+  { value: "Residential", label: "Residential" },
+  { value: "Commercial", label: "Commercial" },
+  { value: "Agricultural", label: "Agricultural" },
+  { value: "Industrial", label: "Industrial" },
+  { value: "Special", label: "Special" },
+  { value: "Timberland", label: "Timberland" },
+  { value: "Mineral", label: "Mineral" },
 ];
 
 type Property = {
@@ -186,6 +198,7 @@ export default function PropertyListingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [remoteBarangays, setRemoteBarangays] = useState<ComboboxOption[]>([]);
   const [printData, setPrintData] = useState<TaxDeclarationData | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
@@ -205,6 +218,17 @@ export default function PropertyListingPage() {
     assessedValue: '',
     status: 'Active',
   });
+  const [initialForm, setInitialForm] = useState<EditablePropertyFields | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({
+    tdNumber: false,
+    pin: false,
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const hasFormChanges = useMemo(() => {
+    if (!initialForm) return false;
+    return JSON.stringify(editForm) !== JSON.stringify(initialForm);
+  }, [editForm, initialForm]);
 
   const pageSize = 20;
 
@@ -255,18 +279,34 @@ export default function PropertyListingPage() {
       }
     }
 
+    async function loadBarangays() {
+      try {
+        const res = await fetch('/api/barangays/list');
+        const data = await res.json();
+        if (res.ok && Array.isArray(data?.barangays)) {
+          setRemoteBarangays(data.barangays.map((b: any) => ({
+            value: b.name,
+            label: b.name
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to load barangays", err);
+      }
+    }
+
     loadListing();
+    loadBarangays();
   }, []);
 
   const classOptions = useMemo<ComboboxOption[]>(() => {
-    const values = [...new Set(properties.map((p) => p.classification).filter((v) => v && v !== '—'))].sort();
-    return values.map((v) => ({ value: v, label: v }));
-  }, [properties]);
+    return CLASSIFICATIONS;
+  }, []);
 
   const barangayOptions = useMemo<ComboboxOption[]>(() => {
+    if (remoteBarangays.length > 0) return remoteBarangays;
     const values = [...new Set(properties.map((p) => p.barangay).filter((v) => v && v !== '—'))].sort();
     return values.map((v) => ({ value: v, label: v }));
-  }, [properties]);
+  }, [properties, remoteBarangays]);
 
   const filtered = properties.filter((p) =>
     (p.tdNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -305,8 +345,7 @@ export default function PropertyListingPage() {
   const totalAgricultural = properties.filter((p) => p.classification === 'Agricultural').length;
 
   function openEditModal(property: Property) {
-    setEditingPropertyId(property.id);
-    setEditForm({
+    const initial: EditablePropertyFields = {
       tdNumber: property.tdNumber,
       pin: property.pin,
       owner: property.owner,
@@ -317,6 +356,13 @@ export default function PropertyListingPage() {
       assessLevel: property.assessLevel.replace(/[^\d.,]/g, ''),
       assessedValue: property.assessedValue.replace(/[^\d.,]/g, ''),
       status: property.status,
+    };
+    setEditingPropertyId(property.id);
+    setEditForm(initial);
+    setInitialForm(initial);
+    setValidationErrors({
+      tdNumber: false,
+      pin: false,
     });
     setIsEditOpen(true);
   }
@@ -622,7 +668,10 @@ export default function PropertyListingPage() {
       </div>
 
       <Dialog open={isViewOpen} onOpenChange={(open) => !open && closeViewModal()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6 bg-white gap-0 border-0 shadow-lg">
+        <DialogContent 
+          className="max-w-3xl max-h-[90vh] overflow-y-auto p-6 bg-white gap-0 border-0 shadow-lg"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader className="mb-4 text-left border-b-0 px-0 pt-0">
             <DialogTitle className="font-lexend text-lg font-semibold text-[#0F172A]">Property Details</DialogTitle>
             <DialogDescription className="font-inter text-sm text-slate-500">Linked property, declarations, and taxpayer information.</DialogDescription>
@@ -727,23 +776,34 @@ export default function PropertyListingPage() {
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={(open) => !open && closeEditModal()}>
-        <DialogContent className="max-w-lg bg-white p-6 gap-0 border-0 shadow-lg">
+        <DialogContent 
+          className="max-w-lg bg-white p-6 gap-0 border-0 shadow-lg"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader className="mb-4 text-left border-b-0 px-0 pt-0">
             <DialogTitle className="font-lexend text-lg font-semibold text-[#0F172A]">Edit Property</DialogTitle>
             <DialogDescription className="font-inter text-sm text-slate-500">Update property details and click save to apply changes.</DialogDescription>
           </DialogHeader>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <ModalField
+                <ValidatedInput
                   label="TD Number"
+                  validator="td-number"
                   value={editForm.tdNumber}
-                  onChange={(v) => updateEditField('tdNumber', formatTdInput(v))}
+                  onChange={(v, isValid) => {
+                    updateEditField('tdNumber', v);
+                    setValidationErrors(prev => ({ ...prev, tdNumber: !isValid }));
+                  }}
                   required
                 />
-                <ModalField
+                <ValidatedInput
                   label="Property Index Number (PIN)"
+                  validator="pin"
                   value={editForm.pin}
-                  onChange={(v) => updateEditField('pin', formatPinInput(v))}
+                  onChange={(v, isValid) => {
+                    updateEditField('pin', v);
+                    setValidationErrors(prev => ({ ...prev, pin: !isValid }));
+                  }}
                   required
                 />
                 <ModalField
@@ -753,16 +813,32 @@ export default function PropertyListingPage() {
                   required
                   readOnly
                 />
-                <ModalField
-                  label="Classification"
-                  value={editForm.classification}
-                  onChange={(v) => updateEditField('classification', v)}
-                />
-                <ModalField
-                  label="Barangay"
-                  value={editForm.barangay}
-                  onChange={(v) => updateEditField('barangay', v)}
-                />
+                <div>
+                  <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
+                    Classification
+                  </label>
+                  <Combobox
+                    placeholder="Select classification"
+                    searchPlaceholder="Search classification..."
+                    options={CLASSIFICATIONS}
+                    value={editForm.classification}
+                    onChange={(v) => updateEditField('classification', v)}
+                    triggerClassName="rounded-md text-sm py-2 text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
+                    Barangay
+                  </label>
+                  <Combobox
+                    placeholder="Select barangay"
+                    searchPlaceholder="Search barangay..."
+                    options={barangayOptions}
+                    value={editForm.barangay}
+                    onChange={(v) => updateEditField('barangay', v)}
+                    triggerClassName="rounded-md text-sm py-2 text-slate-700"
+                  />
+                </div>
                 <ModalField
                   label="Land Area (sqm)"
                   value={editForm.landArea}
@@ -811,9 +887,10 @@ export default function PropertyListingPage() {
                 <button
                   type="button"
                   onClick={saveEditModal}
-                  className="bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition cursor-pointer"
+                  disabled={isSavingEdit || !hasFormChanges || Object.values(validationErrors).some(v => v)}
+                  className="bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {isSavingEdit ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
         </DialogContent>

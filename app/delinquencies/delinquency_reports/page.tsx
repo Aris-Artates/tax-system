@@ -108,7 +108,7 @@ export default function DeliquencyReportsPage() {
     <main className="w-full">
       <button
         type="button"
-        onClick={() => router.push("/deliquencies")}
+        onClick={() => router.push("/delinquencies")}
         className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -121,7 +121,8 @@ export default function DeliquencyReportsPage() {
             Delinquency Reports
           </h1>
           <p className="font-inter mt-1 text-xs text-slate-400">
-            Generate operational and compliance reports for delinquent account monitoring
+            Generate operational and compliance reports for delinquent account
+            monitoring
           </p>
         </div>
 
@@ -136,16 +137,24 @@ export default function DeliquencyReportsPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+          <div
+            key={stat.label}
+            className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm"
+          >
             <p className="font-inter text-xs text-slate-400">{stat.label}</p>
-            <p className={`font-lexend mt-1 text-xl font-bold ${stat.color}`}>{stat.value}</p>
+            <p className={`font-lexend mt-1 text-xl font-bold ${stat.color}`}>
+              {stat.value}
+            </p>
           </div>
         ))}
       </div>
 
       <section className="mb-4 flex flex-col gap-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="relative flex-1 min-w-45 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            size={13}
+          />
           <Input
             type="text"
             placeholder="Search report ID, type, coverage, office, or status..."
@@ -156,8 +165,8 @@ export default function DeliquencyReportsPage() {
         </div>
 
         <p className="flex items-center gap-2 text-xs text-slate-400">
-          <Download className="h-4 w-4" />
-          7 report exports are ready for download
+          <Download className="h-4 w-4" />7 report exports are ready for
+          download
         </p>
       </section>
 
@@ -190,13 +199,19 @@ export default function DeliquencyReportsPage() {
             <TableBody>
               {filteredReports.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-slate-400">
+                  <TableCell
+                    colSpan={6}
+                    className="py-10 text-center text-slate-400"
+                  >
                     No report records found matching your search.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredReports.map((report) => (
-                  <TableRow key={report.reportId} className="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                  <TableRow
+                    key={report.reportId}
+                    className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                  >
                     <TableCell className="whitespace-nowrap px-4 py-3 font-medium text-[#595a5d]">
                       {report.reportId}
                     </TableCell>
@@ -213,7 +228,9 @@ export default function DeliquencyReportsPage() {
                       {report.generatedAt}
                     </TableCell>
                     <TableCell className="whitespace-nowrap px-4 py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[report.status]}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[report.status]}`}
+                      >
                         {report.status}
                       </span>
                     </TableCell>
@@ -226,14 +243,27 @@ export default function DeliquencyReportsPage() {
 
         <footer className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
           <p className="font-inter text-xs text-slate-400">
-            Showing {filteredReports.length} of {reportQueue.length} report records
+            Showing {filteredReports.length} of {reportQueue.length} report
+            records
           </p>
           <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" size="icon-xs" className="text-slate-400 hover:text-slate-600">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-slate-400 hover:text-slate-600"
+            >
               <ChevronLeft size={14} />
             </Button>
-            <span className="font-inter px-2 text-xs text-slate-500">Page 1 of 1</span>
-            <Button type="button" variant="ghost" size="icon-xs" className="text-slate-400 hover:text-slate-600">
+            <span className="font-inter px-2 text-xs text-slate-500">
+              Page 1 of 1
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-slate-400 hover:text-slate-600"
+            >
               <ChevronRight size={14} />
             </Button>
           </div>

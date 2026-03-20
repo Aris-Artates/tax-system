@@ -23,6 +23,7 @@ export type MaskKey =
   | 'ORnumber' 
   | 'name'
   | 'account-number'
+  | 'pin'
   | 'permission-&-role-name';
 
 
@@ -189,6 +190,18 @@ export function maskPermissionRole(raw: string): string {
   });
 }
 
+// ── PIN ───────────────────────────────────────────────────────────────────────
+// Format: 000-00-000-00-000 (13 digits)
+
+export function maskPin(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 13);
+  if (d.length <= 3) return d;
+  if (d.length <= 5) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  if (d.length <= 8) return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
+  if (d.length <= 10) return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5, 8)}-${d.slice(8)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5, 8)}-${d.slice(8, 10)}-${d.slice(10)}`;
+}
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const MASKS: Record<MaskKey, MaskFn> = {
@@ -203,6 +216,7 @@ export const MASKS: Record<MaskKey, MaskFn> = {
   'name': maskName,
   'ORnumber': maskORNumber,
   'account-number': maskAccountNumber,
+  'pin': maskPin,
   'permission-&-role-name': maskPermissionRole,
 };
 

@@ -11,7 +11,6 @@ import {
   Trash2,
   Archive,
   ArchiveRestore,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -21,18 +20,16 @@ import {
   confirmDelete,
   confirmRestore,
 } from "@/components/DeleteUserAction";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { VALIDATORS } from "@/components/ui/validators";
-import {
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectItem,
-  SelectItemText,
-  SelectTrigger,
-  SelectValue,
-  SelectViewport,
-} from "@/components/ui/select";
 
 const OWNER_TYPE_OPTIONS: ComboboxOption[] = [
   { value: "Individual", label: "Individual" },
@@ -105,6 +102,26 @@ export default function TaxpayerListPage() {
     phone: "",
     email: "",
   });
+  const [initialForm, setInitialForm] = useState<typeof editForm | null>(null);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, boolean>
+  >({});
+
+  const updateField = (
+    field: keyof typeof editForm,
+    value: any,
+    isValid?: boolean,
+  ) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+    if (isValid !== undefined) {
+      setValidationErrors((prev) => ({ ...prev, [field]: !isValid }));
+    }
+  };
+
+  const hasFormChanges = useMemo(() => {
+    if (!initialForm) return false;
+    return JSON.stringify(editForm) !== JSON.stringify(initialForm);
+  }, [editForm, initialForm]);
 
   useEffect(() => {
     const fetchTaxpayers = async () => {
@@ -213,13 +230,6 @@ export default function TaxpayerListPage() {
     );
   }, [taxpayers]);
 
-  const hasRequiredEditFields =
-    editForm.first_name.trim().length > 0 &&
-    editForm.last_name.trim().length > 0 &&
-    editForm.owner_type.length > 0 &&
-    editForm.barangay_id.trim().length > 0 &&
-    editForm.address_details.trim().length > 0;
-
   const barangayOptions = useMemo<ComboboxOption[]>(
     () =>
       barangays.map((barangay) => ({
@@ -229,23 +239,15 @@ export default function TaxpayerListPage() {
     [barangays],
   );
 
-  const hasInvalidOptionalFields =
-    (editForm.tin.trim().length > 0 && !VALIDATORS.tin.validate(editForm.tin)) ||
-    (editForm.phone.trim().length > 0 &&
-      !VALIDATORS.phone.validate(editForm.phone)) ||
-    (editForm.email.trim().length > 0 &&
-      !VALIDATORS.email.validate(editForm.email));
-
-  const canSaveEdit = hasRequiredEditFields && !hasInvalidOptionalFields;
-
   const handleOpenEditModal = (taxpayer: Taxpayer) => {
     setEditingTaxpayer(taxpayer);
 
     const fallbackBarangayId =
       taxpayer.barangay_id != null ? String(taxpayer.barangay_id) : "";
-    const fallbackAddressDetails = taxpayer.address_details ?? taxpayer.address ?? "";
+    const fallbackAddressDetails =
+      taxpayer.address_details ?? taxpayer.address ?? "";
 
-    setEditForm({
+    const formValues = {
       first_name: taxpayer.first_name ?? "",
       middle_name: taxpayer.middle_name ?? "",
       last_name: taxpayer.last_name ?? "",
@@ -259,14 +261,12 @@ export default function TaxpayerListPage() {
       address_details: fallbackAddressDetails,
       phone: taxpayer.phone ?? "",
       email: taxpayer.email ?? "",
-    });
-    setIsEditModalOpen(true);
-  };
+    };
 
-  const handleCloseEditModal = () => {
-    if (isSavingEdit) return;
-    setIsEditModalOpen(false);
-    setEditingTaxpayer(null);
+    setEditForm(formValues);
+    setInitialForm(formValues);
+    setValidationErrors({});
+    setIsEditModalOpen(true);
   };
 
   const handleSaveTaxpayer = async () => {
@@ -274,7 +274,12 @@ export default function TaxpayerListPage() {
 
     const updatedFirstName = editForm.first_name.trim();
     const updatedLastName = editForm.last_name.trim();
-    if (!canSaveEdit || !updatedFirstName || !updatedLastName) return;
+    if (
+      Object.values(validationErrors).some((v) => v) ||
+      !updatedFirstName ||
+      !updatedLastName
+    )
+      return;
 
     const updatedOwnerName = [
       updatedFirstName,
@@ -309,7 +314,10 @@ export default function TaxpayerListPage() {
         }),
       });
 
-      const data = (await res.json()) as { error?: string; taxpayer?: Taxpayer };
+      const data = (await res.json()) as {
+        error?: string;
+        taxpayer?: Taxpayer;
+      };
 
       if (!res.ok || !data.taxpayer) {
         toast.error(data.error ?? "Failed to update taxpayer.");
@@ -327,6 +335,7 @@ export default function TaxpayerListPage() {
       toast.success("Taxpayer updated successfully.");
       setIsEditModalOpen(false);
       setEditingTaxpayer(null);
+      setInitialForm(null);
     } catch {
       toast.error("Unable to connect to server.");
     } finally {
@@ -347,7 +356,10 @@ export default function TaxpayerListPage() {
         body: JSON.stringify({ id: taxpayer.id }),
       });
 
-      const data = (await res.json()) as { error?: string; taxpayer?: Taxpayer };
+      const data = (await res.json()) as {
+        error?: string;
+        taxpayer?: Taxpayer;
+      };
 
       if (!res.ok || !data.taxpayer) {
         toast.error(data.error ?? "Failed to archive taxpayer.");
@@ -389,7 +401,10 @@ export default function TaxpayerListPage() {
       }
 
       setTaxpayers((prev) =>
-        prev.filter((currentTaxpayer) => String(currentTaxpayer.id) !== String(taxpayer.id)),
+        prev.filter(
+          (currentTaxpayer) =>
+            String(currentTaxpayer.id) !== String(taxpayer.id),
+        ),
       );
 
       toast.success("Taxpayer deleted successfully.");
@@ -411,7 +426,10 @@ export default function TaxpayerListPage() {
         body: JSON.stringify({ id: taxpayer.id }),
       });
 
-      const data = (await res.json()) as { error?: string; taxpayer?: Taxpayer };
+      const data = (await res.json()) as {
+        error?: string;
+        taxpayer?: Taxpayer;
+      };
 
       if (!res.ok || !data.taxpayer) {
         toast.error(data.error ?? "Failed to restore taxpayer.");
@@ -582,8 +600,7 @@ export default function TaxpayerListPage() {
                       ${h.toLocaleLowerCase() === "full name" ? "md:sticky md:left-7.5 bg-gray-50" : "whitespace-nowrap"}
                       ${h.toLocaleLowerCase() === "actions" ? "md:sticky md:right-0 bg-gray-50" : ""}
                     
-                      ${h.toLowerCase() === "full name" ? "min-w-50" : ""}`
-                    }
+                      ${h.toLowerCase() === "full name" ? "min-w-50" : ""}`}
                   >
                     {h}
                   </th>
@@ -600,92 +617,88 @@ export default function TaxpayerListPage() {
               ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-10 text-center text-slate-400">
-                    {search || typeFilter
-                      ? "No taxpayers match your filters."
-                      : "No taxpayers registered yet."}
+                    No taxpayers found.
                   </td>
                 </tr>
               ) : (
-                paginated.map((t, idx) => (
+                paginated.map((t, i) => (
                   <tr
                     key={t.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    className="border-b border-gray-100 hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-4 py-3 text-slate-400 md:sticky md:left-0 bg-white">
-                      {(page - 1) * PAGE_SIZE + idx + 1}
+                    <td className="sticky left-0 bg-white px-4 py-3 text-slate-400">
+                      {(page - 1) * PAGE_SIZE + i + 1}
                     </td>
-                    <td className="px-4 py-3 font-medium text-[#595a5d] whitespace-nowrap md:sticky md:left-[45.5px] bg-white">
+                    <td className="sticky left-7.5 px-4 py-3 font-medium text-slate-700 whitespace-nowrap bg-white">
                       {t.owner_name}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {t.tin ?? <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {t.owner_type ? (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            ownerTypeColor[t.owner_type] ??
-                            "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {t.owner_type}
-                        </span>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      {t.tin || "—"}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          statusColor[getTaxpayerStatus(t)] ?? "bg-gray-100 text-gray-600"
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          ownerTypeColor[
+                            t.owner_type === "Corporation"
+                              ? "Corporate"
+                              : (t.owner_type ?? "Individual")
+                          ]
+                        }`}
+                      >
+                        {t.owner_type === "Corporation"
+                          ? "Corporate"
+                          : t.owner_type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          statusColor[getTaxpayerStatus(t)]
                         }`}
                       >
                         {getTaxpayerStatus(t)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 max-w-48 truncate">
-                      {t.address ?? <span className="text-slate-300">—</span>}
+                    <td className="px-4 py-3 text-slate-500 min-w-60 max-w-xs truncate">
+                      {t.address || "—"}
                     </td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {t.phone ?? <span className="text-slate-300">—</span>}
+                      {t.phone || "—"}
                     </td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {t.email ?? <span className="text-slate-300">—</span>}
+                      {t.email || "—"}
                     </td>
-                    <td className="px-4 py-3 md:sticky right-0 bg-white">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="sticky right-0 px-4 py-3 text-right whitespace-nowrap bg-white">
+                      <div className="flex justify-end gap-1">
                         <button
-                          type="button"
                           onClick={() => handleOpenEditModal(t)}
                           title="Edit"
-                          className="text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                          className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-blue-600"
                         >
                           <SquarePen size={14} />
                         </button>
-                        {getTaxpayerStatus(t) === "Archived" ? (
+
+                        {getTaxpayerStatus(t) === "Active" ? (
                           <button
-                            type="button"
-                            onClick={() => handleRestoreTaxpayer(t)}
-                            title="Restore"
-                            className="text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
-                          >
-                            <ArchiveRestore size={14} />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
                             onClick={() => handleArchiveTaxpayer(t)}
                             title="Archive"
-                            className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                            className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-amber-600"
                           >
                             <Archive size={14} />
                           </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRestoreTaxpayer(t)}
+                            title="Restore"
+                            className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-emerald-600"
+                          >
+                            <ArchiveRestore size={14} />
+                          </button>
                         )}
                         <button
-                          type="button"
                           onClick={() => handleDeleteTaxpayer(t)}
                           title="Delete"
-                          className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                          className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-rose-600"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -724,264 +737,194 @@ export default function TaxpayerListPage() {
         </div>
       </div>
 
-      {isEditModalOpen && editingTaxpayer && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={handleCloseEditModal}
+      {/* Edit User Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent
+          className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-xl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <div
-            className="swal2-show w-full max-w-lg rounded-xl bg-white p-6 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="font-lexend mb-2 text-lg font-semibold text-[#0F172A]">
-              Edit Taxpayer
-            </h2>
-            <p className="font-inter mb-4 text-sm text-slate-500">
-              Update taxpayer details and click save to apply changes.
-            </p>
+          <div className="flex flex-col max-h-[85vh] bg-white">
+            {/* Fixed Header */}
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle className="font-lexend text-xl font-bold text-[#0F172A]">
+                Edit Taxpayer
+              </DialogTitle>
+              <DialogDescription className="font-inter text-sm text-slate-500">
+                Update taxpayer details and click save to apply changes.
+              </DialogDescription>
+            </DialogHeader>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                  First Name
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <input
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <ValidatedInput
+                  label="First Name"
+                  required
+                  validator="name"
+                  type="name"
                   value={editForm.first_name}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      first_name: e.target.value
-                        .replace(/[^a-zA-Z\s\-\.']/g, "")
-                        .slice(0, 50),
-                    }))
+                  onChange={(v, isValid) =>
+                    updateField("first_name", v, isValid)
                   }
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200"
-                  placeholder="Enter first name"
                 />
-              </div>
 
-              <div>
-                <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                  Middle Name
-                </label>
-                <input
+                <ValidatedInput
+                  label="Middle Name"
+                  validator="name"
+                  type="name"
                   value={editForm.middle_name}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      middle_name: e.target.value
-                        .replace(/[^a-zA-Z\s\-\.']/g, "")
-                        .slice(0, 50),
-                    }))
+                  onChange={(v, isValid) =>
+                    updateField("middle_name", v, isValid)
                   }
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200"
-                  placeholder="Enter middle name"
                 />
-              </div>
 
-              <div>
-                <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                  Last Name
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <input
+                <ValidatedInput
+                  label="Last Name"
+                  required
+                  validator="name"
+                  type="name"
                   value={editForm.last_name}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      last_name: e.target.value
-                        .replace(/[^a-zA-Z\s\-\.']/g, "")
-                        .slice(0, 50),
-                    }))
+                  onChange={(v, isValid) =>
+                    updateField("last_name", v, isValid)
                   }
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200"
-                  placeholder="Enter last name"
                 />
-              </div>
 
-              <div>
-                <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                  Suffix
-                </label>
-                <Select
-                  value={editForm.suffix}
-                  onValueChange={(value) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      suffix: value === "__none__" ? "" : value,
-                    }))
-                  }
-                >
-                  <SelectTrigger className="cursor-pointer font-inter flex h-9 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-1 text-sm text-slate-900 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                    <SelectValue placeholder="Select suffix" />
-                    <SelectIcon>
-                      <ChevronDown className="h-4 w-4 opacity-60" />
-                    </SelectIcon>
-                  </SelectTrigger>
+                <div>
+                  <label className="font-inter mb-1 block text-xs font-medium text-slate-600 pt-2">
+                    Suffix
+                  </label>
+                  <Combobox
+                    value={editForm.suffix}
+                    onChange={(val) => updateField("suffix", val)}
+                    options={SUFFIX_OPTIONS}
+                    placeholder="Select suffix"
+                    searchPlaceholder="Search suffix..."
+                    triggerClassName="h-9 text-xs"
+                  />
+                </div>
 
-                  <SelectContent className="z-50 min-w-(--radix-select-trigger-width) rounded-md border border-gray-200 bg-white shadow-sm">
-                    <SelectViewport className="p-1">
-                      <SelectItem
-                        value="__none__"
-                        className="font-inter cursor-pointer rounded px-3 py-2 text-sm text-slate-700 outline-none data-highlighted:bg-slate-100"
-                      >
-                        <SelectItemText>None</SelectItemText>
-                      </SelectItem>
-                      {SUFFIX_OPTIONS.map((option) => (
-                        <SelectItem
-                          key={option.value}
-                          value={option.value}
-                          className="font-inter cursor-pointer rounded px-3 py-2 text-sm text-slate-700 outline-none data-highlighted:bg-slate-100"
-                        >
-                          <SelectItemText>{option.label}</SelectItemText>
-                        </SelectItem>
-                      ))}
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
                 <ValidatedInput
                   label="TIN"
                   type="tin"
+                  validator="tin"
                   placeholder="000-000-000 or 000-000-000-000"
                   value={editForm.tin}
-                  onChange={(value) =>
-                    setEditForm((prev) => ({ ...prev, tin: value }))
-                  }
+                  onChange={(v, isValid) => updateField("tin", v, isValid)}
                   showValidationIcon
                 />
-              </div>
 
-              <div>
-                <label className="font-inter mt-2 block text-xs font-medium text-slate-600">
-                  Owner Type
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <Select
-                  value={editForm.owner_type}
-                  onValueChange={(value) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      owner_type: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger className="cursor-pointer font-inter mt-1 flex h-9 w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-1 text-sm text-slate-900 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                    <SelectValue placeholder="Select owner type" />
-                    <SelectIcon>
-                      <ChevronDown className="h-4 w-4 opacity-60" />
-                    </SelectIcon>
-                  </SelectTrigger>
-                  
-                  <SelectContent className="z-50 min-w-(--radix-select-trigger-width) rounded-md border border-gray-200 bg-white shadow-sm">
-                    <SelectViewport className="p-1">
-                      {OWNER_TYPE_OPTIONS.map((option) => (
-                        <SelectItem
-                          key={option.value}
-                          value={option.value}
-                          className="font-inter cursor-pointer rounded px-3 py-2 text-sm text-slate-700 outline-none data-highlighted:bg-slate-100"
-                        >
-                          <SelectItemText>{option.label}</SelectItemText>
-                        </SelectItem>
-                      ))}
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <label className="font-inter block text-xs font-medium text-slate-600 mb-1 pt-2">
+                    Owner Type <span className="text-rose-500">*</span>
+                  </label>
+                  <Combobox
+                    value={editForm.owner_type}
+                    onChange={(val) => updateField("owner_type", val)}
+                    options={OWNER_TYPE_OPTIONS}
+                    placeholder="Select owner type"
+                    searchPlaceholder="Search type..."
+                    triggerClassName="h-9 text-xs"
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                  Barangay
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <Combobox
-                  value={editForm.barangay_id}
-                  onChange={(value) =>
-                    setEditForm((prev) => ({ ...prev, barangay_id: value }))
-                  }
-                  options={barangayOptions}
-                  disabled={isLoadingBarangays}
-                  placeholder={isLoadingBarangays ? "Loading barangays..." : "Select barangay"}
-                  searchPlaceholder="Search barangay..."
-                  emptyLabel="No barangay found."
-                />
-              </div>
+                <div className="sm:col-span-2">
+                  <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
+                    Barangay <span className="text-rose-500">*</span>
+                  </label>
+                  <Combobox
+                    value={editForm.barangay_id}
+                    onChange={(val) => updateField("barangay_id", val)}
+                    options={barangayOptions}
+                    disabled={isLoadingBarangays}
+                    placeholder={
+                      isLoadingBarangays ? "Loading..." : "Select barangay"
+                    }
+                    searchPlaceholder="Search barangay..."
+                    emptyLabel="No barangay found."
+                    triggerClassName="h-9 text-xs"
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                  Other Address Details
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <input
-                  value={editForm.address_details}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      address_details: e.target.value,
-                    }))
-                  }
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200"
-                  placeholder="Street, Purok, Sitio, Landmark"
-                />
-              </div>
+                <div className="sm:col-span-2">
+                  <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
+                    Other Address Details{" "}
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    value={editForm.address_details}
+                    onChange={(e) =>
+                      updateField("address_details", e.target.value)
+                    }
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 font-inter"
+                    placeholder="Street, Purok, Sitio, Landmark"
+                  />
+                </div>
 
-              <div>
                 <ValidatedInput
                   type="phone"
                   label="Phone"
+                  validator="phone"
+                  required
                   placeholder="e.g. 912 345 6789"
                   value={editForm.phone}
-                  onChange={(value) =>
-                    setEditForm((prev) => ({ ...prev, phone: value }))
-                  }
+                  onChange={(v, isValid) => updateField("phone", v, isValid)}
                   showValidationIcon
                 />
-              </div>
 
-              <div>
                 <ValidatedInput
                   type="email"
                   label="Email"
+                  validator="email"
+                  required
                   placeholder="example@email.com"
                   value={editForm.email}
-                  onChange={(value) =>
-                    setEditForm((prev) => ({ ...prev, email: value }))
-                  }
+                  onChange={(v, isValid) => updateField("email", v, isValid)}
                   showValidationIcon
                 />
               </div>
+
+              {!editForm.first_name.trim() ||
+              !editForm.last_name.trim() ||
+              !editForm.owner_type ||
+              !editForm.barangay_id ||
+              !editForm.address_details.trim() ? (
+                <p className="font-inter mt-4 text-[10px] text-rose-500 italic">
+                  * Required: Names, Owner Type, Barangay, and Address Details
+                </p>
+              ) : null}
             </div>
 
-            {!hasRequiredEditFields && (
-              <p className="font-inter mt-3 text-xs text-rose-600">
-                Required fields: First Name, Last Name, Owner Type, Barangay, and Other Address Details.
-              </p>
-            )}
-
-            <div className="mt-5 flex justify-end gap-2">
+            {/* Fixed Footer Actions */}
+            <div className="p-6 pt-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="font-inter px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+              </DialogClose>
               <button
                 type="button"
-                onClick={handleCloseEditModal}
-                disabled={isSavingEdit}
-                className="border border-gray-200 text-slate-600 text-xs font-inter px-4 py-2 rounded-md hover:bg-gray-50 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
+                disabled={
+                  isSavingEdit ||
+                  !hasFormChanges ||
+                  Object.values(validationErrors).some((v) => v) ||
+                  !editForm.first_name.trim() ||
+                  !editForm.last_name.trim() ||
+                  !editForm.owner_type ||
+                  !editForm.barangay_id ||
+                  !editForm.address_details.trim()
+                }
                 onClick={handleSaveTaxpayer}
-                disabled={!canSaveEdit || isSavingEdit}
-                className="bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                className="font-inter h-10 inline-flex items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSavingEdit ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
