@@ -1,10 +1,12 @@
+'// Integrated with Supabase via /api/properties/listing (see API route for join details).\n'
 'use client';
 
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search, RefreshCcw, Save, FileText, Layers, BarChart3 } from 'lucide-react';
 
-// TODO: fetch from Supabase — query tax_declarations joined with taxpayers, properties, barangays
+
 type PropertyRecord = {
   tdNumber: string;
   pin: string;
@@ -36,10 +38,40 @@ export default function ReassessmentPage() {
   const [effectivityYear, setEffectivityYear] = useState('2024');
   const [notes, setNotes] = useState('');
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setHasSearched(true);
-    // TODO: fetch from Supabase — query tax_declarations joined with taxpayers and properties
     setSearchResults([]);
+    if (!searchQuery.trim()) return;
+    try {
+      // Call API route that lists tax_declarations with joins
+      const res = await fetch('/api/properties/listing');
+      if (!res.ok) throw new Error('Failed to fetch property records');
+      const { rows } = await res.json();
+      // Filter client-side for now (could be improved with server-side search)
+      const q = searchQuery.trim().toLowerCase();
+      const filtered = (rows || []).filter((row: any) => {
+        const td = row.td_number?.toLowerCase() || '';
+        const owner = row.taxpayers?.owner_name?.toLowerCase() || '';
+        const pin = row.properties?.pin?.toLowerCase() || '';
+        return td.includes(q) || owner.includes(q) || pin.includes(q);
+      });
+      setSearchResults(
+        filtered.map((row: any) => ({
+          tdNumber: row.td_number || '',
+          pin: row.properties?.pin || '',
+          owner: row.taxpayers?.owner_name || '',
+          classification: row.classification || '',
+          barangay: row.properties?.barangays?.name || '',
+          landArea: row.land_area ? String(row.land_area) : '',
+          marketValue: row.total_market_value ? String(row.total_market_value) : '',
+          assessLevel: row.land_assessment_level ? String(row.land_assessment_level) : '',
+          assessedValue: row.total_assessed_value ? String(row.total_assessed_value) : '',
+        }))
+      );
+    } catch (err) {
+      // Optionally show error
+      setSearchResults([]);
+    }
   };
 
   const handleSelect = (p: PropertyRecord) => {

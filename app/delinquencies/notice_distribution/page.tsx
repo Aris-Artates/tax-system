@@ -73,7 +73,10 @@ const distributionRecords = [
   },
 ] as const;
 
-const statusClasses: Record<(typeof distributionRecords)[number]["status"], string> = {
+const statusClasses: Record<
+  (typeof distributionRecords)[number]["status"],
+  string
+> = {
   Acknowledged: "bg-emerald-50 text-emerald-700",
   Delivered: "bg-blue-50 text-blue-700",
   "In Transit": "bg-amber-50 text-amber-700",
@@ -114,7 +117,7 @@ export default function NoticeDistributionPage() {
     <main className="w-full">
       <button
         type="button"
-        onClick={() => router.push("/deliquencies")}
+        onClick={() => router.push("/delinquencies")}
         className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -127,7 +130,8 @@ export default function NoticeDistributionPage() {
             Notice Distribution
           </h1>
           <p className="font-inter mt-1 text-xs text-slate-400">
-            Monitor service channels, delivery outcomes, and taxpayer acknowledgment of notices
+            Monitor service channels, delivery outcomes, and taxpayer
+            acknowledgment of notices
           </p>
         </div>
 
@@ -143,18 +147,24 @@ export default function NoticeDistributionPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+          <div
+            key={stat.label}
+            className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm"
+          >
             <p className="font-inter text-xs text-slate-400">{stat.label}</p>
-            <p className={`font-lexend mt-1 text-xl font-bold ${stat.color}`}>{stat.value}</p>
+            <p className={`font-lexend mt-1 text-xl font-bold ${stat.color}`}>
+              {stat.value}
+            </p>
           </div>
         ))}
       </div>
 
-      
-
       <div className="mb-4 flex flex-col gap-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="relative flex-1 min-w-45 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            size={13}
+          />
           <Input
             type="text"
             placeholder="Search ref#, batch, taxpayer, barangay, channel, or status..."
@@ -202,13 +212,19 @@ export default function NoticeDistributionPage() {
             <TableBody>
               {filteredRecords.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-slate-400">
+                  <TableCell
+                    colSpan={7}
+                    className="py-10 text-center text-slate-400"
+                  >
                     No notice distribution records found matching your search.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredRecords.map((record) => (
-                  <TableRow key={record.reference} className="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                  <TableRow
+                    key={record.reference}
+                    className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                  >
                     <TableCell className="whitespace-nowrap px-4 py-3 font-medium text-[#595a5d]">
                       {record.reference}
                     </TableCell>
@@ -228,7 +244,9 @@ export default function NoticeDistributionPage() {
                       {record.servedDate}
                     </TableCell>
                     <TableCell className="whitespace-nowrap px-4 py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[record.status]}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[record.status]}`}
+                      >
                         {record.status}
                       </span>
                     </TableCell>
@@ -241,14 +259,27 @@ export default function NoticeDistributionPage() {
 
         <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
           <p className="font-inter text-xs text-slate-400">
-            Showing {filteredRecords.length} of {distributionRecords.length} notice records
+            Showing {filteredRecords.length} of {distributionRecords.length}{" "}
+            notice records
           </p>
           <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" size="icon-xs" className="text-slate-400 hover:text-slate-600">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-slate-400 hover:text-slate-600"
+            >
               <ChevronLeft size={14} />
             </Button>
-            <span className="font-inter px-2 text-xs text-slate-500">Page 1 of 1</span>
-            <Button type="button" variant="ghost" size="icon-xs" className="text-slate-400 hover:text-slate-600">
+            <span className="font-inter px-2 text-xs text-slate-500">
+              Page 1 of 1
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-slate-400 hover:text-slate-600"
+            >
               <ChevronRight size={14} />
             </Button>
           </div>
