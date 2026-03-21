@@ -125,7 +125,7 @@ export function GenerateReportModal({
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           <div className="space-y-2">
             <label className="font-inter text-sm font-semibold text-slate-700">
-              Date Range
+              Date
             </label>
             <Combobox
               className="mt-1"
