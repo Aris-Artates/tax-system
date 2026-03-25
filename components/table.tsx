@@ -8,7 +8,7 @@ const Table = React.forwardRef<
   <table
     ref={ref}
     className={cn(
-      "w-full border-collapse text-xs sm:text-sm font-inter",
+      "w-full border-collapse font-inter text-xs sm:text-sm",
       className
     )}
     {...props}
@@ -25,7 +25,11 @@ const TableContainer = React.forwardRef<
 >(({ className, scrollableY, children, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("w-full overflow-x-auto", scrollableY && "overflow-y-auto", className)}
+    className={cn(
+      "w-full overflow-x-auto rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden",
+      scrollableY && "overflow-y-auto",
+      className
+    )}
     style={scrollableY ? { ...style, maxHeight: scrollableY } : style}
     {...props}
   >
@@ -38,7 +42,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("border-b border-gray-200", className)} {...props} />
+  <thead ref={ref} className={cn("border-b border-gray-200 bg-gray-50", className)} {...props} />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -56,7 +60,7 @@ const TableRow = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tr
     ref={ref}
-    className={cn("border-b border-gray-100", className)}
+    className={cn("group border-b border-gray-100 hover:bg-gray-50 transition-colors", className)}
     {...props}
   />
 ));
@@ -69,7 +73,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "px-2 py-2 sm:px-3 sm:py-3 text-[10px] sm:text-xs font-semibold text-slate-500",
+      "whitespace-nowrap px-4 py-3 text-[10px] sm:text-xs font-semibold text-[#595a5d] uppercase tracking-wide",
       align === "right" && "text-right",
       align === "center" && "text-center",
       align === "left" && "text-left",
@@ -87,7 +91,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "px-2 py-2 sm:px-3 sm:py-3 text-[11px] sm:text-sm text-slate-600",
+      "px-4 py-3 text-[11px] sm:text-sm text-slate-600",
       align === "right" && "text-right",
       align === "center" && "text-center",
       align === "left" && "text-left",
