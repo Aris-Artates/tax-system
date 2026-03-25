@@ -15,6 +15,7 @@ import { ValidatedInput } from "@/components/ui/ValidatedInput";
 interface Permission {
   id: number;
   name: string;
+  description?: string;
 }
 
 interface PermissionDialogProps {
@@ -31,13 +32,16 @@ export function PermissionDialog({
   permission,
 }: PermissionDialogProps) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (permission) {
       setName(permission.name);
+      setDescription(permission.description || "");
     } else {
       setName("");
+      setDescription("");
     }
   }, [permission, isOpen]);
 
@@ -53,7 +57,9 @@ export function PermissionDialog({
     const endpoint = permission
       ? "/api/permissions/update"
       : "/api/permissions/create";
-    const payload = permission ? { id: permission.id, name } : { name };
+    const payload = permission
+      ? { id: permission.id, name, description }
+      : { name, description };
 
     try {
       const response = await fetch(endpoint, {
@@ -92,12 +98,23 @@ export function PermissionDialog({
             label="Permission Name"
             value={name}
             onChange={handleScrubbedChange}
-            placeholder="e.g. system.manage" 
+            placeholder="e.g. system.manage"
             maxLength={50}
             required
             validator="permission-&-role-name"
             type="text"
           />
+          <div className="mt-4">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Briefly describe what this permission controls..."
+              className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white p-3 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none"
+            />
+          </div>
         </div>
 
         <DialogFooter>
