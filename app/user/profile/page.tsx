@@ -135,7 +135,7 @@ export default function UserProfilePage() {
       const data = await res.json();
       if (data.path) {
         updateField("profilePicture", data.path);
-        toast.success("Image uploaded", { description: "Your profile picture has been updated locally." });
+        toast.success("Image uploaded", { description: "Your profile picture has been uploaded and ready to save." });
       } else {
         throw new Error(data.error || "Upload failed");
       }

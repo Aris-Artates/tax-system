@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs/promises';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(request: Request) {
 	try {
@@ -11,26 +10,33 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });
 		}
 
-		const bytes = await file.arrayBuffer();
-		const buffer = Buffer.from(bytes);
-
-		// Define the upload directory
-		const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'profiles');
-		
-		// Ensure the directory exists
-		await fs.mkdir(uploadDir, { recursive: true });
+		// Convert the file to a Buffer/ArrayBuffer for uploading
+		const arrayBuffer = await file.arrayBuffer();
+		const buffer = Buffer.from(arrayBuffer);
 
 		// Generate a unique filename
 		const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-		const filePath = path.join(uploadDir, filename);
+		const filePath = `uploads/profiles/${filename}`;
 
-		// Write the file
-		await fs.writeFile(filePath, buffer);
+		// Upload the file to Supabase Storage
+		const { data, error: uploadError } = await supabaseAdmin.storage
+			.from('profiles')
+			.upload(filePath, buffer, {
+				contentType: file.type,
+				upsert: true,
+			});
 
-		// Return the public path
-		const publicPath = `/uploads/profiles/${filename}`;
+		if (uploadError) {
+			console.error('Supabase upload error:', uploadError);
+			throw new Error('Supabase upload failed');
+		}
 
-		return NextResponse.json({ path: publicPath });
+		// Get the public URL of the uploaded image
+		const { data: publicUrlData } = supabaseAdmin.storage
+			.from('profiles')
+			.getPublicUrl(filePath);
+
+		return NextResponse.json({ path: publicUrlData.publicUrl });
 	} catch (error) {
 		console.error('Upload error:', error);
 		return NextResponse.json(
