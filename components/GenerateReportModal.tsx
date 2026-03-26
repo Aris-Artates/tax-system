@@ -190,14 +190,14 @@ export function GenerateReportModal({
           <div className="flex gap-3">
             <button
               onClick={() => handleExport("pdf")}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#0F172A] hover:bg-slate-800 text-white font-inter text-sm font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900"
+              className="cursor-pointer flex-1 flex items-center justify-center gap-2 bg-[#0F172A] hover:bg-slate-800 text-white font-inter text-sm font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900"
             >
               <FileText className="h-4 w-4" />
               Export as PDF
             </button>
             <button
               onClick={() => handleExport("csv")}
-              className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 font-inter text-sm font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              className="cursor-pointer flex-1 flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 font-inter text-sm font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
             >
               <FileSpreadsheet className="h-4 w-4" />
               Export as CSV
