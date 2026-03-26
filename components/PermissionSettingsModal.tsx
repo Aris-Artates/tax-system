@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import {
+  KeyRound,
   Trash2,
   X,
   ShieldAlert,
@@ -236,16 +237,16 @@ export function PermissionSettingsModal({
       <DialogContent
         onOpenAutoFocus={(e) => e.preventDefault()}
         id="permission-settings-modal-content"
-        className="sm:max-w-[500px] rounded-xl overflow-hidden border-none shadow-2xl p-0 transition-all duration-300 h-[80vh]"
+        className="sm:max-w-[450px] h-[70vh]"
       >
-        <div className="bg-slate-50 border-b border-slate-100 p-6">
+        <div className="bg-slate-50 border-b border-slate-100 px-6 py-5">
           <DialogHeader>
-            <DialogTitle className="font-lexend text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <Settings2 className="w-6 h-6 text-slate-400" />
-              Permission Settings
+            <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-slate-400" />
+              Configure Permission
             </DialogTitle>
-            <DialogDescription className="font-inter text-slate-500">
-              Manage system permissions and Role assignments for{" "}
+            <DialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
+              Refine access control parameters for{" "}
               <span className="font-semibold text-slate-700">
                 {permission.name}
               </span>
@@ -253,46 +254,53 @@ export function PermissionSettingsModal({
           </DialogHeader>
         </div>
 
-        <div className="p-5 pt-2 space-y-6.5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="px-5 py-4 space-y-6.5 max-h-[70vh] overflow-y-auto custom-scrollbar">
           {/* Change Name Section */}
           <section>
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">
-              General Configuration
-            </h3>
-            <ValidatedInput
-              label="Permission Name"
-              value={name}
-              onChange={handleScrubbedChange}
-              placeholder="e.g. system.manage"
-              maxLength={50}
-              required
-              validator="permission-&-role-name"
-              type="text"
-            />
-            <div className="mt-4">
-              <label className="font-inter text-xs font-medium text-slate-600">
-                Description
-              </label>
-              <textarea
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Briefly describe what this permission controls..."
-                className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white p-3 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none"
+            <div className="flex items-center gap-1.5 mb-3 border-b border-slate-100 mt-2">
+              <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
+                <KeyRound className="w-3.5 h-3.5 text-blue-500" />
+                <p>Configuration</p>
+              </h3>
+            </div>
+            <div className="space-y-4">
+              <ValidatedInput
+                label="Permission Name"
+                value={name}
+                onChange={handleScrubbedChange}
+                placeholder="e.g. system.manage"
+                maxLength={50}
+                required
+                validator="permission-&-role-name"
+                type="text"
               />
+              <div>
+                <label className="font-inter text-[11px] font-semibold text-slate-600 mb-1.5 block">
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Briefly describe what this permission controls..."
+                  className="w-full min-h-[85px] rounded-xl border border-slate-200 bg-white p-3 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none shadow-sm"
+                />
+              </div>
             </div>
           </section>
 
           {/* Role Assignments Section */}
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                Assigned to
+            <div className="flex items-center justify-between mb-3 border-b border-slate-100">
+              <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
+                <Plus className="w-3.5 h-3.5 text-emerald-500" />
+                <p>Assigned to Roles</p>
               </h3>
 
               <div ref={pickerRef} className="relative">
                 <Button
                   onClick={() => setPickerOpen(!pickerOpen)}
                   disabled={isAllRolesLoading}
-                  className="h-7 px-3 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-none rounded-full flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="mb-3 h-7 px-3 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-none rounded-full flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
                   Assign New Role
@@ -416,12 +424,13 @@ export function PermissionSettingsModal({
           </section>
         </div>
 
-        <DialogFooter className="bg-slate-50 border-t border-slate-100 p-4 gap-2">
+        <DialogFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 gap-2">
           <Button
             variant="ghost"
             onClick={onClose}
-            className="font-bold text-slate-500 hover:bg-slate-200 px-6 h-10 text-xs cursor-pointer"
+            className="flex-1 h-10 rounded-lg font-bold text-slate-500 border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300 text-xs cursor-pointer flex items-center justify-center gap-2 active:scale-95"
           >
+            <X className="w-4 h-4" />
             Cancel
           </Button>
           <Button
@@ -432,9 +441,16 @@ export function PermissionSettingsModal({
               (name === permission.name &&
                 description === (permission.description || ""))
             }
-            className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold px-8 h-10 text-xs shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] cursor-pointer"
+            className="flex-[1.5] bg-[#0F172A] hover:bg-emerald-600 text-white font-bold h-10 text-xs shadow-lg shadow-slate-200 transition-all duration-300 active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
-            {isSubmitting ? "Syncing..." : "Update Permission"}
+            {isSubmitting ? (
+              "Syncing..."
+            ) : (
+              <>
+                <Settings2 className="w-4 h-4" />
+                Update Permission
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

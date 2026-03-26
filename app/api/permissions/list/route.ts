@@ -5,7 +5,7 @@ export async function GET() {
 	try {
 		const { data: permissions, error: permissionsError } = await supabaseAdmin
 			.from('permissions')
-			.select('id, name, created_at')
+			.select('id, name, description, created_at')
 			.order('name', { ascending: true });
 
 		if (permissionsError) {

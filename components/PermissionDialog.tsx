@@ -79,10 +79,7 @@ export function PermissionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        overlayClassName="bg-slate-900/40 backdrop-blur-md"
-        className="sm:max-w-[360px] rounded-xl overflow-hidden border-none p-0 transition-all duration-300"
-      >
+      <DialogContent className="sm:max-w-[360px]">
         <div className="bg-slate-50 border-b border-slate-100 px-5 py-4">
           <DialogHeader>
             <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -98,7 +95,7 @@ export function PermissionDialog({
         <div className="px-5 py-4 space-y-4">
           <section>
             <div className="flex items-center gap-1.5 mb-3 border-b border-slate-100">
-              <h3 className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 font-lexend mb-1">
+              <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
                 <KeyRound className="w-3.5 h-3.5 text-blue-500" />
                 <p>Configuration</p>
               </h3>

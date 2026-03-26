@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import {
   Undo2,
   KeyRound,
@@ -77,14 +76,7 @@ export default function PermissionSettingsPage() {
         return;
       }
 
-      const mockedPermissions = (data.permissions ?? []).map((p: any) => ({
-        ...p,
-        description:
-          p.description ||
-          `Standard ${p.name.split(".").pop()} access level for system modules.`,
-      }));
-
-      setPermissions(mockedPermissions);
+      setPermissions(data.permissions ?? []);
     } catch {
       setLoadError("Unable to connect to server.");
       setPermissions([]);
@@ -202,7 +194,7 @@ export default function PermissionSettingsPage() {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent
-                      side="top"
+                      side="bottom"
                       className="bg-white border border-slate-200 shadow-xl p-3 rounded-lg max-w-[250px]"
                     >
                       <div className="space-y-2">
@@ -249,7 +241,7 @@ export default function PermissionSettingsPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => handleOpenSettings(p)}
-                className="font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 cursor-pointer"
+                className="font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 cursor-pointer active:scale-95"
               >
                 <Settings2 className="h-3.5 w-3.5 text-slate-500" /> Configure
               </button>
