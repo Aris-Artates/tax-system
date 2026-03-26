@@ -68,6 +68,7 @@ type ListedUser = {
   role: string;
   status: "Active" | "Inactive";
   email: string;
+  sex: boolean; // true = male, false = female
 };
 
 type ApiUser = {
@@ -82,6 +83,7 @@ type ApiUser = {
   } | null;
   status?: boolean;
   email?: string;
+  sex?: boolean;
 };
 
 type ApiUserDetails = {
@@ -333,6 +335,7 @@ export default function ViewUserPage() {
             role: user.roles?.name || user.role || "Unassigned",
             status: user.status ? "Active" : "Inactive",
             email: user.email || "",
+            sex: typeof user.sex === "boolean" ? user.sex : true,
           } as ListedUser;
         });
 
@@ -598,6 +601,7 @@ export default function ViewUserPage() {
                 u.role,
               status: form.status ? "Active" : "Inactive",
               email: form.email,
+              sex: form.sex,
             } as ListedUser;
           }
           return u;
@@ -647,6 +651,31 @@ export default function ViewUserPage() {
 
   const columns = useMemo(
     () => [
+      {
+        id: "avatar",
+        header: "",
+        cell: ({ row }: any) => {
+          const isMale: boolean = row.original.sex !== false;
+          return (
+            <div className="flex justify-center">
+              <img
+                src={isMale ? "/avatars/men.png" : "/avatars/female.png"}
+                alt={isMale ? "Male" : "Female"}
+                className="h-8 w-8 rounded-full object-cover border border-gray-200"
+              />
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "empID",
+        header: "Employee ID",
+        cell: ({ row }: any) => (
+          <div className="font-mono text-xs font-medium text-slate-500">
+            {row.original.empID}
+          </div>
+        ),
+      },
       {
         accessorKey: "name",
         header: "Name",
