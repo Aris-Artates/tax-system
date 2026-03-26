@@ -22,10 +22,7 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  confirmDelete,
-  showDeleteSuccess,
-} from "@/components/DeleteUserAction";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 interface Role {
   id: number;
@@ -56,6 +53,7 @@ export function PermissionSettingsModal({
   const [description, setDescription] = useState(permission.description || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   // Roles assigned to this permission
   const [assignedRoles, setAssignedRoles] = useState<Role[]>(
@@ -145,6 +143,18 @@ export function PermissionSettingsModal({
     }
   };
 
+  // Handle Ctrl+Enter to submit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && (e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, name, description, isSubmitting, handleSubmit]);
+
   const handleAssignToRole = async (role: Role) => {
     try {
       const response = await fetch("/api/permissions/assign", {
@@ -190,14 +200,12 @@ export function PermissionSettingsModal({
     }
   };
 
-  const handleDelete = async () => {
-    const confirmed = await confirmDelete(
-      permission.name,
-      "Permission",
-      "#permission-settings-modal-content",
-    );
-    if (!confirmed) return;
+  const handleDeleteClick = () => {
+    setShowConfirmDelete(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    setShowConfirmDelete(false);
     setIsDeleting(true);
     try {
       const response = await fetch("/api/permissions/delete", {
@@ -209,10 +217,7 @@ export function PermissionSettingsModal({
       if (response.ok) {
         onSuccess();
         onClose();
-        await showDeleteSuccess(
-          permission.name,
-          "#permission-settings-modal-content",
-        );
+        toast.success("Permission deleted successfully");
       } else {
         const data = await response.json();
         toast.error(data.error || "Failed to delete permission.");
@@ -395,31 +400,28 @@ export function PermissionSettingsModal({
             </div>
           </section>
 
-          {/* Danger Zone Section */}
-          <section className="bg-rose-50/30 border border-rose-100/50 rounded-xl p-5 group hover:bg-rose-50/50 transition-all duration-300">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 bg-rose-100 p-2.5 rounded-xl shadow-sm ring-4 ring-rose-50">
-                <ShieldAlert className="w-4 h-4 text-rose-600" />
+          {/* Compact Danger Zone Section */}
+          <section className="bg-rose-50/50 border border-rose-100/50 rounded-xl p-3.5 mt-2 transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="bg-rose-100 p-1.5 rounded-lg shadow-sm">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-bold text-rose-900 tracking-tight">
+              <div className="flex-1 min-w-0">
+                <h4 className="text-[11px] font-bold text-rose-900 leading-none">
                   Danger Zone
                 </h4>
-                <p className="text-xs text-rose-700/70 mt-1 leading-relaxed font-medium">
-                  Deleting this permission will remove it from all roles and may
-                  impact system functionality.
+                <p className="text-[10px] text-rose-700/70 mt-0.5 leading-tight truncate">
+                  Permanently delete this system resource.
                 </p>
-                <Button
-                  onClick={handleDelete}
-                  variant="ghost"
-                  disabled={isDeleting}
-                  className="mt-4 h-9 px-4 text-xs font-bold text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all border border-rose-200 shadow-sm rounded-lg cursor-pointer"
-                >
-                  {isDeleting
-                    ? "Deleting System Resource..."
-                    : "Delete Permission Permanently"}
-                </Button>
               </div>
+              <Button
+                onClick={handleDeleteClick}
+                variant="ghost"
+                disabled={isDeleting}
+                className="h-8 px-3 text-[10px] font-bold text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all border border-rose-200 shadow-sm rounded-lg active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                {isDeleting ? "Deleting..." : "Delete Resource"}
+              </Button>
             </div>
           </section>
         </div>
@@ -454,6 +456,16 @@ export function PermissionSettingsModal({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmationDialog
+        isOpen={showConfirmDelete}
+        onClose={() => setShowConfirmDelete(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Permission"
+        description="You are about to permanently remove this system entry. This may affect linked modules."
+        entityName={permission.name}
+        confirmText="Confirm Delete"
+      />
     </Dialog>
   );
 }

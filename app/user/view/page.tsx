@@ -35,7 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
-import { confirmDelete } from "@/components/DeleteUserAction";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 import {
   Dialog,
   DialogContent,
@@ -300,6 +300,12 @@ export default function ViewUserPage() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, boolean>
   >({});
+
+  const [deleteTarget, setDeleteTarget] = useState<{
+    empID: string;
+    name: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -616,11 +622,18 @@ export default function ViewUserPage() {
     }
   };
 
-  const handleDeleteUser = async (empID: string, name: string) => {
+  const handleDeleteClick = (empID: string, name: string) => {
+    setDeleteTarget({ empID, name });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    const { empID, name } = deleteTarget;
     const shortName = name.length > 20 ? name.substring(0, 20) + "..." : name;
 
-    const confirmed = await confirmDelete(shortName);
-    if (!confirmed) return;
+    setDeleteTarget(null);
+    setIsDeleting(true);
 
     try {
       const res = await fetch("/api/user/delete", {
@@ -639,13 +652,14 @@ export default function ViewUserPage() {
         return;
       }
 
-      // Update local state and show success
       setUsers((prev) => prev.filter((user) => user.empID !== empID));
       toast.success(`${shortName} has been deleted.`);
     } catch (err) {
       toast.error("Connection Error", {
         description: "Unable to connect to server.",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -733,11 +747,13 @@ export default function ViewUserPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleDeleteUser(user.empID, user.name)}
+                onClick={() => handleDeleteClick(user.empID, user.name)}
                 className={`font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Delete
+                {isDeleting && deleteTarget?.empID === user.empID
+                  ? "Deleting..."
+                  : "Delete"}
               </button>
             </div>
           );
@@ -822,7 +838,7 @@ export default function ViewUserPage() {
           </div>
 
           <TableContainer>
-            <Table className="min-w-155">
+            <Table zebra className="min-w-155">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -1215,6 +1231,16 @@ export default function ViewUserPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmationDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete User"
+        description="Are you sure you want to delete this user? This action will remove their access and all associated data."
+        entityName={deleteTarget?.name}
+        confirmText="Confirm Delete"
+      />
     </div>
   );
 }

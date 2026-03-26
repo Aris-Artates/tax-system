@@ -3,12 +3,13 @@ import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableElement> & { zebra?: boolean }
+>(({ className, zebra, ...props }, ref) => (
   <table
     ref={ref}
     className={cn(
       "w-full border-collapse font-inter text-xs sm:text-sm",
+      zebra && "[&_tbody_tr:nth-child(even)]:bg-slate-50/50",
       className
     )}
     {...props}

@@ -77,6 +77,18 @@ export function PermissionDialog({
     }
   };
 
+  // Handle Ctrl+Enter to submit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && (e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, name, isSubmitting, handleSubmit]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[360px]">

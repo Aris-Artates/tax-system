@@ -98,6 +98,23 @@ export default function PermissionSettingsPage() {
     setIsSettingsOpen(true);
   };
 
+  // Table hotkeys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Clear search on Esc
+      if (e.key === "Escape" && globalFilter) {
+        setGlobalFilter("");
+      }
+      // Alt + N to add new permission
+      if (e.altKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        handleAddPermission();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [globalFilter, handleAddPermission]);
+
   const handleDialogSuccess = useCallback(async () => {
     await fetchPermissions();
     setIsDialogOpen(false);
@@ -323,7 +340,7 @@ export default function PermissionSettingsPage() {
         )}
 
         <TableContainer>
-          <Table>
+          <Table zebra>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="bg-gray-50/50">

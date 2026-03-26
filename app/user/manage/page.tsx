@@ -35,6 +35,7 @@ import {
 } from "@/components/table";
 
 import { AddRoleDialog } from "@/components/AddRoleDialog";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 type ApiUser = {
   firstname?: string;
@@ -521,7 +522,7 @@ export default function ManageRolePage() {
           </div>
 
           <TableContainer>
-            <Table className="min-w-155">
+            <Table zebra className="min-w-155">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -670,49 +671,15 @@ export default function ManageRolePage() {
           </div>
         )}
 
-        {/* Delete Confirm Modal */}
-        {rolePendingDelete && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onClick={() => setRolePendingDelete(null)}
-          >
-            <div
-              className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="font-lexend mb-2 text-lg font-semibold text-[#0F172A]">
-                Delete Role?
-              </h2>
-              <p className="font-inter text-sm text-slate-500">
-                You are about to remove <span className="font-semibold text-[#0F172A]">
-                  {rolePendingDelete}
-                </span>.
-              </p>
-              <p className="font-inter mt-2 text-xs text-rose-500">
-                This action cannot be undone.
-              </p>
-
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRolePendingDelete(null)}
-                  className="border border-gray-200 text-slate-600 text-xs font-inter px-4 py-2 rounded-md hover:bg-gray-50 transition cursor-pointer"
-                  disabled={isDeletingRole}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmDeleteRole}
-                  className="bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isDeletingRole}
-                >
-                  {isDeletingRole ? "Deleting..." : "Delete Role"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmationDialog
+          isOpen={!!rolePendingDelete}
+          onClose={() => setRolePendingDelete(null)}
+          onConfirm={confirmDeleteRole}
+          title="Delete Role"
+          description="Are you sure you want to remove this role? This will affect users currently assigned to it."
+          entityName={rolePendingDelete || ""}
+          confirmText={isDeletingRole ? "Deleting..." : "Delete Role"}
+        />
         <AddRoleDialog 
           isOpen={isAddRoleDialogOpen}
           onClose={handleDialogClose}

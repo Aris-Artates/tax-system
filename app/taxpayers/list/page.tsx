@@ -15,11 +15,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import {
-  confirmArchive,
-  confirmDelete,
-  confirmRestore,
-} from "@/components/DeleteUserAction";
+import { cn } from "@/lib/utils";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +27,15 @@ import {
 } from "@/components/ui/dialog";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { VALIDATORS } from "@/components/ui/validators";
+import {
+  Table,
+  TableContainer,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/table";
 
 const OWNER_TYPE_OPTIONS: ComboboxOption[] = [
   { value: "Individual", label: "Individual" },
@@ -106,6 +112,12 @@ export default function TaxpayerListPage() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, boolean>
   >({});
+
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    type: "archive" | "delete" | "restore" | null;
+    taxpayer: Taxpayer | null;
+  }>({ isOpen: false, type: null, taxpayer: null });
 
   const updateField = (
     field: keyof typeof editForm,
@@ -343,9 +355,15 @@ export default function TaxpayerListPage() {
     }
   };
 
-  const handleArchiveTaxpayer = async (taxpayer: Taxpayer) => {
-    const confirmed = await confirmArchive(taxpayer.owner_name, "Taxpayer");
-    if (!confirmed) return;
+  const handleArchiveClick = (taxpayer: Taxpayer) => {
+    setConfirmState({ isOpen: true, type: "archive", taxpayer });
+  };
+
+  const handleConfirmArchive = async () => {
+    const { taxpayer } = confirmState;
+    if (!taxpayer) return;
+
+    setConfirmState({ isOpen: false, type: null, taxpayer: null });
 
     try {
       const res = await fetch("/api/taxpayers/archive", {
@@ -380,9 +398,15 @@ export default function TaxpayerListPage() {
     }
   };
 
-  const handleDeleteTaxpayer = async (taxpayer: Taxpayer) => {
-    const confirmed = await confirmDelete(taxpayer.owner_name, "Taxpayer");
-    if (!confirmed) return;
+  const handleDeleteClick = (taxpayer: Taxpayer) => {
+    setConfirmState({ isOpen: true, type: "delete", taxpayer });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { taxpayer } = confirmState;
+    if (!taxpayer) return;
+
+    setConfirmState({ isOpen: false, type: null, taxpayer: null });
 
     try {
       const res = await fetch("/api/taxpayers/delete", {
@@ -413,9 +437,15 @@ export default function TaxpayerListPage() {
     }
   };
 
-  const handleRestoreTaxpayer = async (taxpayer: Taxpayer) => {
-    const confirmed = await confirmRestore(taxpayer.owner_name, "Taxpayer");
-    if (!confirmed) return;
+  const handleRestoreClick = (taxpayer: Taxpayer) => {
+    setConfirmState({ isOpen: true, type: "restore", taxpayer });
+  };
+
+  const handleConfirmRestore = async () => {
+    const { taxpayer } = confirmState;
+    if (!taxpayer) return;
+
+    setConfirmState({ isOpen: false, type: null, taxpayer: null });
 
     try {
       const res = await fetch("/api/taxpayers/restore", {
@@ -466,122 +496,121 @@ export default function TaxpayerListPage() {
   };
 
   return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={() => router.push("/taxpayers")}
-        className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Taxpayer Records
-      </button>
-
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-            Taxpayer Master List
-          </h1>
-          <p className="font-inter mt-1 text-xs text-slate-400">
-            All Registered Taxpayers – Municipality of Sta. Rita, Samar
-          </p>
-        </div>
+    <>
+      <div className="w-full">
         <button
           type="button"
-          onClick={() => router.push("/taxpayers/register")}
-          className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
+          onClick={() => router.push("/taxpayers")}
+          className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700"
         >
-          <Plus className="h-4 w-4" />
-          Register Taxpayer
+          <ArrowLeft className="h-4 w-4" />
+          Back to Taxpayer Records
         </button>
-      </header>
 
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {[
-          {
-            label: "Total Taxpayers",
-            value: isLoading ? "—" : taxpayers.length.toLocaleString(),
-            color: "text-[#595a5d]",
-          },
-          {
-            label: "Individual",
-            value: isLoading
-              ? "—"
-              : normalizedOwnerTypeCount.Individual.toLocaleString(),
-            color: "text-blue-600",
-          },
-          {
-            label: "Corporate",
-            value: isLoading
-              ? "—"
-              : normalizedOwnerTypeCount.Corporate.toLocaleString(),
-            color: "text-amber-600",
-          },
-          {
-            label: "Government",
-            value: isLoading
-              ? "—"
-              : normalizedOwnerTypeCount.Government.toLocaleString(),
-            color: "text-emerald-600",
-          },
-        ].map((s) => (
-          <div
-            key={s.label}
-            className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm"
-          >
-            <p className="font-inter text-xs text-slate-400">{s.label}</p>
-            <p className={`font-lexend mt-1 text-xl font-bold ${s.color}`}>
-              {s.value}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+              Taxpayer Master List
+            </h1>
+            <p className="font-inter mt-1 text-xs text-slate-400">
+              All Registered Taxpayers – Municipality of Sta. Rita, Samar
             </p>
           </div>
-        ))}
-      </div>
+          <button
+            type="button"
+            onClick={() => router.push("/taxpayers/register")}
+            className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
+          >
+            <Plus className="h-4 w-4" />
+            Register Taxpayer
+          </button>
+        </header>
 
-      {/* Toolbar */}
-      <div className="mb-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="relative flex-1 min-w-45 max-w-xs">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={13}
-            />
-            <input
-              type="text"
-              placeholder="Search name, TIN, or address..."
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="font-inter w-full rounded-sm border border-gray-200 py-2 pl-8 pr-3 text-xs text-[#595a5d] focus:outline-none focus:border-slate-400"
-            />
-          </div>
-          <div className="min-w-40">
-            <Combobox
-              placeholder="All Owner Types"
-              searchPlaceholder="Search type..."
-              options={OWNER_TYPE_OPTIONS}
-              value={typeFilter}
-              onChange={handleTypeFilter}
-              triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
-            />
-          </div>
-          <div className="min-w-40">
-            <Combobox
-              placeholder="Status"
-              searchPlaceholder="Search status..."
-              options={STATUS_FILTER_OPTIONS}
-              value={statusFilter}
-              onChange={handleStatusFilter}
-              triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
-            />
+        {/* Stats */}
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {[
+            {
+              label: "Total Taxpayers",
+              value: isLoading ? "—" : taxpayers.length.toLocaleString(),
+              color: "text-[#595a5d]",
+            },
+            {
+              label: "Individual",
+              value: isLoading
+                ? "—"
+                : normalizedOwnerTypeCount.Individual.toLocaleString(),
+              color: "text-blue-600",
+            },
+            {
+              label: "Corporate",
+              value: isLoading
+                ? "—"
+                : normalizedOwnerTypeCount.Corporate.toLocaleString(),
+              color: "text-amber-600",
+            },
+            {
+              label: "Government",
+              value: isLoading
+                ? "—"
+                : normalizedOwnerTypeCount.Government.toLocaleString(),
+              color: "text-emerald-600",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <p className="font-inter text-xs text-slate-400">{s.label}</p>
+              <p className={`font-lexend mt-1 text-xl font-bold ${s.color}`}>
+                {s.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Toolbar */}
+        <div className="mb-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="relative flex-1 min-w-45 max-w-xs">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                size={13}
+              />
+              <input
+                type="text"
+                placeholder="Search name, TIN, or address..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="font-inter w-full rounded-sm border border-gray-200 py-2 pl-8 pr-3 text-xs text-[#595a5d] focus:outline-none focus:border-slate-400"
+              />
+            </div>
+            <div className="min-w-40">
+              <Combobox
+                placeholder="All Owner Types"
+                searchPlaceholder="Search type..."
+                options={OWNER_TYPE_OPTIONS}
+                value={typeFilter}
+                onChange={handleTypeFilter}
+                triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
+              />
+            </div>
+            <div className="min-w-40">
+              <Combobox
+                placeholder="Status"
+                searchPlaceholder="Search status..."
+                options={STATUS_FILTER_OPTIONS}
+                value={statusFilter}
+                onChange={handleStatusFilter}
+                triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full font-inter text-xs">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
+        <TableContainer>
+          <Table zebra>
+            <TableHeader>
+              <TableRow>
                 {[
                   "#",
                   "Full Name",
@@ -593,82 +622,76 @@ export default function TaxpayerListPage() {
                   "Email",
                   "Actions",
                 ].map((h) => (
-                  <th
+                  <TableHead
                     key={h}
-                    className={`px-4 py-3 text-left text-[#595a5d] font-semibold uppercase tracking-wide  
-                      ${h.toLocaleLowerCase() === "#" ? "md:sticky md:left-0 bg-gray-50" : ""} 
-                      ${h.toLocaleLowerCase() === "full name" ? "md:sticky md:left-7.5 bg-gray-50" : "whitespace-nowrap"}
-                      ${h.toLocaleLowerCase() === "actions" ? "md:sticky md:right-0 bg-gray-50" : ""}
-                    
-                      ${h.toLowerCase() === "full name" ? "min-w-50" : ""}`}
+                    className={cn(
+                      h.toLowerCase() === "full name" ? "min-w-50" : ""
+                    )}
                   >
                     {h}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading ? (
-                <tr>
-                  <td colSpan={9} className="py-10 text-center text-slate-400">
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
+                    className="py-10 text-center text-slate-400"
+                  >
                     Loading taxpayers...
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : paginated.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-10 text-center text-slate-400">
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
+                    className="py-10 text-center text-slate-400"
+                  >
                     No taxpayers found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 paginated.map((t, i) => (
-                  <tr
-                    key={t.id}
-                    className="border-b border-gray-100 hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="sticky left-0 bg-white px-4 py-3 text-slate-400">
-                      {(page - 1) * PAGE_SIZE + i + 1}
-                    </td>
-                    <td className="sticky left-7.5 px-4 py-3 font-medium text-slate-700 whitespace-nowrap bg-white">
+                  <TableRow key={t.id}>
+                    <TableCell>{(page - 1) * PAGE_SIZE + i + 1}</TableCell>
+                    <TableCell className="font-medium text-slate-700">
                       {t.owner_name}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                      {t.tin || "—"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    </TableCell>
+                    <TableCell>{t.tin || "—"}</TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        className={cn(
+                          "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
                           ownerTypeColor[
                             t.owner_type === "Corporation"
                               ? "Corporate"
                               : (t.owner_type ?? "Individual")
                           ]
-                        }`}
+                        )}
                       >
                         {t.owner_type === "Corporation"
                           ? "Corporate"
                           : t.owner_type}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    </TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        className={cn(
+                          "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
                           statusColor[getTaxpayerStatus(t)]
-                        }`}
+                        )}
                       >
                         {getTaxpayerStatus(t)}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 min-w-60 max-w-xs truncate">
+                    </TableCell>
+                    <TableCell className="text-slate-500 min-w-60 max-w-xs truncate">
                       {t.address || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {t.phone || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {t.email || "—"}
-                    </td>
-                    <td className="sticky right-0 px-4 py-3 text-right whitespace-nowrap bg-white">
+                    </TableCell>
+                    <TableCell className="text-slate-500">{t.phone || "—"}</TableCell>
+                    <TableCell className="text-slate-500">{t.email || "—"}</TableCell>
+                    <TableCell align="right">
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleOpenEditModal(t)}
@@ -680,7 +703,7 @@ export default function TaxpayerListPage() {
 
                         {getTaxpayerStatus(t) === "Active" ? (
                           <button
-                            onClick={() => handleArchiveTaxpayer(t)}
+                            onClick={() => handleArchiveClick(t)}
                             title="Archive"
                             className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-amber-600"
                           >
@@ -688,7 +711,7 @@ export default function TaxpayerListPage() {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleRestoreTaxpayer(t)}
+                            onClick={() => handleRestoreClick(t)}
                             title="Restore"
                             className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-emerald-600"
                           >
@@ -696,45 +719,45 @@ export default function TaxpayerListPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleDeleteTaxpayer(t)}
+                          onClick={() => handleDeleteClick(t)}
                           title="Delete"
                           className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-rose-600"
                         >
                           <Trash2 size={14} />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
 
-        <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-          <p className="font-inter text-xs text-slate-400">
-            Showing {paginated.length} of {filtered.length} taxpayers
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="font-inter px-2 text-xs text-slate-500">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ChevronRight size={14} />
-            </button>
+          <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+            <p className="font-inter text-xs text-slate-400">
+              Showing {paginated.length} of {filtered.length} taxpayers
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span className="font-inter px-2 text-xs text-slate-500">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
-        </div>
+        </TableContainer>
       </div>
 
       {/* Edit User Modal */}
@@ -763,9 +786,7 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.first_name}
-                  onChange={(v, isValid) =>
-                    updateField("first_name", v, isValid)
-                  }
+                  onChange={(v, isValid) => updateField("first_name", v, isValid)}
                 />
 
                 <ValidatedInput
@@ -773,9 +794,7 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.middle_name}
-                  onChange={(v, isValid) =>
-                    updateField("middle_name", v, isValid)
-                  }
+                  onChange={(v, isValid) => updateField("middle_name", v, isValid)}
                 />
 
                 <ValidatedInput
@@ -784,9 +803,7 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.last_name}
-                  onChange={(v, isValid) =>
-                    updateField("last_name", v, isValid)
-                  }
+                  onChange={(v, isValid) => updateField("last_name", v, isValid)}
                 />
 
                 <div>
@@ -847,14 +864,11 @@ export default function TaxpayerListPage() {
 
                 <div className="sm:col-span-2">
                   <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                    Other Address Details{" "}
-                    <span className="text-rose-500">*</span>
+                    Other Address Details <span className="text-rose-500">*</span>
                   </label>
                   <input
                     value={editForm.address_details}
-                    onChange={(e) =>
-                      updateField("address_details", e.target.value)
-                    }
+                    onChange={(e) => updateField("address_details", e.target.value)}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 font-inter"
                     placeholder="Street, Purok, Sitio, Landmark"
                   />
@@ -925,6 +939,47 @@ export default function TaxpayerListPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+
+      <ConfirmationDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, type: null, taxpayer: null })}
+        onConfirm={
+          confirmState.type === "delete"
+            ? handleConfirmDelete
+            : confirmState.type === "archive"
+              ? handleConfirmArchive
+              : handleConfirmRestore
+        }
+        title={
+          confirmState.type === "delete"
+            ? "Delete Taxpayer"
+            : confirmState.type === "archive"
+              ? "Archive Taxpayer"
+              : "Restore Taxpayer"
+        }
+        description={
+          confirmState.type === "delete"
+            ? "Are you sure you want to permanently delete this record? This action cannot be undone."
+            : confirmState.type === "archive"
+              ? "Are you sure you want to archive this record? It will be moved to the historical archive."
+              : "Are you sure you want to restore this record to active status?"
+        }
+        entityName={confirmState.taxpayer?.owner_name}
+        variant={
+          confirmState.type === "delete"
+            ? "danger"
+            : confirmState.type === "archive"
+              ? "warning"
+              : "success"
+        }
+        confirmText={
+          confirmState.type === "delete"
+            ? "Confirm Delete"
+            : confirmState.type === "archive"
+              ? "Confirm Archive"
+              : "Confirm Restore"
+        }
+      />
+    </>
   );
 }
