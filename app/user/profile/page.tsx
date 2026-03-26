@@ -520,14 +520,6 @@ export default function UserProfilePage() {
                   "Save Changes"
                 )}
               </Button>
-              <Button 
-                className="cursor-pointer" 
-                variant="outline" 
-                onClick={handleReset}
-                disabled={saving || uploading}
-              >
-                Reset
-              </Button>
             </div>
           </section>
         </div>
