@@ -46,12 +46,18 @@ export function ConfirmationDialog({
         <div className="bg-slate-50 border-b border-slate-100 px-6 py-5">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
-              <AlertTriangle className={cn(
-                "w-5 h-5",
-                isDanger ? "text-rose-500" : 
-                isWarning ? "text-amber-500" : 
-                isSuccess ? "text-emerald-500" : "text-blue-500"
-              )} />
+              <AlertTriangle
+                className={cn(
+                  "w-5 h-5",
+                  isDanger
+                    ? "text-rose-500"
+                    : isWarning
+                      ? "text-amber-500"
+                      : isSuccess
+                        ? "text-emerald-500"
+                        : "text-blue-500",
+                )}
+              />
               {title}
             </AlertDialogTitle>
             <AlertDialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
@@ -66,19 +72,31 @@ export function ConfirmationDialog({
         </div>
 
         <div className="px-6 py-6 ring-1 ring-inset ring-slate-100/50">
-          <div className={cn(
-            "flex items-start gap-3 p-3 rounded-xl border text-[11px] font-inter leading-relaxed",
-            isDanger ? "bg-rose-50 border-rose-100 text-rose-600" : 
-            isWarning ? "bg-amber-50 border-amber-100 text-amber-700" :
-            isSuccess ? "bg-emerald-50 border-emerald-100 text-emerald-700" :
-            "bg-blue-50 border-blue-100 text-blue-700"
-          )}>
-            <AlertTriangle className={cn("w-4 h-4 shrink-0 mt-0.5", isSuccess && "rotate-180")} />
+          <div
+            className={cn(
+              "flex items-start gap-3 p-3 rounded-xl border text-[11px] font-inter leading-relaxed",
+              isDanger
+                ? "bg-rose-50 border-rose-100 text-rose-600"
+                : isWarning
+                  ? "bg-amber-50 border-amber-100 text-amber-700"
+                  : isSuccess
+                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                    : "bg-blue-50 border-blue-100 text-blue-700",
+            )}
+          >
+            <AlertTriangle
+              className={cn(
+                "w-4 h-4 shrink-0 mt-0.5",
+              )}
+            />
             <p className="font-medium">
-              {isDanger ? "This action is permanent and cannot be undone. Please proceed with caution." : 
-               isWarning ? "This will move the record to the archives. You can restore it later if needed." :
-               isSuccess ? "This will restore the record to active status." :
-               "This will update the system record." }
+              {isDanger
+                ? "This action is permanent and cannot be undone. Please proceed with caution."
+                : isWarning
+                  ? "This will move the record to the archives. You can restore it later if needed."
+                  : isSuccess
+                    ? "This will save current changes."
+                    : "This will update the system record."}
             </p>
           </div>
         </div>
@@ -96,16 +114,15 @@ export function ConfirmationDialog({
           <AlertDialogAction
             asChild
             className={cn(
-              "flex-[1.5] text-white font-bold h-10 text-xs shadow-lg transition-all duration-300 active:scale-95 cursor-pointer flex items-center justify-center gap-2",
-              isDanger ? "bg-[#0F172A] hover:bg-rose-600 shadow-slate-200" : 
-              isWarning ? "bg-amber-600 hover:bg-amber-700 shadow-amber-100" :
-              isSuccess ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100" :
-              "bg-[#0F172A] hover:bg-slate-800 shadow-slate-200"
+              "flex-[1.5] text-white font-bold h-10 text-xs transition-all duration-300 active:scale-95 cursor-pointer flex items-center justify-center gap-2 bg-[#0F172A]",
+              isDanger
+                ? "hover:bg-rose-600"
+                : isWarning
+                  ? "hover:bg-amber-600"
+                  : "hover:bg-emerald-600",
             )}
           >
-            <button onClick={onConfirm}>
-              {confirmText}
-            </button>
+            <button onClick={onConfirm}>{confirmText}</button>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

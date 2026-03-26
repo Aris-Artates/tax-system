@@ -278,6 +278,7 @@ export default function PermissionSettingsPage() {
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    autoResetPageIndex: false,
     initialState: { pagination: { pageSize: 5 } },
   });
 
