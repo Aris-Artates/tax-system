@@ -11,10 +11,11 @@
  *       fetched from Supabase (via /api/property/mapping?barangay_id=X).
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { ArrowLeft, MapPinned, Eye, Search, X } from 'lucide-react';
+import { ArrowLeft, MapPinned, Eye, Search, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const STA_RITA_BARANGAY_COORDINATES: Array<{ name: string; coordinates: [number, number] }> = [
   { name: 'Alegria', coordinates: [11.3753963, 124.9942696] },
@@ -96,32 +97,116 @@ const classificationColors: Record<string, string> = {
   Special:      'bg-orange-50 text-orange-700',
 };
 
-// ── Placeholder data (TODO: fetch from Supabase) ──────────────────────────────
-const barangayStats: Record<string, BarangayStats> = {};
-const propertiesByBarangay: Record<string, PropertyEntry[]> = {};
-
 // ─────────────────────────────────────────────────────────────────────────────
+
+type Barangay = {
+  id: number;
+  name: string;
+};
 
 export default function TaxMappingPage() {
   const router = useRouter();
 
+  const [barangayList, setBarangayList] = useState<Barangay[]>([]);
   const [selectedBarangay, setSelectedBarangay] = useState('Bokinggan Poblacion (Zone I)');
+  const [selectedBarangayId, setSelectedBarangayId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [properties, setProperties] = useState<PropertyEntry[]>([]);
+  const [stats, setStats] = useState<BarangayStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchingProperties, setFetchingProperties] = useState(false);
+
+  // Fetch barangay list on mount
+  useEffect(() => {
+    async function fetchBarangays() {
+      try {
+        const res = await fetch('/api/barangays/list');
+        const data = await res.json();
+        if (res.ok && data.barangays) {
+          setBarangayList(data.barangays);
+          // Try to find the initial selected barangay ID
+          const initial = data.barangays.find((b: Barangay) => b.name === selectedBarangay);
+          if (initial) setSelectedBarangayId(initial.id);
+        }
+      } catch (err) {
+        console.error('Failed to load barangays:', err);
+        toast.error('Failed to load barangay list.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBarangays();
+  }, [selectedBarangay]);
+
+  // Fetch properties when selectedBarangayId changes
+  useEffect(() => {
+    if (!selectedBarangayId) return;
+
+    async function fetchProperties() {
+      setFetchingProperties(true);
+      try {
+        const res = await fetch(`/api/property/mapping?barangay_id=${selectedBarangayId}`);
+        const data = await res.json();
+
+        if (res.ok && data.properties) {
+          const raw = data.properties;
+
+          // Map to PropertyEntry
+          const mapped: PropertyEntry[] = raw.map((p: any) => ({
+            tdNumber: p.td_number || '—',
+            owner: p.taxpayers?.owner_name || '—',
+            classification: p.classification || '—',
+            landArea: p.land_area != null ? p.land_area.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
+            marketValue: p.total_market_value != null ? p.total_market_value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
+            assessedValue: p.total_assessed_value != null ? p.total_assessed_value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
+          }));
+
+          setProperties(mapped);
+
+          // Calculate aggregate stats
+          const total = raw.length;
+          const residential = raw.filter((p: any) => p.classification === 'Residential').length;
+          const commercial = raw.filter((p: any) => p.classification === 'Commercial').length;
+          const agricultural = raw.filter((p: any) => p.classification === 'Agricultural').length;
+          const totalLandArea = raw.reduce((sum: number, p: any) => sum + (p.land_area || 0), 0);
+          const totalMarketValue = raw.reduce((sum: number, p: any) => sum + (p.total_market_value || 0), 0);
+          const totalAssessedValue = raw.reduce((sum: number, p: any) => sum + (p.total_assessed_value || 0), 0);
+
+          setStats({
+            total,
+            residential,
+            commercial,
+            agricultural,
+            landArea: totalLandArea.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            marketValue: totalMarketValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            assessedValue: totalAssessedValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load properties:', err);
+        toast.error('Failed to load property data.');
+      } finally {
+        setFetchingProperties(false);
+      }
+    }
+
+    fetchProperties();
+  }, [selectedBarangayId]);
 
   // Filter the barangay list dynamically based on search input
   const filteredBarangays = useMemo(() => {
-    if (!searchQuery.trim()) return barangays;
+    if (!searchQuery.trim()) return barangayList;
     const q = searchQuery.toLowerCase();
-    return barangays.filter((b) => b.toLowerCase().includes(q));
-  }, [searchQuery]);
+    return barangayList.filter((b) => b.name.toLowerCase().includes(q));
+  }, [searchQuery, barangayList]);
 
-  const stats      = barangayStats[selectedBarangay];
-  const properties = propertiesByBarangay[selectedBarangay] ?? [];
   const selectedBarangayCenter =
     barangayCenters[selectedBarangay] ?? barangayCenters['Bokinggan Poblacion (Zone I)'];
 
-  function handleBarangaySelect(name: string) {
-    setSelectedBarangay(name);
+  function handleBarangaySelect(b: Barangay) {
+    setSelectedBarangay(b.name);
+    setSelectedBarangayId(b.id);
     setSearchQuery(''); // clear search after selection
   }
 
@@ -186,23 +271,28 @@ export default function TaxMappingPage() {
 
             {/* Barangay list */}
             <nav className="max-h-115 overflow-y-auto p-2">
-              {filteredBarangays.length === 0 ? (
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                  <p className="mt-2 font-inter text-xs text-slate-400">Loading barangays...</p>
+                </div>
+              ) : filteredBarangays.length === 0 ? (
                 <p className="px-3 py-4 text-center font-inter text-xs text-slate-400">
                   No barangay matches &ldquo;{searchQuery}&rdquo;.
                 </p>
               ) : (
                 filteredBarangays.map((b) => (
                   <button
-                    key={b}
+                    key={b.id}
                     type="button"
                     onClick={() => handleBarangaySelect(b)}
                     className={`font-inter w-full rounded px-3 py-2 text-left text-xs transition-colors cursor-pointer ${
-                      selectedBarangay === b
+                      selectedBarangay === b.name
                         ? 'bg-blue-50 font-semibold text-blue-700'
                         : 'text-slate-500 hover:bg-gray-50 hover:text-slate-700'
                     }`}
                   >
-                    {b}
+                    {b.name}
                   </button>
                 ))
               )}
@@ -228,7 +318,16 @@ export default function TaxMappingPage() {
           </div>
 
           {/* Stats Grid */}
-          {stats ? (
+          {fetchingProperties ? (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="animate-pulse rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="h-3 w-20 rounded bg-gray-100"></div>
+                  <div className="mt-2 h-6 w-16 rounded bg-gray-100"></div>
+                </div>
+              ))}
+            </div>
+          ) : stats ? (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
                 { label: 'Total Properties', value: stats.total.toLocaleString(),        color: 'text-[#595a5d]' },
@@ -251,7 +350,16 @@ export default function TaxMappingPage() {
           )}
 
           {/* Valuation Stats */}
-          {stats && (
+          {fetchingProperties ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="h-3 w-24 rounded bg-gray-100"></div>
+                  <div className="mt-2 h-4 w-32 rounded bg-gray-100"></div>
+                </div>
+              ))}
+            </div>
+          ) : stats && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {[
                 { label: 'Total Land Area (sqm)',    value: stats.landArea,      color: 'text-[#595a5d]' },
@@ -295,7 +403,12 @@ export default function TaxMappingPage() {
               </h3>
             </div>
 
-            {properties.length === 0 ? (
+            {fetchingProperties ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+                <p className="mt-4 font-inter text-xs text-slate-400">Loading properties...</p>
+              </div>
+            ) : properties.length === 0 ? (
               <p className="font-inter p-6 text-center text-xs text-slate-400">
                 No property records found for Barangay {selectedBarangay}.
               </p>
