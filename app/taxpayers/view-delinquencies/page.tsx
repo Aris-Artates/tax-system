@@ -186,13 +186,13 @@ export default function ViewDelinquenciesPage() {
       <button
         type="button"
         onClick={() => router.push("/taxpayers")}
-        className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-900"
+        className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-900 print:hidden"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Taxpayer Records
       </button>
 
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
           <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
             Delinquent Accounts
@@ -201,14 +201,121 @@ export default function ViewDelinquenciesPage() {
             Monitor overdue Real Property Tax obligations
           </p>
         </div>
-        <button className="font-inter inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer">
+        <button
+          onClick={() => window.print()}
+          className="font-inter inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer"
+        >
           <Download className="h-4 w-4" />
           Export Delinquency List
         </button>
       </header>
 
+      {/* PRINT VIEW TEMPLATE - HIDDEN ON SCREEN */}
+      <div className="hidden print:block w-full max-w-[210mm] mx-auto p-4 text-black font-serif">
+        <style>{`
+          @media print {
+            @page { size: A4 portrait; margin: 15mm; }
+            body { font-size: 11pt; color: #000; background: #fff; }
+            .print-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 10px; font-size: 10pt; }
+            .print-table th { background: #f0f0f0 !important; font-weight: bold; }
+          }
+        `}</style>
+
+        {/* PRINT HEADER */}
+        <div className="text-center mb-10 pb-4 border-b-2 border-black/10">
+          <p className="text-[10pt] font-bold uppercase tracking-widest">
+            Republic of the Philippines
+          </p>
+          <p className="text-[11pt] font-semibold">Province of Samar</p>
+          <p className="text-[11pt] font-semibold uppercase">
+            Municipality of Sta. Rita
+          </p>
+          <div className="mt-2 inline-block border-y border-black py-1 px-4">
+            <p className="text-[12pt] font-bold uppercase">
+              Office of the Municipal Treasurer
+            </p>
+          </div>
+          <h2 className="mt-8 text-[16pt] font-black uppercase underline decoration-2 underline-offset-4">
+            List of Delinquent Taxpayers
+          </h2>
+          <p className="mt-2 text-[10pt] italic">
+            As of{" "}
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+
+        {/* PRINT TABLE */}
+        <table className="print-table w-full">
+          <thead>
+            <tr>
+              <th className="w-8">#</th>
+              <th className="text-left font-bold">Taxpayer Name</th>
+              <th className="text-left font-bold">TIN</th>
+              <th className="text-left font-bold">Barangay</th>
+              <th className="text-center font-bold">Aging</th>
+              <th className="text-right font-bold w-32">Amount Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            {delinquents.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-10 text-center italic">
+                  No records found for the current filter.
+                </td>
+              </tr>
+            ) : (
+              delinquents.map((row, i) => (
+                <tr key={row.id}>
+                  <td className="text-center font-serif">
+                    {pagination.pageIndex * pagination.pageSize + i + 1}
+                  </td>
+                  <td className="font-bold">{row.full_name}</td>
+                  <td className="font-mono text-[9pt]">{row.tin}</td>
+                  <td className="font-serif">{row.barangay_name}</td>
+                  <td className="text-center font-serif">{row.bucket}</td>
+                  <td className="text-right font-bold font-serif">
+                    {row.total_due}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {/* PRINT FOOTER / SIGNATORIES */}
+        <div className="mt-20 grid grid-cols-2 gap-12 font-serif text-[11pt]">
+          <div className="text-left">
+            <p className="mb-14">Prepared by:</p>
+            <div className="w-64 border-t border-black">
+              <p className="font-bold uppercase pt-1">RPTA Staff / Assessor</p>
+              <p className="text-[10pt] italic text-slate-600">
+                Administrative Assistant
+              </p>
+            </div>
+          </div>
+          <div className="text-left ml-auto">
+            <p className="mb-14">Noted by:</p>
+            <div className="w-64 border-t border-black">
+              <p className="font-bold uppercase pt-1">NAME OF TREASURER</p>
+              <p className="text-[10pt] italic text-slate-600">
+                Municipal Treasurer
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-16 text-center text-[8pt] text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-4">
+          LGU STA. RITA, SAMAR · RPT DELINQUENCIES SYSTEM REPORT · CONFIDENTIAL
+        </div>
+      </div>
+
       {/* Aging Buckets */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 text-center">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 text-center print:hidden">
         {bucketPanels.map((panel) => (
           <div
             key={panel.bucket}
@@ -235,7 +342,7 @@ export default function ViewDelinquenciesPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -258,7 +365,7 @@ export default function ViewDelinquenciesPage() {
       </div>
 
       {/* TanStack DataTable - Fully replaces old manual implementation */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden print:hidden">
         <DataTable
           columns={columns}
           data={delinquents}
