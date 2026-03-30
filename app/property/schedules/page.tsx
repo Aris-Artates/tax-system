@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -23,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { Combobox } from "@/components/ui/combobox";
+import { cn } from "@/lib/utils";
 
 type SmvEntry = {
   id?: string;
@@ -99,6 +99,8 @@ export default function AssessmentSchedulesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
 
   // Form states
   const [scheduleType, setScheduleType] = useState<string>("smv");
@@ -134,6 +136,67 @@ export default function AssessmentSchedulesPage() {
       );
     }
     return false;
+  };
+
+  const handleEdit = (type: string, item: any) => {
+    setIsEditing(true);
+    setEditId(item.id);
+    setScheduleType(type);
+
+    // Populate form with item data, formatting numeric values where needed
+    const initialFormData: any = { ...item };
+    const initialValidity: Record<string, boolean> = {};
+
+    if (type === "smv") {
+      initialFormData.unit_value = item.unit_value.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      initialFormData.effectivity_year = item.effectivity_year.toString();
+      initialValidity.use_type = true;
+      initialValidity.unit_value = true;
+      initialValidity.effectivity_year = true;
+    } else if (type === "level") {
+      initialFormData.assessment_level = item.assessment_level.toString();
+      initialValidity.classification = true;
+      initialValidity.actual_use = true;
+      initialValidity.mv_range = true;
+      initialValidity.assessment_level = true;
+    } else if (type === "depreciation") {
+      initialValidity.building_type = true;
+      initialValidity.rate = true;
+      initialValidity.max_depreciation = true;
+    }
+
+    setFormData(initialFormData);
+    setFormValidity(initialValidity);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!editId || !window.confirm("Are you sure you want to delete this entry?"))
+      return;
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch(
+        `/api/property/schedules?type=${scheduleType}&id=${editId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      const result = await res.json();
+      if (result.error) throw new Error(result.error);
+
+      toast.success("Schedule entry deleted successfully");
+      setIsDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to delete entry: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const fetchData = async () => {
@@ -174,17 +237,25 @@ export default function AssessmentSchedulesPage() {
       }
 
       const res = await fetch("/api/property/schedules", {
-        method: "POST",
+        method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: scheduleType, data: dataToSubmit }),
+        body: JSON.stringify({
+          type: scheduleType,
+          id: editId,
+          data: dataToSubmit,
+        }),
       });
 
       const result = await res.json();
       if (result.error) throw new Error(result.error);
 
-      toast.success("Schedule entry added successfully");
+      toast.success(
+        `Schedule entry ${isEditing ? "updated" : "added"} successfully`,
+      );
       setIsDialogOpen(false);
       setFormData({});
+      setIsEditing(false);
+      setEditId(null);
       fetchData();
     } catch (error: any) {
       toast.error("Failed to save entry: " + error.message);
@@ -219,9 +290,10 @@ export default function AssessmentSchedulesPage() {
           <DialogContent className="bg-white px-8 py-6 sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="font-lexend text-xl text-[#00154A]">
-                {scheduleType === "smv" && "Add Land Market Value"}
-                {scheduleType === "level" && "Add Assessment Level"}
-                {scheduleType === "depreciation" && "Add Depreciation Rule"}
+                {isEditing ? "Edit " : "Add "}
+                {scheduleType === "smv" && "Land Market Value"}
+                {scheduleType === "level" && "Assessment Level"}
+                {scheduleType === "depreciation" && "Depreciation Rule"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -266,7 +338,9 @@ export default function AssessmentSchedulesPage() {
                     options={LAND_CLASSIFICATIONS}
                     value={formData.classification || ""}
                     placeholder="Select classification..."
-                    onChange={(val) => updateField("classification", val, !!val)}
+                    onChange={(val) =>
+                      updateField("classification", val, !!val)
+                    }
                   />
                   <Combobox
                     label="Actual Use"
@@ -330,17 +404,33 @@ export default function AssessmentSchedulesPage() {
                 </>
               )}
 
-              <DialogFooter className="mt-8">
+              <DialogFooter className="mt-8 flex items-center gap-2">
+                {isEditing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                    className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-inter text-xs"
+                  >
+                    Delete Entry
+                  </Button>
+                )}
                 <Button
                   type="submit"
                   disabled={isSubmitting || !isFormValid()}
-                  className="w-full bg-[#0f1729] hover:bg-slate-800 text-white font-inter text-xs disabled:opacity-50"
+                  className={cn(
+                    "bg-[#0f1729] hover:bg-slate-800 text-white font-inter text-xs disabled:opacity-50",
+                    isEditing ? "flex-1" : "w-full",
+                  )}
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...
                     </>
+                  ) : isEditing ? (
+                    "Update Schedule Entry"
                   ) : (
                     "Save Schedule Entry"
                   )}
@@ -376,6 +466,8 @@ export default function AssessmentSchedulesPage() {
                     setScheduleType("smv");
                     setFormData({});
                     setFormValidity({});
+                    setIsEditing(false);
+                    setEditId(null);
                     setIsDialogOpen(true);
                   }}
                   className="font-inter inline-flex cursor-pointer items-center gap-1.5 rounded bg-[#0f1729] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800 transition-colors"
@@ -438,6 +530,7 @@ export default function AssessmentSchedulesPage() {
                             <button
                               type="button"
                               title="Edit"
+                              onClick={() => handleEdit("smv", row)}
                               className="text-slate-400 hover:text-amber-600 cursor-pointer transition-colors"
                             >
                               <Pencil size={13} />
@@ -466,6 +559,8 @@ export default function AssessmentSchedulesPage() {
                     setScheduleType("level");
                     setFormData({});
                     setFormValidity({});
+                    setIsEditing(false);
+                    setEditId(null);
                     setIsDialogOpen(true);
                   }}
                   className="font-inter inline-flex cursor-pointer items-center gap-1.5 rounded bg-[#0f1729] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800 transition-colors"
@@ -533,6 +628,7 @@ export default function AssessmentSchedulesPage() {
                             <button
                               type="button"
                               title="Edit"
+                              onClick={() => handleEdit("level", row)}
                               className="text-slate-400 hover:text-amber-600 cursor-pointer transition-colors"
                             >
                               <Pencil size={13} />
@@ -561,6 +657,8 @@ export default function AssessmentSchedulesPage() {
                     setScheduleType("depreciation");
                     setFormData({});
                     setFormValidity({});
+                    setIsEditing(false);
+                    setEditId(null);
                     setIsDialogOpen(true);
                   }}
                   className="font-inter inline-flex cursor-pointer items-center gap-1.5 rounded bg-[#0f1729] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800 transition-colors"
@@ -578,8 +676,16 @@ export default function AssessmentSchedulesPage() {
                   depData.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-md border border-gray-100 bg-gray-50 p-3"
+                      className="group relative rounded-md border border-gray-100 bg-gray-50 p-3"
                     >
+                      <button
+                        type="button"
+                        onClick={() => handleEdit("depreciation", item)}
+                        className="absolute right-2 top-2 p-1.5 text-slate-300 hover:text-amber-600 transition-colors cursor-pointer"
+                        title="Edit Rule"
+                      >
+                        <Pencil size={12} />
+                      </button>
                       <p className="font-inter text-xs font-semibold text-[#595a5d]">
                         {item.building_type}
                       </p>
