@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ValidatedInput } from "@/components/ui/ValidatedInput";
+import { Combobox } from "@/components/ui/combobox";
 
 type SmvEntry = {
   id?: string;
@@ -52,6 +54,43 @@ const classificationColors: Record<string, string> = {
   Special: "bg-orange-50 text-orange-700",
 };
 
+const LAND_CLASSIFICATIONS = [
+  { value: "Residential", label: "Residential" },
+  { value: "Commercial", label: "Commercial" },
+  { value: "Industrial", label: "Industrial" },
+  { value: "Agricultural", label: "Agricultural" },
+  { value: "Special", label: "Special" },
+  { value: "Timberland", label: "Timberland" },
+  { value: "Mineral", label: "Mineral" },
+];
+
+const COMMON_ACTUAL_USES = [
+  { value: "Residential", label: "Residential" },
+  { value: "Commercial", label: "Commercial" },
+  { value: "Industrial", label: "Industrial" },
+  { value: "Agricultural", label: "Agricultural" },
+  { value: "Corn Land", label: "Corn Land" },
+  { value: "Cocoland", label: "Cocoland" },
+  { value: "Riceland", label: "Riceland" },
+  { value: "Warehouse", label: "Warehouse" },
+  { value: "Gas Station", label: "Gas Station" },
+  { value: "Hospital", label: "Hospital" },
+  { value: "School", label: "School" },
+  { value: "Church / Religious", label: "Church / Religious" },
+];
+
+const BUILDING_TYPE_OPTIONS = [
+  { value: "One-Family Dwelling", label: "One-Family Dwelling" },
+  { value: "Two-Family Dwelling", label: "Two-Family Dwelling" },
+  { value: "Multi-Family Dwelling", label: "Multi-Family Dwelling" },
+  { value: "Commercial Building", label: "Commercial Building" },
+  { value: "Industrial Building", label: "Industrial Building" },
+  { value: "Warehouse", label: "Warehouse" },
+  { value: "Hospital", label: "Hospital" },
+  { value: "School", label: "School" },
+  { value: "Special Purpose", label: "Special Purpose" },
+];
+
 export default function AssessmentSchedulesPage() {
   const router = useRouter();
   const [smvData, setSmvData] = useState<SmvEntry[]>([]);
@@ -64,6 +103,38 @@ export default function AssessmentSchedulesPage() {
   // Form states
   const [scheduleType, setScheduleType] = useState<string>("smv");
   const [formData, setFormData] = useState<any>({});
+  const [formValidity, setFormValidity] = useState<Record<string, boolean>>({});
+
+  const updateField = (name: string, value: string, isValid: boolean) => {
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormValidity((prev) => ({ ...prev, [name]: isValid }));
+  };
+
+  const isFormValid = () => {
+    if (scheduleType === "smv") {
+      return (
+        formValidity.use_type &&
+        formValidity.unit_value &&
+        formValidity.effectivity_year
+      );
+    }
+    if (scheduleType === "level") {
+      return (
+        formValidity.classification &&
+        formValidity.actual_use &&
+        formValidity.mv_range &&
+        formValidity.assessment_level
+      );
+    }
+    if (scheduleType === "depreciation") {
+      return (
+        formValidity.building_type &&
+        formValidity.rate &&
+        formValidity.max_depreciation
+      );
+    }
+    return false;
+  };
 
   const fetchData = async () => {
     try {
@@ -90,10 +161,22 @@ export default function AssessmentSchedulesPage() {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+
+      // Prepare data for API (parse numbers)
+      const dataToSubmit = { ...formData };
+      if (scheduleType === "smv") {
+        dataToSubmit.unit_value = parseFloat(
+          formData.unit_value.replace(/,/g, ""),
+        );
+        dataToSubmit.effectivity_year = parseInt(formData.effectivity_year, 10);
+      } else if (scheduleType === "level") {
+        dataToSubmit.assessment_level = parseInt(formData.assessment_level, 10);
+      }
+
       const res = await fetch("/api/property/schedules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: scheduleType, data: formData }),
+        body: JSON.stringify({ type: scheduleType, data: dataToSubmit }),
       });
 
       const result = await res.json();
@@ -133,219 +216,125 @@ export default function AssessmentSchedulesPage() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Add Schedule Entry
-            </button>
-          </DialogTrigger>
           <DialogContent className="bg-white px-8 py-6 sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="font-lexend text-xl text-[#00154A]">
-                Add Schedule Entry
+                {scheduleType === "smv" && "Add Land Market Value"}
+                {scheduleType === "level" && "Add Assessment Level"}
+                {scheduleType === "depreciation" && "Add Depreciation Rule"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label className="font-inter text-xs font-medium text-slate-600">
-                  Schedule Type
-                </label>
-                <Select
-                  value={scheduleType}
-                  onOpenChange={() => {}}
-                  onValueChange={(v) => {
-                    setScheduleType(v);
-                    setFormData({});
-                  }}
-                >
-                  <SelectTrigger className="w-full font-inter text-sm border-gray-200">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200">
-                    <SelectItem value="smv">SMV Land Schedule</SelectItem>
-                    <SelectItem value="level">Assessment Level</SelectItem>
-                    <SelectItem value="depreciation">
-                      Building Depreciation
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {scheduleType === "smv" && (
                 <>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Classification / Actual Use
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. Residential"
-                      onChange={(e) =>
-                        setFormData({ ...formData, use_type: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Base Unit Market Value (₱/sqm)
-                    </label>
-                    <Input
-                      required
-                      type="number"
-                      step="0.01"
-                      className="border-gray-200"
-                      placeholder="0.00"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          unit_value: parseFloat(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Effectivity Year
-                    </label>
-                    <Input
-                      required
-                      type="number"
-                      className="border-gray-200"
-                      placeholder="2024"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          effectivity_year: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
+                  <Combobox
+                    label="Classification / Actual Use"
+                    required
+                    options={COMMON_ACTUAL_USES}
+                    value={formData.use_type || ""}
+                    placeholder="Select or search use..."
+                    onChange={(val) => updateField("use_type", val, !!val)}
+                  />
+                  <ValidatedInput
+                    label="Base Unit Market Value (₱/sqm)"
+                    required
+                    validator="decimal-numeric"
+                    value={formData.unit_value || ""}
+                    placeholder="0.00"
+                    onChange={(val, valid) =>
+                      updateField("unit_value", val, valid)
+                    }
+                  />
+                  <ValidatedInput
+                    label="Effectivity Year"
+                    required
+                    validator="year"
+                    value={formData.effectivity_year || ""}
+                    placeholder="2024"
+                    onChange={(val, valid) =>
+                      updateField("effectivity_year", val, valid)
+                    }
+                  />
                 </>
               )}
 
               {scheduleType === "level" && (
                 <>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Classification
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. Residential"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          classification: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Actual Use
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. Agricultural"
-                      onChange={(e) =>
-                        setFormData({ ...formData, actual_use: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Market Value Range
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. Below ₱500,000"
-                      onChange={(e) =>
-                        setFormData({ ...formData, mv_range: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Assessment Level (%)
-                    </label>
-                    <Input
-                      required
-                      type="number"
-                      className="border-gray-200"
-                      placeholder="20"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          assessment_level: parseInt(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
+                  <Combobox
+                    label="Classification"
+                    required
+                    options={LAND_CLASSIFICATIONS}
+                    value={formData.classification || ""}
+                    placeholder="Select classification..."
+                    onChange={(val) => updateField("classification", val, !!val)}
+                  />
+                  <Combobox
+                    label="Actual Use"
+                    required
+                    options={COMMON_ACTUAL_USES}
+                    value={formData.actual_use || ""}
+                    placeholder="Select actual use..."
+                    onChange={(val) => updateField("actual_use", val, !!val)}
+                  />
+                  <ValidatedInput
+                    label="Market Value Range"
+                    required
+                    validator="text"
+                    value={formData.mv_range || ""}
+                    placeholder="e.g. Below ₱500,000"
+                    onChange={(val, valid) =>
+                      updateField("mv_range", val, valid)
+                    }
+                  />
+                  <ValidatedInput
+                    label="Assessment Level (%)"
+                    required
+                    validator="percentage"
+                    value={formData.assessment_level || ""}
+                    placeholder="20"
+                    onChange={(val, valid) =>
+                      updateField("assessment_level", val, valid)
+                    }
+                  />
                 </>
               )}
 
               {scheduleType === "depreciation" && (
                 <>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Building Type
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. Concrete"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          building_type: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Depreciation Rate
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. 2% per year"
-                      onChange={(e) =>
-                        setFormData({ ...formData, rate: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">
-                      Max Depreciation
-                    </label>
-                    <Input
-                      required
-                      className="border-gray-200"
-                      placeholder="e.g. 50%"
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          max_depreciation: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                  <Combobox
+                    label="Building Type"
+                    required
+                    options={BUILDING_TYPE_OPTIONS}
+                    value={formData.building_type || ""}
+                    placeholder="Select building type..."
+                    onChange={(val) => updateField("building_type", val, !!val)}
+                  />
+                  <ValidatedInput
+                    label="Depreciation Rate"
+                    required
+                    validator="text"
+                    value={formData.rate || ""}
+                    placeholder="e.g. 2% per year"
+                    onChange={(val, valid) => updateField("rate", val, valid)}
+                  />
+                  <ValidatedInput
+                    label="Max Depreciation"
+                    required
+                    validator="text"
+                    value={formData.max_depreciation || ""}
+                    placeholder="e.g. 50%"
+                    onChange={(val, valid) =>
+                      updateField("max_depreciation", val, valid)
+                    }
+                  />
                 </>
               )}
 
               <DialogFooter className="mt-8">
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-[#0f1729] hover:bg-slate-800 text-white font-inter text-xs"
+                  disabled={isSubmitting || !isFormValid()}
+                  className="w-full bg-[#0f1729] hover:bg-slate-800 text-white font-inter text-xs disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -361,23 +350,6 @@ export default function AssessmentSchedulesPage() {
           </DialogContent>
         </Dialog>
       </header>
-
-      {/* Ordinance Info Banner */}
-      <div className="mb-6 rounded-sm border border-blue-200 bg-blue-50 p-4">
-        <div className="flex items-start gap-3">
-          <ListChecks className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-inter text-sm font-semibold text-blue-800">
-              Municipal Ordinance No. 2023-14
-            </p>
-            <p className="font-inter mt-1 text-xs text-blue-600">
-              An Ordinance Providing the Schedule of Market Values for Real
-              Properties and Prescribing the Assessment Levels in the
-              Municipality of Sta. Rita, Samar. Effectivity: January 1, 2024.
-            </p>
-          </div>
-        </div>
-      </div>
 
       <div className="space-y-6">
         {isLoading ? (
@@ -398,6 +370,19 @@ export default function AssessmentSchedulesPage() {
                     Schedule of Market Values (SMV) – Land
                   </h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScheduleType("smv");
+                    setFormData({});
+                    setFormValidity({});
+                    setIsDialogOpen(true);
+                  }}
+                  className="font-inter inline-flex cursor-pointer items-center gap-1.5 rounded bg-[#0f1729] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Land MV
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full font-inter text-xs">
@@ -475,6 +460,19 @@ export default function AssessmentSchedulesPage() {
                     Assessment Level Schedule
                   </h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScheduleType("level");
+                    setFormData({});
+                    setFormValidity({});
+                    setIsDialogOpen(true);
+                  }}
+                  className="font-inter inline-flex cursor-pointer items-center gap-1.5 rounded bg-[#0f1729] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Level
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full font-inter text-xs">
@@ -550,11 +548,26 @@ export default function AssessmentSchedulesPage() {
 
             {/* Depreciation Schedule Note */}
             <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <ListChecks className="h-4 w-4 text-[#00154A]" />
-                <h2 className="font-inter text-xs font-semibold uppercase tracking-wide text-[#848794]">
-                  Building Depreciation Schedule (Reference)
-                </h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="h-4 w-4 text-[#00154A]" />
+                  <h2 className="font-inter text-xs font-semibold uppercase tracking-wide text-[#848794]">
+                    Building Depreciation Schedule (Reference)
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScheduleType("depreciation");
+                    setFormData({});
+                    setFormValidity({});
+                    setIsDialogOpen(true);
+                  }}
+                  className="font-inter inline-flex cursor-pointer items-center gap-1.5 rounded bg-[#0f1729] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-800 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Rule
+                </button>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {depData.length === 0 ? (

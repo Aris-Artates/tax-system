@@ -27,7 +27,9 @@ export type ValidatorKey =
   | 'pin'
   | 'arp-number'
   | 'lot-number'
-  | 'decimal-numeric';
+  | 'decimal-numeric'
+  | 'year'
+  | 'percentage';
 
 export interface Validator {
   /** Returns true when the fully-formatted value is complete and valid. */
@@ -140,5 +142,18 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
       return Number.isFinite(num) && num > 0;
     },
     errorMessage: 'Must be a valid decimal number > 0',
+  },
+
+  'year': {
+    validate: (v) => /^\d{4}$/.test(v),
+    errorMessage: 'Year must be a 4-digit number (e.g. 2024)',
+  },
+
+  'percentage': {
+    validate: (v) => {
+      const num = parseInt(v, 10);
+      return !isNaN(num) && num >= 0 && num <= 100;
+    },
+    errorMessage: 'Percentage must be between 0 and 100',
   },
 };

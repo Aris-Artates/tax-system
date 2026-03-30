@@ -27,7 +27,9 @@ export type MaskKey =
   | 'pin'
   | 'arp-number'
   | 'lot-number'
-  | 'decimal-numeric';
+  | 'decimal-numeric'
+  | 'year'
+  | 'percentage';
 
 
 export type MaskFn = (raw: string) => string;
@@ -248,6 +250,16 @@ export function maskDecimalNumeric(raw: string, options: {maxInt: number, maxDec
   return `${groupedInt}.${decPart}`;
 }
 
+export function maskYear(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, 4);
+}
+
+export function maskPercentage(raw: string): string {
+  let d = raw.replace(/\D/g, '').slice(0, 3);
+  if (parseInt(d, 10) > 100) d = '100';
+  return d;
+}
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const MASKS: Record<MaskKey, MaskFn> = {
@@ -269,5 +281,7 @@ export const MASKS: Record<MaskKey, MaskFn> = {
   // decimal-numeric takes options param, but MaskFn is (raw: string) => string
   // Use wrapper for compatibility
   'decimal-numeric': ((raw) => maskDecimalNumeric(raw, {maxInt: 12, maxDec: 2, allowDec: true})) as MaskFn,
+  'year': maskYear,
+  'percentage': maskPercentage,
 };
 
