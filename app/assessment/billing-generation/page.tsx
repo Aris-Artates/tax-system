@@ -293,6 +293,10 @@ export default function BillingGenerationPage() {
     formData.billing_year.length === 4 &&
     totalDue >= 0;
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="w-full">
       <Link
@@ -315,7 +319,9 @@ export default function BillingGenerationPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="cursor-pointer font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-gray-50"
+            onClick={handlePrint}
+            disabled={!isFormValid}
+            className="cursor-pointer font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-gray-50 disabled:opacity-50"
           >
             <Printer className="h-4 w-4" />
             Print Preview
@@ -643,6 +649,14 @@ export default function BillingGenerationPage() {
           </section>
         </div>
       </div>
+
+      {/* PRINT VIEW TEMPLATE - HIDDEN ON SCREEN */}
+      <BillingStatement
+        formData={formData}
+        dueDate={dueDate}
+        subtotal={subtotal}
+        totalDue={totalDue}
+      />
     </div>
   );
 }
@@ -769,5 +783,237 @@ function SummaryRow({
         {value}
       </span>
     </div>
+  );
+}
+
+function BillingStatement({
+  formData,
+  dueDate,
+  subtotal,
+  totalDue,
+}: {
+  formData: BillingFormData;
+  dueDate?: Date;
+  subtotal: number;
+  totalDue: number;
+}) {
+  const dateStr = format(new Date(), "MMMM dd, yyyy");
+  const dueStr = dueDate ? format(dueDate, "MMMM dd, yyyy") : "N/A";
+
+  const PRINT_CSS = `
+    @media print {
+      @page { size: A4 portrait; margin: 15mm; }
+      body { visibility: hidden !important; background: white !important; }
+      #billing-statement-print,
+      #billing-statement-print * { visibility: visible !important; }
+      #billing-statement-print {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+      }
+      .no-print { display: none !important; }
+    }
+  `;
+
+  return (
+    <>
+      <style>{PRINT_CSS}</style>
+      <div
+        id="billing-statement-print"
+        className="hidden print:block w-full max-w-[210mm] mx-auto p-8 text-black font-serif"
+      >
+        {/* OFFICIAL HEADER */}
+        <div className="text-center mb-10 border-b-2 border-slate-200 pb-6">
+          <p className="text-[10pt] font-bold uppercase tracking-widest text-slate-500">
+            Republic of the Philippines
+          </p>
+          <p className="text-[11pt] font-semibold text-slate-800">
+            Province of Samar
+          </p>
+          <p className="text-[11pt] font-semibold text-slate-800 uppercase">
+            Municipality of Sta. Rita
+          </p>
+          <div className="mt-4 inline-block border-y-2 border-slate-900 py-1 px-6">
+            <p className="text-[12pt] font-black uppercase tracking-widest text-slate-900">
+              Office of the Municipal Treasurer
+            </p>
+          </div>
+          <h2 className="mt-8 text-[18pt] font-black uppercase underline decoration-2 underline-offset-4">
+            Statement of Real Property Tax
+          </h2>
+          <p className="mt-2 text-[10pt] italic text-slate-500">
+            Reference No: {formData.reference_no}
+          </p>
+        </div>
+
+        {/* BILLING INFO SECTION */}
+        <div className="grid grid-cols-2 gap-12 mb-10 text-[11pt]">
+          <div className="space-y-4">
+            <div>
+              <p className="text-[9pt] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Taxpayer Details
+              </p>
+              <p className="font-bold text-[13pt] uppercase">
+                {formData.taxpayer_name || "____________________"}
+              </p>
+              <p className="text-slate-600">
+                Taxpayer ID: {formData.taxpayer_id || "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9pt] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Billing Period
+              </p>
+              <p className="font-bold text-slate-800">
+                {formData.quarter} Quarter, {formData.billing_year}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <p className="text-[9pt] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Property Identifiers
+              </p>
+              <p className="font-bold text-slate-800">
+                PIN: {formData.pin || "____________________"}
+              </p>
+              <p className="text-slate-600">
+                TD No: {formData.td_no || "____________________"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9pt] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Due Date
+              </p>
+              <p className="font-bold text-rose-700">{dueStr}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* FINANCIAL TABLE */}
+        <div className="mb-10">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-y-2 border-slate-300">
+                <th className="py-3 text-left font-bold uppercase tracking-wider text-[10pt]">
+                  Description
+                </th>
+                <th className="py-3 text-right font-bold uppercase tracking-wider text-[10pt]">
+                  Amount (PHP)
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className="py-3 font-medium">Basic Real Property Tax</td>
+                <td className="py-3 text-right">
+                  {formData.basic_tax || "0.00"}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-3 font-medium">
+                  Special Education Fund (SEF)
+                </td>
+                <td className="py-3 text-right">{formData.sef_tax || "0.00"}</td>
+              </tr>
+              <tr className="bg-slate-50/50">
+                <td className="py-3 font-bold text-slate-700 italic">
+                  Subtotal
+                </td>
+                <td className="py-3 text-right font-bold text-slate-700">
+                  {subtotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-3 text-slate-600">Adjustment: Discount</td>
+                <td className="py-3 text-right text-emerald-700">
+                  -{formData.discount || "0.00"}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-3 text-slate-600">
+                  Adjustment: Penalty/Interest
+                </td>
+                <td className="py-3 text-right text-rose-700">
+                  {formData.penalty || "0.00"}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-900">
+                <td className="py-4 text-[12pt] font-black uppercase tracking-widest">
+                  Total Amount Due
+                </td>
+                <td className="py-4 text-right text-[16pt] font-black">
+                  PHP{" "}
+                  {totalDue.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {/* NOTICE */}
+        <div className="mb-12 p-4 bg-slate-50 border border-slate-200 rounded text-[10pt] text-slate-700 italic leading-snug">
+          <p className="font-bold not-italic mb-2 text-xs uppercase tracking-wider text-slate-500 underline underline-offset-2">
+            Important Notice:
+          </p>
+          <p>
+            Please present this statement at the Municipal Treasurer's Office
+            upon payment. All taxes must be paid on or before the due date
+            indicated above to avoid further penalties. This statement is valid
+            only for the specified tax year ({formData.billing_year}).
+          </p>
+        </div>
+
+        {/* SIGNATORIES */}
+        <div className="mt-20 grid grid-cols-2 gap-12 font-serif text-[11pt]">
+          <div className="text-left w-64">
+            <p className="mb-14 text-slate-500 text-[10pt]">Prepared by:</p>
+            <div className="border-t border-slate-400 pt-1">
+              <p className="font-bold uppercase tracking-tight">
+                RPTA Billing Unit
+              </p>
+              <p className="text-[9pt] italic text-slate-500">
+                Account Specialist
+              </p>
+            </div>
+          </div>
+          <div className="text-left ml-auto w-64">
+            <p className="mb-14 text-slate-500 text-[10pt]">Noted by:</p>
+            <div className="border-t border-slate-400 pt-1">
+              <p className="font-bold uppercase tracking-tight">
+                NAME OF TREASURER
+              </p>
+              <p className="text-[9pt] italic text-slate-500">
+                Municipal Treasurer
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* SECURITY FOOTER */}
+        <div className="mt-auto pt-16 border-t border-slate-100 flex justify-between items-end text-[8pt] text-slate-400 uppercase tracking-widest">
+          <div className="space-y-1">
+            <p>System Generated: {dateStr}</p>
+            <p>
+              Verification Code:{" "}
+              {formData.reference_no?.split("-").pop() || "000000"}
+            </p>
+          </div>
+          <div className="text-right">
+            <p>LGU STA. RITA, SAMAR · RPTA SYSTEM</p>
+            <p className="font-bold text-slate-300">Confidential Statement</p>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
