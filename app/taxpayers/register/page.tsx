@@ -5,7 +5,21 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { ArrowLeft, Save, UserRound, MapPin, Phone, Mail } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  UserRound,
+  MapPin,
+  Phone,
+  Mail,
+  FileText,
+} from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const OWNER_TYPE_OPTIONS = ["Individual", "Corporation", "Government"] as const;
 const SUFFIX_OPTIONS = ["", "Jr.", "Sr.", "II", "III", "IV", "V"] as const;
@@ -232,7 +246,7 @@ export default function RegisterTaxpayerPage() {
                 value={form.last_name}
                 onChange={(v) => updateField("last_name", v)}
               />
-              
+
               <div>
                 <label className="font-inter text-xs font-medium text-slate-600">
                   Suffix
@@ -357,34 +371,53 @@ export default function RegisterTaxpayerPage() {
             </div>
           </div>
 
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="font-inter text-sm font-semibold text-[#848794]">
-              Summary
-            </h2>
-            <p className="font-inter mt-1 text-xs text-slate-400">
-              Required: First/Last Name, Owner Type, Barangay, Address Details
-            </p>
-            <div className="mt-4 space-y-3 text-sm">
-              <SummaryRow label="Full Name" value={previewName} />
-              <SummaryRow label="TIN" value={form.tin.trim() || "—"} />
-              <SummaryRow
-                label="Type"
-                value={form.owner_type || "(Required)"}
-              />
-              <SummaryRow
-                label="Barangay"
-                value={selectedBarangayName || "(Required)"}
-              />
-              <SummaryRow
-                label="Address"
-                value={composedAddress || "(Required)"}
-              />
-            </div>
-            {missingRequired && (
-              <p className="mt-4 font-inter text-xs text-rose-600">
-                Complete all required fields before saving.
-              </p>
-            )}
+          <section className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <Accordion
+              type="single"
+              collapsible
+              className="w-full"
+            >
+              <AccordionItem value="summary" className="border-none">
+                <AccordionTrigger className="cursor-pointer px-6 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className="rounded-md bg-slate-100 p-1.5">
+                      <FileText className="h-4 w-4 text-[#00154A]" />
+                    </div>
+                    <div>
+                      <h2 className="font-inter text-xs font-semibold text-[#595a5d]">
+                        Registration Summary
+                      </h2>
+                      <p className="font-inter text-[10px] text-slate-400">
+                        Review details before saving
+                      </p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6 pt-0">
+                  <div className="space-y-3 text-sm border-t border-slate-50 pt-4">
+                    <SummaryRow label="Full Name" value={previewName} />
+                    <SummaryRow label="TIN" value={form.tin.trim() || "—"} />
+                    <SummaryRow
+                      label="Type"
+                      value={form.owner_type || "(Required)"}
+                    />
+                    <SummaryRow
+                      label="Barangay"
+                      value={selectedBarangayName || "(Required)"}
+                    />
+                    <SummaryRow
+                      label="Address"
+                      value={composedAddress || "(Required)"}
+                    />
+                  </div>
+                  {missingRequired && (
+                    <p className="mt-4 font-inter text-[10px] uppercase font-bold tracking-wider text-rose-600">
+                      ⚠ Complete all required fields before saving.
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </section>
         </div>
       </div>
