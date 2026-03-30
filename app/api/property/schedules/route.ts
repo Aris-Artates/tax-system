@@ -49,3 +49,67 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { type, id, data } = body;
+
+    let tableName = '';
+    if (type === 'smv') tableName = 'smv_schedules';
+    else if (type === 'level') tableName = 'assessment_level_schedules';
+    else if (type === 'depreciation') tableName = 'depreciation_schedules';
+    else throw new Error('Invalid schedule type');
+
+    if (!id) throw new Error('ID is required for update');
+
+    // Remove ID from data to avoid primary key update errors
+    const { id: _, ...updateData } = data;
+
+    const { error } = await supabaseAdmin
+      .from(tableName)
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      console.error(`Schedules PUT error (${tableName}):`, error);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Schedules PUT Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+    const id = searchParams.get('id');
+
+    let tableName = '';
+    if (type === 'smv') tableName = 'smv_schedules';
+    else if (type === 'level') tableName = 'assessment_level_schedules';
+    else if (type === 'depreciation') tableName = 'depreciation_schedules';
+    else throw new Error('Invalid schedule type');
+
+    if (!id) throw new Error('ID is required for deletion');
+
+    const { error } = await supabaseAdmin
+      .from(tableName)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error(`Schedules DELETE error (${tableName}):`, error);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Schedules DELETE Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
