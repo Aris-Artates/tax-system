@@ -16,6 +16,12 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function SecuritySettingsPage() {
   const router = useRouter();
@@ -297,70 +303,95 @@ export default function SecuritySettingsPage() {
 
         {/* Right: Summary / Status */}
         <div className="space-y-6">
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-md bg-slate-100 p-2">
-                <Shield className="h-5 w-5 text-[#00154A]" />
-              </div>
-              <div>
-                <h2 className="font-lexend text-sm font-semibold text-[#848794]">
-                  Security Overview
-                </h2>
-                <p className="font-inter text-xs text-slate-400">
-                  Quick summary of policy configuration.
-                </p>
-              </div>
-            </div>
+          <section className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <Accordion type="multiple" className="w-full">
+              {/* Security Overview */}
+              <AccordionItem value="overview" className="border-b border-gray-100 last:border-0 text-[#00154A]">
+                <AccordionTrigger className="cursor-pointer px-6 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className="rounded-md bg-slate-100 p-1.5">
+                      <Shield className="h-4 w-4 text-[#00154A]" />
+                    </div>
+                    <div>
+                      <h2 className="font-lexend text-xs font-semibold text-[#595a5d]">
+                        Security Overview
+                      </h2>
+                      <p className="font-inter text-[10px] text-slate-400">
+                        Quick policy summary
+                      </p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6 pt-0">
+                  <div className="space-y-3 pt-4 border-t border-slate-50">
+                    <SummaryRow label="Password Policy" value="Configured" ok />
+                    <SummaryRow label="Session Timeout" value="Configured" ok />
+                    <SummaryRow label="MFA" value="Optional" />
+                    <SummaryRow label="Account Lockout" value="Enabled" ok />
+                  </div>
 
-            <div className="space-y-3">
-              <SummaryRow label="Password Policy" value="Configured" ok />
-              <SummaryRow label="Session Timeout" value="Configured" ok />
-              <SummaryRow label="MFA" value="Optional" />
-              <SummaryRow label="Account Lockout" value="Enabled" ok />
-            </div>
+                  <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-3">
+                    <div className="font-inter text-[11px] font-bold uppercase tracking-wider text-slate-900">
+                      Recommended Baseline
+                    </div>
+                    <ul className="font-inter mt-2 space-y-2 text-xs text-slate-600">
+                      <li className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                        Minimum length 12, special characters required
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                        Idle timeout 15 mins, session max 8 hrs
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                        MFA enforced for Admin role
+                      </li>
+                    </ul>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-3">
-              <div className="font-inter text-xs font-medium text-slate-900">
-                Recommended Baseline
-              </div>
-              <ul className="font-inter mt-2 space-y-2 text-xs text-slate-600">
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                  Minimum length 12, special characters required
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                  Idle timeout 15 mins, session max 8 hrs
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                  MFA enforced for Admin role
-                </li>
-              </ul>
-            </div>
-          </section>
+              {/* Notes */}
+              <AccordionItem value="notes" className="border-none text-[#00154A]">
+                <AccordionTrigger className="cursor-pointer px-6 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className="rounded-md bg-slate-100 p-1.5">
+                      <AlertTriangle className="h-4 w-4 text-[#00154A]" />
+                    </div>
+                    <div>
+                      <h2 className="font-lexend text-xs font-semibold text-[#595a5d]">
+                        Implementation Notes
+                      </h2>
+                      <p className="font-inter text-[10px] text-slate-400">
+                        Technical reminders
+                      </p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6 pt-0">
+                  <div className="pt-4 border-t border-slate-50">
+                    <p className="font-inter text-xs text-slate-500 leading-relaxed">
+                      This page is design-only. When you add auth, apply policies on the
+                      server (middleware + session validation) for real security.
+                    </p>
 
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="font-lexend text-sm font-semibold text-[#848794]">
-              Notes
-            </h2>
-            <p className="font-inter mt-2 text-xs text-slate-400">
-              This page is design-only. When you add auth, apply policies on the
-              server (middleware + session validation) for real security.
-            </p>
-
-            <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-100 bg-amber-50 p-3">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-              <div>
-                <div className="font-inter text-xs font-medium text-amber-800">
-                  Important
-                </div>
-                <div className="font-inter text-xs text-amber-700">
-                  Client-side UI does not prevent access. Enforce access rules
-                  on the server.
-                </div>
-              </div>
-            </div>
+                    <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-100 bg-amber-50 p-3">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="font-inter text-xs font-medium text-amber-800">
+                          Important
+                        </div>
+                        <div className="font-inter text-xs text-amber-700">
+                          Client-side UI does not prevent access. Enforce access rules
+                          on the server.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </section>
         </div>
       </div>

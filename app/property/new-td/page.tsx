@@ -1071,7 +1071,7 @@ export default function NewTaxDeclarationPage() {
             {/* Header Section */}
             <div className="mb-6">
               <h2 className="font-inter text-sm font-semibold text-[#848794]">
-                Details & ReferenceD
+                Details & Reference
               </h2>
               <p className="font-inter mt-1 text-xs text-slate-400">
                 Declaration summary, assessment levels, and required documents.

@@ -19,6 +19,12 @@ import {
   User,
   Wallet,
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 export default function BillingGenerationPage() {
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date('2026-03-31'));
@@ -101,53 +107,98 @@ export default function BillingGenerationPage() {
         </div>
 
         <div className='space-y-6'>
-          <Section icon={<FileText className='h-5 w-5 text-[#00154A]' />} title='Billing Summary'>
-            <p className='font-inter mt-1 text-xs text-slate-400'>Review before generating statement.</p>
-            <div className='mt-4 space-y-3'>
-              <SummaryRow label='Taxpayer' value='Juan Dela Cruz' />
-              <SummaryRow label='Property Class' value='Commercial' />
-              <SummaryRow label='Tax Year' value='2026' />
-              <SummaryRow label='Quarter' value='1st' />
-              <SummaryRow label='Reference No.' value='BILL-2026-000124' />
-              <SummaryRow label='Status' value='Draft' />
-            </div>
-          </Section>
+          <section className='rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm text-[#00154A]'>
+            <Accordion type='multiple' className='w-full'>
+              {/* Billing Summary */}
+              <AccordionItem value='summary' className='border-b border-gray-100'>
+                <AccordionTrigger className='cursor-pointer px-6 py-3 hover:no-underline'>
+                  <div className='flex items-center gap-2.5 text-left'>
+                    <div className='rounded-md bg-slate-100 p-1.5'>
+                      <FileText className='h-4 w-4 text-[#00154A]' />
+                    </div>
+                    <div>
+                      <h2 className='font-inter text-xs font-semibold text-[#595a5d]'>Billing Summary</h2>
+                      <p className='font-inter text-[10px] text-slate-400'>Review statement details</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className='px-6 pb-6 pt-0'>
+                  <div className='space-y-3 pt-4 border-t border-slate-50'>
+                    <SummaryRow label='Taxpayer' value='Juan Dela Cruz' />
+                    <SummaryRow label='Property Class' value='Commercial' />
+                    <SummaryRow label='Tax Year' value='2026' />
+                    <SummaryRow label='Quarter' value='1st' />
+                    <SummaryRow label='Reference No.' value='BILL-2026-000124' />
+                    <SummaryRow label='Status' value='Draft' />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-          <Section icon={<ShieldCheck className='h-5 w-5 text-[#00154A]' />} title='Generation Actions'>
-            <div className='space-y-2'>
-              <button
-                type='button'
-                className='cursor-pointer font-inter inline-flex h-10 w-full items-center justify-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800'
-              >
-                <FileText className='h-4 w-4' />
-                Generate Statement
-              </button>
-              <button
-                type='button'
-                className='cursor-pointer font-inter inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-gray-50'
-              >
-                <Send className='h-4 w-4' />
-                Send to Taxpayer
-              </button>
-            </div>
-          </Section>
+              {/* Generation Actions */}
+              <AccordionItem value='actions' className='border-b border-gray-100'>
+                <AccordionTrigger className='cursor-pointer px-6 py-3 hover:no-underline'>
+                  <div className='flex items-center gap-2.5 text-left'>
+                    <div className='rounded-md bg-slate-100 p-1.5'>
+                      <ShieldCheck className='h-4 w-4 text-[#00154A]' />
+                    </div>
+                    <div>
+                      <h2 className='font-inter text-xs font-semibold text-[#595a5d]'>Generation Actions</h2>
+                      <p className='font-inter text-[10px] text-slate-400'>Output and delivery</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className='px-6 pb-6 pt-0'>
+                  <div className='space-y-2 pt-4 border-t border-slate-50'>
+                    <button
+                      type='button'
+                      className='cursor-pointer font-inter inline-flex h-10 w-full items-center justify-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800'
+                    >
+                      <FileText className='h-4 w-4' />
+                      Generate Statement
+                    </button>
+                    <button
+                      type='button'
+                      className='cursor-pointer font-inter inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-gray-50'
+                    >
+                      <Send className='h-4 w-4' />
+                      Send to Taxpayer
+                    </button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-          <Section icon={<User className='h-5 w-5 text-[#00154A]' />} title='Required Checks'>
-            <ul className='space-y-2 font-inter text-xs text-slate-500'>
-              <li className='flex items-start gap-2'>
-                <span className='mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400' />
-                Assessment values are finalized
-              </li>
-              <li className='flex items-start gap-2'>
-                <span className='mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400' />
-                Due date follows approved schedule
-              </li>
-              <li className='flex items-start gap-2'>
-                <span className='mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400' />
-                Billing notice ready for release
-              </li>
-            </ul>
-          </Section>
+              {/* Required Checks */}
+              <AccordionItem value='checks' className='border-none'>
+                <AccordionTrigger className='cursor-pointer px-6 py-3 hover:no-underline'>
+                  <div className='flex items-center gap-2.5 text-left'>
+                    <div className='rounded-md bg-slate-100 p-1.5'>
+                      <User className='h-4 w-4 text-[#00154A]' />
+                    </div>
+                    <div>
+                      <h2 className='font-inter text-xs font-semibold text-[#595a5d]'>Required Checks</h2>
+                      <p className='font-inter text-[10px] text-slate-400'>Pre-release verification</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className='px-6 pb-6 pt-0'>
+                  <ul className='space-y-2 font-inter text-xs text-slate-500 pt-4 border-t border-slate-50'>
+                    <li className='flex items-start gap-2'>
+                      <span className='mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400' />
+                      Assessment values are finalized
+                    </li>
+                    <li className='flex items-start gap-2'>
+                      <span className='mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400' />
+                      Due date follows approved schedule
+                    </li>
+                    <li className='flex items-start gap-2'>
+                      <span className='mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400' />
+                      Billing notice ready for release
+                    </li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </section>
         </div>
       </div>
     </div>
