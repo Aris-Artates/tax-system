@@ -102,6 +102,12 @@ export default function AssessmentSchedulesPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
+  // Pagination states
+  const ITEMS_PER_PAGE = 8;
+  const [smvPage, setSmvPage] = useState(1);
+  const [levelPage, setLevelPage] = useState(1);
+  const [depPage, setDepPage] = useState(1);
+
   // Form states
   const [scheduleType, setScheduleType] = useState<string>("smv");
   const [formData, setFormData] = useState<any>({});
@@ -136,6 +142,56 @@ export default function AssessmentSchedulesPage() {
       );
     }
     return false;
+  };
+
+  /**
+   * Reusable Pagination Component
+   */
+  const PaginationControls = ({
+    currentPage,
+    totalItems,
+    onPageChange,
+  }: {
+    currentPage: number;
+    totalItems: number;
+    onPageChange: (page: number) => void;
+  }) => {
+    const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+
+    const start = totalItems === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const end = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+
+    return (
+      <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-3">
+        <p className="font-inter text-[10px] text-slate-400">
+          Showing <span className="font-medium text-slate-600">{start}</span> to{" "}
+          <span className="font-medium text-slate-600">{end}</span> of{" "}
+          <span className="font-medium text-slate-600">{totalItems}</span>{" "}
+          entries
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+            className="flex h-7 items-center justify-center rounded border border-gray-200 bg-white px-2 font-inter text-[10px] font-medium text-slate-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <span className="font-inter text-[10px] text-slate-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+            className="flex h-7 items-center justify-center rounded border border-gray-200 bg-white px-2 font-inter text-[10px] font-medium text-slate-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const handleEdit = (type: string, item: any) => {
@@ -209,6 +265,11 @@ export default function AssessmentSchedulesPage() {
       setSmvData(data.smv || []);
       setLevelData(data.levels || []);
       setDepData(data.depreciation || []);
+
+      // Reset pages to 1 on fresh fetch
+      setSmvPage(1);
+      setLevelPage(1);
+      setDepPage(1);
     } catch (error: any) {
       toast.error("Failed to load schedules: " + error.message);
     } finally {
@@ -508,40 +569,56 @@ export default function AssessmentSchedulesPage() {
                         </td>
                       </tr>
                     ) : (
-                      smvData.map((row, i) => (
-                        <tr
-                          key={row.id || i}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-slate-400">{i + 1}</td>
-                          <td className="px-4 py-3 font-medium text-[#595a5d]">
-                            {row.use_type}
-                          </td>
-                          <td className="px-4 py-3 text-right text-slate-600">
-                            ₱
-                            {row.unit_value.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                            })}
-                          </td>
-                          <td className="px-4 py-3 text-center text-slate-500">
-                            {row.effectivity_year}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              title="Edit"
-                              onClick={() => handleEdit("smv", row)}
-                              className="text-slate-400 hover:text-amber-600 cursor-pointer transition-colors"
+                      smvData
+                        .slice(
+                          (smvPage - 1) * ITEMS_PER_PAGE,
+                          smvPage * ITEMS_PER_PAGE,
+                        )
+                        .map((row, i) => {
+                          const globalIndex =
+                            (smvPage - 1) * ITEMS_PER_PAGE + i + 1;
+                          return (
+                            <tr
+                              key={row.id || globalIndex}
+                              className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                             >
-                              <Pencil size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                              <td className="px-4 py-3 text-slate-400">
+                                {globalIndex}
+                              </td>
+                              <td className="px-4 py-3 font-medium text-[#595a5d]">
+                                {row.use_type}
+                              </td>
+                              <td className="px-4 py-3 text-right text-slate-600">
+                                ₱
+                                {row.unit_value.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </td>
+                              <td className="px-4 py-3 text-center text-slate-500">
+                                {row.effectivity_year}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  type="button"
+                                  title="Edit"
+                                  onClick={() => handleEdit("smv", row)}
+                                  className="text-slate-400 hover:text-amber-600 cursor-pointer transition-colors"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
                     )}
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={smvPage}
+                totalItems={smvData.length}
+                onPageChange={setSmvPage}
+              />
             </div>
 
             {/* Assessment Level Schedule */}
@@ -601,45 +678,55 @@ export default function AssessmentSchedulesPage() {
                         </td>
                       </tr>
                     ) : (
-                      levelData.map((row, i) => (
-                        <tr
-                          key={row.id || i}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${classificationColors[row.classification] ?? "bg-gray-100 text-gray-600"}`}
-                            >
-                              {row.classification}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {row.actual_use}
-                          </td>
-                          <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                            {row.mv_range}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="rounded-full bg-slate-100 px-3 py-0.5 text-xs font-bold text-[#595a5d]">
-                              {row.assessment_level}%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              title="Edit"
-                              onClick={() => handleEdit("level", row)}
-                              className="text-slate-400 hover:text-amber-600 cursor-pointer transition-colors"
-                            >
-                              <Pencil size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      levelData
+                        .slice(
+                          (levelPage - 1) * ITEMS_PER_PAGE,
+                          levelPage * ITEMS_PER_PAGE,
+                        )
+                        .map((row, i) => (
+                          <tr
+                            key={row.id || i}
+                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium ${classificationColors[row.classification] ?? "bg-gray-100 text-gray-600"}`}
+                              >
+                                {row.classification}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {row.actual_use}
+                            </td>
+                            <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                              {row.mv_range}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="rounded-full bg-slate-100 px-3 py-0.5 text-xs font-bold text-[#595a5d]">
+                                {row.assessment_level}%
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                type="button"
+                                title="Edit"
+                                onClick={() => handleEdit("level", row)}
+                                className="text-slate-400 hover:text-amber-600 cursor-pointer transition-colors"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
                     )}
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                currentPage={levelPage}
+                totalItems={levelData.length}
+                onPageChange={setLevelPage}
+              />
             </div>
 
             {/* Depreciation Schedule Note */}
@@ -667,44 +754,56 @@ export default function AssessmentSchedulesPage() {
                   Add Rule
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {depData.length === 0 ? (
-                  <div className="col-span-full py-8 text-center text-slate-400 italic">
-                    No depreciation rules available.
-                  </div>
-                ) : (
-                  depData.map((item) => (
-                    <div
-                      key={item.id}
-                      className="group relative rounded-md border border-gray-100 bg-gray-50 p-3"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleEdit("depreciation", item)}
-                        className="absolute right-2 top-2 p-1.5 text-slate-300 hover:text-amber-600 transition-colors cursor-pointer"
-                        title="Edit Rule"
-                      >
-                        <Pencil size={12} />
-                      </button>
-                      <p className="font-inter text-xs font-semibold text-[#595a5d]">
-                        {item.building_type}
-                      </p>
-                      <p className="font-inter mt-1 text-xs text-slate-500">
-                        Rate:{" "}
-                        <span className="font-medium text-slate-700">
-                          {item.rate}
-                        </span>
-                      </p>
-                      <p className="font-inter text-xs text-slate-500">
-                        Max Depreciation:{" "}
-                        <span className="font-medium text-slate-700">
-                          {item.max_depreciation}
-                        </span>
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
+               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                 {depData.length === 0 ? (
+                   <div className="col-span-full py-8 text-center text-slate-400 italic">
+                     No depreciation rules available.
+                   </div>
+                 ) : (
+                   depData
+                     .slice(
+                       (depPage - 1) * ITEMS_PER_PAGE,
+                       depPage * ITEMS_PER_PAGE,
+                     )
+                     .map((item) => (
+                       <div
+                         key={item.id}
+                         className="group relative rounded-md border border-gray-100 bg-gray-50 p-3"
+                       >
+                         <button
+                           type="button"
+                           onClick={() => handleEdit("depreciation", item)}
+                           className="absolute right-2 top-2 p-1.5 text-slate-300 hover:text-amber-600 transition-colors cursor-pointer"
+                           title="Edit Rule"
+                         >
+                           <Pencil size={12} />
+                         </button>
+                         <p className="font-inter text-xs font-semibold text-[#595a5d]">
+                           {item.building_type}
+                         </p>
+                         <p className="font-inter mt-1 text-xs text-slate-500">
+                           Rate:{" "}
+                           <span className="font-medium text-slate-700">
+                             {item.rate}
+                           </span>
+                         </p>
+                         <p className="font-inter text-xs text-slate-500">
+                           Max Depreciation:{" "}
+                           <span className="font-medium text-slate-700">
+                             {item.max_depreciation}
+                           </span>
+                         </p>
+                       </div>
+                     ))
+                 )}
+               </div>
+               <div className="mt-4">
+                 <PaginationControls
+                   currentPage={depPage}
+                   totalItems={depData.length}
+                   onPageChange={setDepPage}
+                 />
+               </div>
             </div>
           </>
         )}
