@@ -44,6 +44,8 @@ type ComboboxProps = {
   emptyLabel?: string;
   className?: string;
   triggerClassName?: string;
+  /** If true, hides the search input inside the dropdown. Useful for fewer options. */
+  hideSearch?: boolean;
 };
 
 export function Combobox({
@@ -58,13 +60,14 @@ export function Combobox({
   emptyLabel = 'No results found.',
   className,
   triggerClassName,
+  hideSearch = false,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered =
-    search.trim()
+    !hideSearch && search.trim()
       ? options.filter((o) =>
           [o.label, o.sublabel ?? '']
             .join(' ')
@@ -150,17 +153,19 @@ export function Combobox({
               sideOffset={4}
             >
               {/* Search input */}
-              <div className="flex items-center border-b border-gray-100 px-3 py-2">
-                <Search className="mr-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="w-full bg-transparent font-inter text-xs text-slate-900 outline-none placeholder:text-slate-400"
-                />
-              </div>
+              {!hideSearch && (
+                <div className="flex items-center border-b border-gray-100 px-3 py-2">
+                  <Search className="mr-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={searchPlaceholder}
+                    className="w-full bg-transparent font-inter text-xs text-slate-900 outline-none placeholder:text-slate-400"
+                  />
+                </div>
+              )}
 
               {/* Option list */}
               <div className="max-h-60 overflow-y-auto p-1">
