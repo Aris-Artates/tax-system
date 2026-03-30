@@ -3,9 +3,15 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Download, Search } from "lucide-react";
+import { ArrowLeft, Clock, Download, Search, Eye } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/tanstack-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type DelinquentTaxpayer = {
   id: number;
@@ -93,6 +99,8 @@ export default function ViewDelinquenciesPage() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [selectedDelinquent, setSelectedDelinquent] = useState<DelinquentTaxpayer | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const {
     data: delinquentsData,
@@ -161,10 +169,17 @@ export default function ViewDelinquenciesPage() {
       {
         id: "actions",
         header: () => <span className="text-center">Actions</span>,
-        cell: () => (
+        cell: ({ row }) => (
           <div className="text-center">
-            <button className="rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors">
-              View Details
+            <button
+              onClick={() => {
+                setSelectedDelinquent(row.original);
+                setIsDetailsOpen(true);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 cursor-pointer"
+              title="View Details"
+            >
+              <Eye className="h-4 w-4" />
             </button>
           </div>
         ),
@@ -375,6 +390,67 @@ export default function ViewDelinquenciesPage() {
           onPaginationChange={setPagination}
         />
       </div>
+
+      {/* Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-md bg-white p-6 shadow-xl rounded-xl border border-slate-200">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="font-lexend text-lg text-slate-800 flex items-center gap-2">
+              <Eye className="h-4 w-4 text-blue-500" />
+              Taxpayer Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedDelinquent && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 divide-y divide-slate-100">
+                <div className="pt-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Full Name</p>
+                  <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedDelinquent.full_name}</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">TIN</p>
+                  <p className="text-sm font-mono text-slate-700 mt-0.5">{selectedDelinquent.tin}</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Barangay</p>
+                  <p className="text-sm text-slate-700 mt-0.5">{selectedDelinquent.barangay_name}</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Properties Count</p>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">{selectedDelinquent.property_count} Registered Properties</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Delinquency Age</p>
+                  <div className="mt-1 flex items-center">
+                    <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[selectedDelinquent.bucket]}`}>
+                      {selectedDelinquent.bucket}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Outstanding Due</p>
+                  <p className="text-lg font-black text-slate-900 mt-0.5">{selectedDelinquent.total_due}</p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end pt-4 border-t border-slate-50">
+                <button
+                  onClick={() => setIsDetailsOpen(false)}
+                  className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
