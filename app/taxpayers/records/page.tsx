@@ -4,6 +4,8 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
+import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+
 import {
   ArrowLeft,
   FileBadge,
@@ -14,6 +16,7 @@ import {
   CalendarIcon,
 } from "lucide-react";
 
+import { CertificatePDF } from "@/components/print/CertificatePDF";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { Button } from "@/components/ui/button";
@@ -110,6 +113,7 @@ export default function CertificationsRecordsPage() {
   const [taxpayerId, setTaxpayerId] = React.useState("");
   const [tin, setTin] = React.useState("");
   const [ownerAddress, setOwnerAddress] = React.useState("");
+  const [taxpayerName, setTaxpayerName] = React.useState("");
 
   // State: Certification Request
   const [certType, setCertType] = React.useState("");
@@ -120,9 +124,15 @@ export default function CertificationsRecordsPage() {
   // State: Payment
   const [orNumber, setOrNumber] = React.useState("");
   const [amountPaid, setAmountPaid] = React.useState("");
-  const [paymentDate, setPaymentDate] = React.useState<Date | undefined>(
-    new Date(),
-  );
+  const [paymentDate, setPaymentDate] = React.useState<Date | undefined>(new Date());
+
+  // State: PDF preview
+  const [showPDF, setShowPDF] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Mock data for combobox
   const [taxpayerOptions] = React.useState<ComboboxOption[]>([
@@ -134,6 +144,8 @@ export default function CertificationsRecordsPage() {
   // Simulate fetching taxpayer details
   React.useEffect(() => {
     if (taxpayerId) {
+      const selected = taxpayerOptions.find((o) => o.value === taxpayerId);
+      setTaxpayerName(selected?.label || "");
       if (taxpayerId === "1") {
         setTin("123-456-789-000");
         setOwnerAddress("Brgy. San Jose, Sta. Rita, Samar");
@@ -145,10 +157,11 @@ export default function CertificationsRecordsPage() {
         setOwnerAddress("Manila City");
       }
     } else {
+      setTaxpayerName("");
       setTin("");
       setOwnerAddress("");
     }
-  }, [taxpayerId]);
+  }, [taxpayerId, taxpayerOptions]);
 
   return (
     <div className="flex">
@@ -184,13 +197,37 @@ export default function CertificationsRecordsPage() {
                 Cancel
               </button>
 
-              <button
-                type="button"
-                className="font-inter inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800"
-              >
-                <Printer className="h-4 w-4" />
-                Preview & Issue
-              </button>
+              {/* PDF Preview & Download */}
+              {isClient && (
+                <PDFDownloadLink
+                  document={
+                    <CertificatePDF
+                      taxpayerName={taxpayerName}
+                      tin={tin}
+                      ownerAddress={ownerAddress}
+                      certType={certType}
+                      purpose={purpose}
+                      relatedTd={relatedTd}
+                      remarks={remarks}
+                      orNumber={orNumber}
+                      amountPaid={amountPaid}
+                      paymentDate={paymentDate}
+                    />
+                  }
+                  fileName={`certificate-${taxpayerName || "taxpayer"}.pdf`}
+                  style={{ textDecoration: "none" }}
+                >
+                  {({ loading }) => (
+                    <button
+                      type="button"
+                      className="font-inter inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800"
+                    >
+                      <Printer className="h-4 w-4" />
+                      {loading ? "Generating PDF..." : "Preview & Issue"}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+              )}
             </div>
           </div>
         </header>
@@ -361,4 +398,4 @@ export default function CertificationsRecordsPage() {
       </main>
     </div>
   );
-}
+}
