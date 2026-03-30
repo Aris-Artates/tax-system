@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 import {
   ArrowLeft,
@@ -124,10 +123,11 @@ export default function CertificationsRecordsPage() {
   // State: Payment
   const [orNumber, setOrNumber] = React.useState("");
   const [amountPaid, setAmountPaid] = React.useState("");
-  const [paymentDate, setPaymentDate] = React.useState<Date | undefined>(new Date());
+  const [paymentDate, setPaymentDate] = React.useState<Date | undefined>(
+    new Date(),
+  );
 
   // State: PDF preview
-  const [showPDF, setShowPDF] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -192,41 +192,22 @@ export default function CertificationsRecordsPage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="font-inter inline-flex h-10 items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-xs font-medium text-slate-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                className="cursor-pointer font-inter inline-flex h-10 items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-xs font-medium text-slate-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 Cancel
               </button>
 
-              {/* PDF Preview & Download */}
+              {/* Native Print Trigger */}
               {isClient && (
-                <PDFDownloadLink
-                  document={
-                    <CertificatePDF
-                      taxpayerName={taxpayerName}
-                      tin={tin}
-                      ownerAddress={ownerAddress}
-                      certType={certType}
-                      purpose={purpose}
-                      relatedTd={relatedTd}
-                      remarks={remarks}
-                      orNumber={orNumber}
-                      amountPaid={amountPaid}
-                      paymentDate={paymentDate}
-                    />
-                  }
-                  fileName={`certificate-${taxpayerName || "taxpayer"}.pdf`}
-                  style={{ textDecoration: "none" }}
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  disabled={!taxpayerName || !orNumber || !amountPaid}
+                  className="cursor-pointer font-inter inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {({ loading }) => (
-                    <button
-                      type="button"
-                      className="font-inter inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800"
-                    >
-                      <Printer className="h-4 w-4" />
-                      {loading ? "Generating PDF..." : "Preview & Issue"}
-                    </button>
-                  )}
-                </PDFDownloadLink>
+                  <Printer className="h-4 w-4" />
+                  Preview & Issue
+                </button>
               )}
             </div>
           </div>
@@ -395,7 +376,24 @@ export default function CertificationsRecordsPage() {
             </Section>
           </div>
         </div>
+        {/* Print-only Certificate Container */}
+        {isClient && (
+          <div className="sr-only print:not-sr-only">
+            <CertificatePDF
+              taxpayerName={taxpayerName}
+              tin={tin}
+              ownerAddress={ownerAddress}
+              certType={certType}
+              purpose={purpose}
+              relatedTd={relatedTd}
+              remarks={remarks}
+              orNumber={orNumber}
+              amountPaid={amountPaid}
+              paymentDate={paymentDate}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
-}
+}
