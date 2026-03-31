@@ -11,8 +11,10 @@ import {
   Search,
   Loader2,
   RefreshCw,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DelinquentAccountsPrint } from "@/components/print/DelinquentAccountsPrint";
 
 type DelinquentTaxpayer = {
   id: number;
@@ -73,7 +75,7 @@ const statusClasses: Record<string, string> = {
   "3 Years": "bg-amber-50 text-amber-700",
   "2 Years": "bg-blue-50 text-blue-700",
   "1 Year": "bg-slate-100 text-slate-600",
-  "Current": "bg-emerald-50 text-emerald-700",
+  Current: "bg-emerald-50 text-emerald-700",
 };
 
 export default function DeliquentAccountsPage() {
@@ -85,11 +87,13 @@ export default function DeliquentAccountsPage() {
   const [limit] = useState(10);
   const [meta, setMeta] = useState({ totalItems: 0, totalPages: 1 });
 
+  const handlePrint = () => window.print();
+
   const fetchDelinquents = async () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/taxpayers/delinquents?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`
+        `/api/taxpayers/delinquents?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`,
       );
       const res = await response.json();
 
@@ -153,10 +157,11 @@ export default function DeliquentAccountsPage() {
 
         <button
           type="button"
+          onClick={handlePrint}
           className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
         >
-          <Download className="h-4 w-4" />
-          Export List
+          <Printer className="h-4 w-4" />
+          Export List (Print)
         </button>
       </header>
 
@@ -201,7 +206,9 @@ export default function DeliquentAccountsPage() {
               className="p-1.5 rounded-md hover:bg-slate-50 text-slate-400 transition-colors disabled:opacity-50"
               title="Refresh List"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
         </div>
@@ -252,7 +259,7 @@ export default function DeliquentAccountsPage() {
                     className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                   >
                     <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-[#595a5d]">
-                      TD-{account.id.toString().padStart(5, '0')}
+                      TD-{account.id.toString().padStart(5, "0")}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
                       {account.full_name}
@@ -282,8 +289,7 @@ export default function DeliquentAccountsPage() {
 
         <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
           <p className="font-inter text-xs text-slate-400">
-            Showing {accounts.length} of {meta.totalItems}{" "}
-            delinquent accounts
+            Showing {accounts.length} of {meta.totalItems} delinquent accounts
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -307,6 +313,10 @@ export default function DeliquentAccountsPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="sr-only print:not-sr-only">
+        <DelinquentAccountsPrint data={accounts} />
       </div>
     </div>
   );
