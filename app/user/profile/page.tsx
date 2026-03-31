@@ -99,7 +99,18 @@ export default function UserProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("personal");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup for object URL to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -157,9 +168,7 @@ export default function UserProfilePage() {
     fetchUserData();
   }, [router]);
 
-  const handlePictureChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -170,34 +179,18 @@ export default function UserProfilePage() {
       return;
     }
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/user/profile/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (data.path) {
-        updateField("profilePicture", data.path);
-        toast.success("Image uploaded", {
-          description:
-            "Your profile picture has been uploaded and ready to save.",
-        });
-      } else {
-        throw new Error(data.error || "Upload failed");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Upload failed", {
-        description: "Could not upload the profile picture.",
-      });
-    } finally {
-      setUploading(false);
+    // Revoke previous URL if any
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
     }
+
+    const url = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setPreviewUrl(url);
+
+    toast.success("Image selected", {
+      description: "Visual preview updated. Click 'Save Changes' to upload.",
+    });
   };
 
   const calculateAge = (birthdate: string) => {
@@ -227,7 +220,32 @@ export default function UserProfilePage() {
 
   const handleSave = async () => {
     setSaving(true);
+    let currentImagePath = form.profilePicture;
+
     try {
+      // If a new file is selected, upload it first
+      if (selectedFile) {
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const uploadRes = await fetch("/api/user/profile/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+
+        if (uploadData.path) {
+          currentImagePath = uploadData.path;
+          // Also update the form state so it's consistent if the user continues editing
+          updateField("profilePicture", currentImagePath);
+          setSelectedFile(null); // Clear the selected file after successful upload
+        } else {
+          throw new Error(uploadData.error || "Upload failed");
+        }
+      }
+
       const payload = {
         originalEmpID: form.empID,
         empID: form.empID,
@@ -245,7 +263,7 @@ export default function UserProfilePage() {
         position: form.position,
         role_id: form.role_id,
         status: form.status,
-        image_path: form.profilePicture,
+        image_path: currentImagePath,
       };
 
       const res = await fetch("/api/user/update", {
@@ -269,6 +287,7 @@ export default function UserProfilePage() {
       });
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
@@ -282,7 +301,10 @@ export default function UserProfilePage() {
       "position",
       "profilePicture",
     ];
-    const filled = fields.filter((f) => !!form[f]).length;
+    const filled = fields.filter((f) => {
+      if (f === "profilePicture") return !!form[f] || !!selectedFile;
+      return !!form[f];
+    }).length;
     return Math.round((filled / fields.length) * 100);
   };
 
@@ -318,13 +340,6 @@ export default function UserProfilePage() {
 
         <div className="flex items-center gap-3">
           <Button
-            variant="outline"
-            className="h-10 text-xs font-semibold px-6 border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
-            onClick={() => window.location.reload()}
-          >
-            Discard
-          </Button>
-          <Button
             className="h-10 text-xs font-semibold px-8 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95"
             onClick={handleSave}
             disabled={saving || uploading}
@@ -349,9 +364,9 @@ export default function UserProfilePage() {
               <div className="relative group mb-6">
                 <div className="absolute -inset-1 rounded-full bg-linear-to-tr from-indigo-500 to-emerald-500 opacity-20 blur group-hover:opacity-40 transition duration-500" />
                 <div className="relative">
-                  {form.profilePicture ? (
+                  {previewUrl || form.profilePicture ? (
                     <img
-                      src={form.profilePicture}
+                      src={previewUrl || form.profilePicture}
                       alt="Profile"
                       className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-2xl transition hover:scale-105"
                     />
