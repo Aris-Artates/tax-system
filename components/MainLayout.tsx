@@ -15,7 +15,11 @@ type SessionUser = {
   role_id: string | number;
 };
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
 
   useEffect(() => {
@@ -62,7 +66,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <HeaderComponent sessionUser={sessionUser} />
         </div>
         {/* Main content scrolls */}
-        <main className="flex-1 overflow-y-auto p-6 bg-[#f0f4f7] print:bg-white print:p-0 print:overflow-visible">
+        <main className="flex-1 overflow-y-auto p-4.5 bg-[#f0f4f7] print:bg-white print:p-0 print:overflow-visible">
           {children}
         </main>
       </div>

@@ -7,11 +7,12 @@ export { Swal };
 /**
  * Show a custom styled delete success dialog.
  */
-export async function showDeleteSuccess(name: string) {
+export async function showDeleteSuccess(name: string, target?: string | HTMLElement) {
   const checkIcon = renderToStaticMarkup(
     <CheckCircle2 size={14} className="text-emerald-500 mr-2" />,
   );
   await Swal.fire({
+    target: target || "body",
     width: 300,
     html: `
       <div class="text-left">
@@ -37,17 +38,28 @@ export async function showDeleteSuccess(name: string) {
       confirmButton:
         "bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition",
     },
+    didOpen: (popup: any) => {
+      popup.style.zIndex = "10000";
+      const container = (Swal as any).getContainer();
+      if (container) container.style.zIndex = "10000";
+    },
   });
 }
 
 /**
  * Show a generic error dialog with an optional title.
  */
-export async function showError(message: string, title = "Error") {
+export async function showError(message: string, title = "Error", target?: string | HTMLElement) {
   await Swal.fire({
+    target: target || "body",
     icon: "error",
     title,
     text: message,
+    didOpen: (popup: any) => {
+      popup.style.zIndex = "10000";
+      const container = (Swal as any).getContainer();
+      if (container) container.style.zIndex = "10000";
+    },
   });
 }
 
@@ -58,11 +70,12 @@ export async function showError(message: string, title = "Error") {
  * @param name - The name/identifier of the entity to delete
  * @param entityType - The type of entity being deleted (default: "User")
  */
-export async function confirmDelete(name: string, entityType = "User"): Promise<boolean> {
+export async function confirmDelete(name: string, entityType = "User", target?: string | HTMLElement): Promise<boolean> {
   const cautionIcon = renderToStaticMarkup(
     <AlertTriangle size={14} className="text-rose-500 mr-2" />,
   );
   const result = await Swal.fire({
+    target: target || "body",
     width: 300,
     html: `
       <div class="text-left">
@@ -93,6 +106,11 @@ export async function confirmDelete(name: string, entityType = "User"): Promise<
       cancelButton:
         "cursor-pointer border border-gray-200 text-slate-600 text-xs font-inter px-4 py-2 rounded-md hover:bg-gray-50 transition mr-2",
     },
+    didOpen: (popup: any) => {
+      popup.style.zIndex = "10000";
+      const container = (Swal as any).getContainer();
+      if (container) container.style.zIndex = "10000";
+    },
   });
 
   return result.isConfirmed;
@@ -102,12 +120,13 @@ export async function confirmDelete(name: string, entityType = "User"): Promise<
  * Show a confirmation dialog for archiving an entity and return whether the
  * user confirmed the action.
  */
-export async function confirmArchive(name: string, entityType = "Record"): Promise<boolean> {
+export async function confirmArchive(name: string, entityType = "Record", target?: string | HTMLElement): Promise<boolean> {
   const cautionIcon = renderToStaticMarkup(
     <AlertTriangle size={14} className="text-blue-500 mr-2" />,
   );
 
   const result = await Swal.fire({
+    target: target || "body",
     width: 300,
     html: `
       <div class="text-left">
@@ -138,6 +157,11 @@ export async function confirmArchive(name: string, entityType = "Record"): Promi
       cancelButton:
         "cursor-pointer border border-gray-200 text-slate-600 text-xs font-inter px-4 py-2 rounded-md hover:bg-gray-50 transition mr-2",
     },
+    didOpen: (popup: any) => {
+      popup.style.zIndex = "10000";
+      const container = (Swal as any).getContainer();
+      if (container) container.style.zIndex = "10000";
+    },
   });
 
   return result.isConfirmed;
@@ -147,12 +171,13 @@ export async function confirmArchive(name: string, entityType = "Record"): Promi
  * Show a confirmation dialog for restoring an archived entity and return
  * whether the user confirmed the action.
  */
-export async function confirmRestore(name: string, entityType = "Record"): Promise<boolean> {
+export async function confirmRestore(name: string, entityType = "Record", target?: string | HTMLElement): Promise<boolean> {
   const cautionIcon = renderToStaticMarkup(
     <AlertTriangle size={14} className="text-emerald-500 mr-2" />,
   );
 
   const result = await Swal.fire({
+    target: target || "body",
     width: 300,
     html: `
       <div class="text-left">
@@ -182,6 +207,11 @@ export async function confirmRestore(name: string, entityType = "Record"): Promi
         "bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition cursor-pointer",
       cancelButton:
         "cursor-pointer border border-gray-200 text-slate-600 text-xs font-inter px-4 py-2 rounded-md hover:bg-gray-50 transition mr-2",
+    },
+    didOpen: (popup: any) => {
+      popup.style.zIndex = "10000";
+      const container = (Swal as any).getContainer();
+      if (container) container.style.zIndex = "10000";
     },
   });
 

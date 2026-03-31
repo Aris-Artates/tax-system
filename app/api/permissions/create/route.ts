@@ -3,12 +3,14 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 type CreatePermissionPayload = {
 	name: string;
+	description?: string;
 };
 
 export async function POST(request: Request) {
 	try {
 		const body = (await request.json()) as Partial<CreatePermissionPayload>;
 		const name = body.name?.trim() ?? '';
+		const description = body.description?.trim() ?? '';
 
 		if (!name) {
 			return NextResponse.json({ error: 'name is required.' }, { status: 400 });
@@ -30,8 +32,8 @@ export async function POST(request: Request) {
 
 		const { data, error } = await supabaseAdmin
 			.from('permissions')
-			.insert({ name })
-			.select('id, name, created_at')
+			.insert({ name, description })
+			.select('id, name, description, created_at')
 			.single();
 
 		if (error) {
