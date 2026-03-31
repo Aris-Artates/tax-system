@@ -29,7 +29,8 @@ export type MaskKey =
   | 'lot-number'
   | 'decimal-numeric'
   | 'year'
-  | 'percentage';
+  | 'percentage'
+  | 'reference-number';
 
 
 export type MaskFn = (raw: string) => string;
@@ -260,6 +261,18 @@ export function maskPercentage(raw: string): string {
   return d;
 }
 
+// ── Reference Number ─────────────────────────────────────────────────────────
+// Prefix: "DOC-" | Format: DOC-####-#### | 4-digit Year + 4-digit Sequence
+
+export function maskReferenceNumber(raw: string): string {
+  const withoutPrefix = raw.replace(/^[Dd][Oo][Cc]-?/, '');
+  const d = withoutPrefix.replace(/\D/g, '').slice(0, 8);
+
+  if (!d) return 'DOC-';
+  if (d.length <= 4) return `DOC-${d}`;
+  return `DOC-${d.slice(0, 4)}-${d.slice(4)}`;
+}
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const MASKS: Record<MaskKey, MaskFn> = {
@@ -283,5 +296,6 @@ export const MASKS: Record<MaskKey, MaskFn> = {
   'decimal-numeric': ((raw) => maskDecimalNumeric(raw, {maxInt: 12, maxDec: 2, allowDec: true})) as MaskFn,
   'year': maskYear,
   'percentage': maskPercentage,
+  'reference-number': maskReferenceNumber,
 };
 
