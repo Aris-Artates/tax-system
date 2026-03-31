@@ -3,16 +3,15 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Clock,
-  Download,
-  Search,
-} from "lucide-react";
-import { 
-  ColumnDef, 
-} from "@tanstack/react-table";
+import { ArrowLeft, Clock, Download, Search, Eye } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/tanstack-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type DelinquentTaxpayer = {
   id: number;
@@ -42,17 +41,42 @@ const bucketColors: Record<DelinquentTaxpayer["bucket"], string> = {
 };
 
 const bucketPanels = [
-  { bucket: "Current", total: "128", balance: "PHP 2.1M", accent: "border-emerald-200 bg-emerald-50/40" },
-  { bucket: "1 Year", total: "388", balance: "PHP 6.1M", accent: "border-emerald-200 bg-emerald-50/40" },
-  { bucket: "2 Years", total: "274", balance: "PHP 8.8M", accent: "border-blue-200 bg-blue-50/40" },
-  { bucket: "3 Years", total: "238", balance: "PHP 10.2M", accent: "border-amber-200 bg-amber-50/40" },
-  { bucket: "5+ Years", total: "348", balance: "PHP 13.5M", accent: "border-rose-200 bg-rose-50/40" },
+  {
+    bucket: "Current",
+    total: "128",
+    balance: "PHP 2.1M",
+    accent: "border-emerald-200 bg-emerald-50/40",
+  },
+  {
+    bucket: "1 Year",
+    total: "388",
+    balance: "PHP 6.1M",
+    accent: "border-emerald-200 bg-emerald-50/40",
+  },
+  {
+    bucket: "2 Years",
+    total: "274",
+    balance: "PHP 8.8M",
+    accent: "border-blue-200 bg-blue-50/40",
+  },
+  {
+    bucket: "3 Years",
+    total: "238",
+    balance: "PHP 10.2M",
+    accent: "border-amber-200 bg-amber-50/40",
+  },
+  {
+    bucket: "5+ Years",
+    total: "348",
+    balance: "PHP 13.5M",
+    accent: "border-rose-200 bg-rose-50/40",
+  },
 ];
 
 function fetchDelinquents(
-  search: string, 
-  pageIndex: number, 
-  pageSize: number
+  search: string,
+  pageIndex: number,
+  pageSize: number,
 ): Promise<DelinquentsResponse> {
   const params = new URLSearchParams({
     search,
@@ -60,13 +84,12 @@ function fetchDelinquents(
     limit: pageSize.toString(),
   });
 
-  return fetch(`/api/taxpayers/delinquents?${params}`)
-    .then(res => {
-      if (!res.ok) {
-        throw new Error("Failed to fetch");
-      }
-      return res.json();
-    });
+  return fetch(`/api/taxpayers/delinquents?${params}`).then((res) => {
+    if (!res.ok) {
+      throw new Error("Failed to fetch");
+    }
+    return res.json();
+  });
 }
 
 export default function ViewDelinquenciesPage() {
@@ -76,14 +99,17 @@ export default function ViewDelinquenciesPage() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [selectedDelinquent, setSelectedDelinquent] = useState<DelinquentTaxpayer | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const { 
-    data: delinquentsData, 
-    isLoading, 
-    error 
+  const {
+    data: delinquentsData,
+    isLoading,
+    error,
   } = useQuery({
     queryKey: ["delinquents", { search, pagination: pagination.pageIndex }],
-    queryFn: () => fetchDelinquents(search, pagination.pageIndex, pagination.pageSize),
+    queryFn: () =>
+      fetchDelinquents(search, pagination.pageIndex, pagination.pageSize),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -123,7 +149,9 @@ export default function ViewDelinquenciesPage() {
         cell: ({ row }) => {
           const bucket = row.original.bucket as DelinquentTaxpayer["bucket"];
           return (
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[bucket]}`}>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[bucket]}`}
+            >
               {bucket}
             </span>
           );
@@ -141,16 +169,23 @@ export default function ViewDelinquenciesPage() {
       {
         id: "actions",
         header: () => <span className="text-center">Actions</span>,
-        cell: () => (
+        cell: ({ row }) => (
           <div className="text-center">
-            <button className="rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors">
-              View Details
+            <button
+              onClick={() => {
+                setSelectedDelinquent(row.original);
+                setIsDetailsOpen(true);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 cursor-pointer"
+              title="View Details"
+            >
+              <Eye className="h-4 w-4" />
             </button>
           </div>
         ),
       },
     ],
-    []
+    [],
   );
 
   if (error) {
@@ -166,41 +201,163 @@ export default function ViewDelinquenciesPage() {
       <button
         type="button"
         onClick={() => router.push("/taxpayers")}
-        className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-900"
+        className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-900 print:hidden"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Taxpayer Records
       </button>
 
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
-          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">Delinquent Accounts</h1>
-          <p className="font-inter mt-1 text-xs text-slate-400">Monitor overdue Real Property Tax obligations</p>
+          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+            Delinquent Accounts
+          </h1>
+          <p className="font-inter mt-1 text-xs text-slate-400">
+            Monitor overdue Real Property Tax obligations
+          </p>
         </div>
-        <button className="font-inter inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer">
+        <button
+          onClick={() => window.print()}
+          className="font-inter inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer"
+        >
           <Download className="h-4 w-4" />
           Export Delinquency List
         </button>
       </header>
 
+      {/* PRINT VIEW TEMPLATE - HIDDEN ON SCREEN */}
+      <div className="hidden print:block w-full max-w-[210mm] mx-auto p-4 text-black font-serif">
+        <style>{`
+          @media print {
+            @page { size: A4 portrait; margin: 15mm; }
+            body { font-size: 11pt; color: #000; background: #fff; }
+            .print-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 10px; font-size: 10pt; }
+            .print-table th { background: #f0f0f0 !important; font-weight: bold; }
+          }
+        `}</style>
+
+        {/* PRINT HEADER */}
+        <div className="text-center mb-10 pb-4 border-b-2 border-black/10">
+          <p className="text-[10pt] font-bold uppercase tracking-widest">
+            Republic of the Philippines
+          </p>
+          <p className="text-[11pt] font-semibold">Province of Samar</p>
+          <p className="text-[11pt] font-semibold uppercase">
+            Municipality of Sta. Rita
+          </p>
+          <div className="mt-2 inline-block border-y border-black py-1 px-4">
+            <p className="text-[12pt] font-bold uppercase">
+              Office of the Municipal Treasurer
+            </p>
+          </div>
+          <h2 className="mt-8 text-[16pt] font-black uppercase underline decoration-2 underline-offset-4">
+            List of Delinquent Taxpayers
+          </h2>
+          <p className="mt-2 text-[10pt] italic">
+            As of{" "}
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+
+        {/* PRINT TABLE */}
+        <table className="print-table w-full">
+          <thead>
+            <tr>
+              <th className="w-8">#</th>
+              <th className="text-left font-bold">Taxpayer Name</th>
+              <th className="text-left font-bold">TIN</th>
+              <th className="text-left font-bold">Barangay</th>
+              <th className="text-center font-bold">Aging</th>
+              <th className="text-right font-bold w-32">Amount Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            {delinquents.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-10 text-center italic">
+                  No records found for the current filter.
+                </td>
+              </tr>
+            ) : (
+              delinquents.map((row, i) => (
+                <tr key={row.id}>
+                  <td className="text-center font-serif">
+                    {pagination.pageIndex * pagination.pageSize + i + 1}
+                  </td>
+                  <td className="font-bold">{row.full_name}</td>
+                  <td className="font-mono text-[9pt]">{row.tin}</td>
+                  <td className="font-serif">{row.barangay_name}</td>
+                  <td className="text-center font-serif">{row.bucket}</td>
+                  <td className="text-right font-bold font-serif">
+                    {row.total_due}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {/* PRINT FOOTER / SIGNATORIES */}
+        <div className="mt-20 grid grid-cols-2 gap-12 font-serif text-[11pt]">
+          <div className="text-left">
+            <p className="mb-14">Prepared by:</p>
+            <div className="w-64 border-t border-black">
+              <p className="font-bold uppercase pt-1">RPTA Staff / Assessor</p>
+              <p className="text-[10pt] italic text-slate-600">
+                Administrative Assistant
+              </p>
+            </div>
+          </div>
+          <div className="text-left ml-auto">
+            <p className="mb-14">Noted by:</p>
+            <div className="w-64 border-t border-black">
+              <p className="font-bold uppercase pt-1">NAME OF TREASURER</p>
+              <p className="text-[10pt] italic text-slate-600">
+                Municipal Treasurer
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-16 text-center text-[8pt] text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-4">
+          LGU STA. RITA, SAMAR · RPT DELINQUENCIES SYSTEM REPORT · CONFIDENTIAL
+        </div>
+      </div>
+
       {/* Aging Buckets */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 text-center">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 text-center print:hidden">
         {bucketPanels.map((panel) => (
-          <div key={panel.bucket} className={`rounded-xl border p-5 shadow-sm transition-transform hover:scale-[1.02] ${panel.accent}`}>
+          <div
+            key={panel.bucket}
+            className={`rounded-xl border p-5 shadow-sm transition-transform hover:scale-[1.02] ${panel.accent}`}
+          >
             <div className="flex items-center justify-between">
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[panel.bucket as DelinquentTaxpayer["bucket"]]}`}>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[panel.bucket as DelinquentTaxpayer["bucket"]]}`}
+              >
                 {panel.bucket}
               </span>
-              <div className="font-lexend text-xl font-bold text-slate-700">{panel.total}</div>
+              <div className="font-lexend text-xl font-bold text-slate-700">
+                {panel.total}
+              </div>
             </div>
-            <p className="mt-4 font-inter text-lg font-bold text-slate-800">{panel.balance}</p>
-            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Outstanding Balance</p>
+            <p className="mt-4 font-inter text-lg font-bold text-slate-800">
+              {panel.balance}
+            </p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+              Outstanding Balance
+            </p>
           </div>
         ))}
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -210,7 +367,7 @@ export default function ViewDelinquenciesPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPagination(prev => ({ ...prev, pageIndex: 0 }));
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
               }}
               className="w-full rounded-lg border border-gray-200 bg-slate-50 py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-slate-200 transition-all"
             />
@@ -223,7 +380,7 @@ export default function ViewDelinquenciesPage() {
       </div>
 
       {/* TanStack DataTable - Fully replaces old manual implementation */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden print:hidden">
         <DataTable
           columns={columns}
           data={delinquents}
@@ -233,7 +390,67 @@ export default function ViewDelinquenciesPage() {
           onPaginationChange={setPagination}
         />
       </div>
+
+      {/* Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-md bg-white p-6 shadow-xl rounded-xl border border-slate-200">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="font-lexend text-lg text-slate-800 flex items-center gap-2">
+              <Eye className="h-4 w-4 text-blue-500" />
+              Taxpayer Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedDelinquent && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 divide-y divide-slate-100">
+                <div className="pt-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Full Name</p>
+                  <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedDelinquent.full_name}</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">TIN</p>
+                  <p className="text-sm font-mono text-slate-700 mt-0.5">{selectedDelinquent.tin}</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Barangay</p>
+                  <p className="text-sm text-slate-700 mt-0.5">{selectedDelinquent.barangay_name}</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Properties Count</p>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">{selectedDelinquent.property_count} Registered Properties</p>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Delinquency Age</p>
+                  <div className="mt-1 flex items-center">
+                    <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[selectedDelinquent.bucket]}`}>
+                      {selectedDelinquent.bucket}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Outstanding Due</p>
+                  <p className="text-lg font-black text-slate-900 mt-0.5">{selectedDelinquent.total_due}</p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end pt-4 border-t border-slate-50">
+                <button
+                  onClick={() => setIsDetailsOpen(false)}
+                  className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

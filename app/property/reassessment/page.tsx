@@ -4,10 +4,13 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, RefreshCcw, Save, FileText, Layers, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Search, RefreshCcw, Save, FileText, Layers, BarChart3, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 
 
 type PropertyRecord = {
+  id: number;
   tdNumber: string;
   pin: string;
   owner: string;
@@ -17,16 +20,20 @@ type PropertyRecord = {
   marketValue: string;
   assessLevel: string;
   assessedValue: string;
+  taxpayer_id?: number;
+  property_id?: number;
 };
 
 export default function ReassessmentPage() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<PropertyRecord[]>([]);
+  const [selectedTdId, setSelectedTdId] = useState('');
+  const [allOptions, setAllOptions] = useState<ComboboxOption[]>([]);
+  const [propertyData, setPropertyData] = useState<Record<string, PropertyRecord>>({});
   const [selectedProperty, setSelectedProperty] = useState<PropertyRecord | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Revision fields
+  const [newTdNumber, setNewTdNumber] = useState('');
   const [reason, setReason] = useState('');
   const [newClassification, setNewClassification] = useState('');
   const [newLandArea, setNewLandArea] = useState('');
@@ -37,51 +44,136 @@ export default function ReassessmentPage() {
   const [bldgChanges, setBldgChanges] = useState('');
   const [effectivityYear, setEffectivityYear] = useState('2024');
   const [notes, setNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSearch = async () => {
-    setHasSearched(true);
-    setSearchResults([]);
-    if (!searchQuery.trim()) return;
-    try {
-      // Call API route that lists tax_declarations with joins
-      const res = await fetch('/api/properties/listing');
-      if (!res.ok) throw new Error('Failed to fetch property records');
-      const { rows } = await res.json();
-      // Filter client-side for now (could be improved with server-side search)
-      const q = searchQuery.trim().toLowerCase();
-      const filtered = (rows || []).filter((row: any) => {
-        const td = row.td_number?.toLowerCase() || '';
-        const owner = row.taxpayers?.owner_name?.toLowerCase() || '';
-        const pin = row.properties?.pin?.toLowerCase() || '';
-        return td.includes(q) || owner.includes(q) || pin.includes(q);
-      });
-      setSearchResults(
-        filtered.map((row: any) => ({
-          tdNumber: row.td_number || '',
-          pin: row.properties?.pin || '',
-          owner: row.taxpayers?.owner_name || '',
-          classification: row.classification || '',
-          barangay: row.properties?.barangays?.name || '',
-          landArea: row.land_area ? String(row.land_area) : '',
-          marketValue: row.total_market_value ? String(row.total_market_value) : '',
-          assessLevel: row.land_assessment_level ? String(row.land_assessment_level) : '',
-          assessedValue: row.total_assessed_value ? String(row.total_assessed_value) : '',
-        }))
-      );
-    } catch (err) {
-      // Optionally show error
-      setSearchResults([]);
+  // Auto-compute Market Value
+  useEffect(() => {
+    const area = parseFloat(newLandArea.replace(/,/g, '')) || 0;
+    const unit = parseFloat(newUnitValue.replace(/,/g, '')) || 0;
+    if (area && unit) {
+      setNewMarketValue((area * unit).toFixed(2));
+    } else {
+      setNewMarketValue('');
     }
-  };
+  }, [newLandArea, newUnitValue]);
 
-  const handleSelect = (p: PropertyRecord) => {
-    setSelectedProperty(p);
-    setNewClassification(p.classification);
-    setNewLandArea(p.landArea);
-    setNewAssessLevel(p.assessLevel);
-    setSearchResults([]);
-    setHasSearched(false);
-    setSearchQuery('');
+  // Auto-compute Assessed Value
+  useEffect(() => {
+    const market = parseFloat(newMarketValue.replace(/,/g, '')) || 0;
+    const level = parseFloat(newAssessLevel.replace(/,/g, '')) || 0;
+    if (market && level) {
+      setNewAssessedValue(((market * level) / 100).toFixed(2));
+    } else {
+      setNewAssessedValue('');
+    }
+  }, [newMarketValue, newAssessLevel]);
+
+  // Fetch all properties for combobox
+  useEffect(() => {
+    async function fetchAll() {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/properties/listing');
+        if (!res.ok) throw new Error('Failed to load properties');
+        const { rows } = await res.json();
+        const options: ComboboxOption[] = [];
+        const data: Record<string, PropertyRecord> = {};
+
+        (rows || []).forEach((row: any) => {
+          const idStr = String(row.id);
+          const p: PropertyRecord = {
+            id: row.id,
+            tdNumber: row.td_number || '',
+            pin: row.properties?.pin || '',
+            owner: row.taxpayers?.owner_name || '',
+            classification: row.classification || '',
+            barangay: row.properties?.barangays?.name || '',
+            landArea: row.land_area ? String(row.land_area) : '',
+            marketValue: row.total_market_value ? String(row.total_market_value) : '',
+            assessLevel: row.land_assessment_level ? String(row.land_assessment_level) : '',
+            assessedValue: row.total_assessed_value ? String(row.total_assessed_value) : '',
+            taxpayer_id: row.taxpayer_id,
+            property_id: row.property_id
+          };
+          
+          options.push({
+            value: idStr,
+            label: `${p.tdNumber} – ${p.owner}`,
+            sublabel: `PIN: ${p.pin} | ${p.classification} | ${p.barangay}`
+          });
+          data[idStr] = p;
+        });
+
+        setAllOptions(options);
+        setPropertyData(data);
+      } catch (err) {
+        toast.error('Could not load property records.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchAll();
+  }, []);
+
+  // Update selected property when combobox value changes
+  useEffect(() => {
+    if (selectedTdId && propertyData[selectedTdId]) {
+      const p = propertyData[selectedTdId];
+      setSelectedProperty(p);
+      setNewClassification(p.classification);
+      setNewLandArea(p.landArea);
+      setNewAssessLevel(p.assessLevel);
+      setNewTdNumber(''); // Reset for new entry
+    } else {
+      setSelectedProperty(null);
+    }
+  }, [selectedTdId, propertyData]);
+
+  const handleSaveRevision = async () => {
+    if (!selectedProperty || !newTdNumber || !reason || !newClassification || !newLandArea || !newUnitValue || !newAssessLevel || !effectivityYear) {
+      toast.error('Please fill in all required fields marked with *');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/property/reassessment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldTdId: selectedProperty.id,
+          oldTdNumber: selectedProperty.tdNumber,
+          property_id: selectedProperty.property_id,
+          taxpayer_id: selectedProperty.taxpayer_id,
+          newTdNumber,
+          reason,
+          newClassification,
+          newLandArea: parseFloat(newLandArea.replace(/,/g, '')),
+          newUnitValue: parseFloat(newUnitValue.replace(/,/g, '')),
+          newMarketValue: parseFloat(newMarketValue.replace(/,/g, '')),
+          newAssessLevel: parseFloat(newAssessLevel.replace(/,/g, '')),
+          newAssessedValue: parseFloat(newAssessedValue.replace(/,/g, '')),
+          bldgChanges,
+          effectivityYear,
+          notes,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to save revision');
+      }
+
+      toast.success('Property revision saved successfully!');
+      setSelectedProperty(null);
+      setSelectedTdId(''); // Clear selection
+      // Reset form
+      setReason(''); setNewClassification(''); setNewLandArea(''); setNewUnitValue(''); setNewMarketValue(''); setNewAssessLevel(''); setNewAssessedValue(''); setBldgChanges(''); setNotes('');
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred while saving.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -104,17 +196,19 @@ export default function ReassessmentPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => { setSelectedProperty(null); setReason(''); setNewClassification(''); setNewLandArea(''); setNewUnitValue(''); setNewMarketValue(''); setNewAssessLevel(''); setNewAssessedValue(''); setBldgChanges(''); setNotes(''); }}
+              onClick={() => { setSelectedTdId(''); setSelectedProperty(null); setReason(''); setNewClassification(''); setNewLandArea(''); setNewUnitValue(''); setNewMarketValue(''); setNewAssessLevel(''); setNewAssessedValue(''); setBldgChanges(''); setNotes(''); }}
               className="font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-gray-50"
             >
               Clear
             </button>
             <button
               type="button"
-              className="font-inter inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
+              disabled={isSaving}
+              onClick={handleSaveRevision}
+              className="font-inter inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
             >
-              <Save className="h-4 w-4" />
-              Save Revision
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {isSaving ? 'Saving...' : 'Save Revision'}
             </button>
           </div>
         )}
@@ -127,69 +221,21 @@ export default function ReassessmentPage() {
             <div className="rounded-md bg-slate-100 p-2">
               <Search className="h-5 w-5 text-[#00154A]" />
             </div>
-            <h2 className="font-inter text-sm font-semibold text-[#848794]">Step 1 – Search Existing Property</h2>
+            <h2 className="font-inter text-sm font-semibold text-[#848794]">Step 1 – Select Property for Revision</h2>
           </div>
           <p className="font-inter mb-4 text-xs text-slate-400">
-            Search for the property to be reassessed using TD number, owner name, or PIN.
+            Search and select the property you wish to revise from the registry.
           </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Enter TD Number, Owner Name, or PIN..."
-              className="font-inter flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          <div className="max-w-xl">
+            <Combobox
+              placeholder={isLoading ? 'Loading properties...' : 'Select or search property...'}
+              searchPlaceholder="Search by TD Number, Owner, or PIN..."
+              options={allOptions}
+              value={selectedTdId}
+              onChange={setSelectedTdId}
+              disabled={isLoading}
             />
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-[#8A9098] hover:bg-slate-800 transition-colors"
-            >
-              <Search className="h-4 w-4" />
-              Search
-            </button>
           </div>
-
-          {hasSearched && searchResults.length === 0 && (
-            <p className="font-inter mt-4 text-xs text-slate-400">No properties found. Try a different search term.</p>
-          )}
-
-          {searchResults.length > 0 && (
-            <div className="mt-4 overflow-hidden rounded-md border border-gray-200">
-              <table className="w-full font-inter text-xs">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    {['TD Number', 'Owner Name', 'PIN', 'Classification', 'Barangay', 'Market Value (₱)', 'Assessed Value (₱)', ''].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-[#595a5d] font-semibold uppercase tracking-wide whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {searchResults.map((p) => (
-                    <tr key={p.tdNumber} className="border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-[#595a5d] whitespace-nowrap">{p.tdNumber}</td>
-                      <td className="px-4 py-3 text-slate-700">{p.owner}</td>
-                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{p.pin}</td>
-                      <td className="px-4 py-3 text-slate-500">{p.classification}</td>
-                      <td className="px-4 py-3 text-slate-500">{p.barangay}</td>
-                      <td className="px-4 py-3 text-right text-slate-600">{p.marketValue}</td>
-                      <td className="px-4 py-3 text-right text-slate-600">{p.assessedValue}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => handleSelect(p)}
-                          className="font-inter cursor-pointer rounded bg-[#0f1729] px-3 py-1.5 text-xs text-[#8A9098] hover:bg-slate-800 transition-colors"
-                        >
-                          Select
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
 
@@ -239,6 +285,7 @@ export default function ReassessmentPage() {
                       ].map((r) => <option key={r}>{r}</option>)}
                     </select>
                   </div>
+                  <Field label="New TD Number" placeholder="e.g. TD-2024-XXXX" value={newTdNumber} onChange={setNewTdNumber} required />
                   <Field label="Effectivity Year" placeholder="e.g. 2024" value={effectivityYear} onChange={setEffectivityYear} required />
                   <div className="sm:col-span-2">
                     <label className="font-inter text-xs font-medium text-slate-600">Notes / Remarks</label>

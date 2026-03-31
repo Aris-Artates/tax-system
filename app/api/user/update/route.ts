@@ -20,6 +20,7 @@ type UpdateUserPayload = {
 	department: string;
 	position: string;
 	status: boolean;
+	image_path?: string;
 };
 
 function isMissingText(value: unknown) {
@@ -47,7 +48,6 @@ export async function PUT(request: Request) {
 			'firstname',
 			'lastname',
 			'birthdate',
-			'age',
 			'email',
 			'phone',
 			'department',
@@ -119,23 +119,24 @@ export async function PUT(request: Request) {
 		const { error: updateError } = await supabaseAdmin
 			.from('users')
 			.update({
-				empID: body.empID!.trim(),
+				empID: String(body.empID ?? '').trim(),
 				username: normalizedUsername,
-				firstname: body.firstname!.trim(),
-				middlename: body.middlename?.trim() || '',
-				lastname: body.lastname!.trim(),
-				suffix: body.suffix?.trim() || '',
-				birthdate: body.birthdate!.trim(),
-				age: body.age!.trim(),
+				firstname: String(body.firstname ?? '').trim(),
+				middlename: String(body.middlename ?? '').trim(),
+				lastname: String(body.lastname ?? '').trim(),
+				suffix: String(body.suffix ?? '').trim(),
+				birthdate: String(body.birthdate ?? '').trim(),
+				age: String(body.age ?? '').trim(),
 				sex: body.sex,
 				...(hasTempPass ? { temp_pass: normalizedTempPass } : {}),
 				...(hasPassword ? { password: normalizedPassword } : {}),
-				email: body.email!.trim(),
-				phone: body.phone!.trim(),
+				email: String(body.email ?? '').trim(),
+				phone: String(body.phone ?? '').trim(),
 				role_id: roleId,
-				department: body.department!.trim(),
-				position: body.position!.trim(),
+				department: String(body.department ?? '').trim(),
+				position: String(body.position ?? '').trim(),
 				status: body.status,
+				image_path: body.image_path,
 			})
 			.eq('empID', body.originalEmpID!.trim());
 
@@ -146,9 +147,10 @@ export async function PUT(request: Request) {
 		return NextResponse.json({
 			message: 'User updated successfully.',
 		});
-	} catch {
+	} catch (error: any) {
+		console.error('Update user detail error:', error);
 		return NextResponse.json(
-			{ error: 'Unable to process request.' },
+			{ error: `Unable to process request: ${error.message || 'Unknown error'}` },
 			{ status: 500 },
 		);
 	}

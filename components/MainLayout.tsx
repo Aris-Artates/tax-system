@@ -57,12 +57,16 @@ export default function MainLayout({
   }, []);
 
   return (
-    <SidebarProvider className="h-screen overflow-hidden">
-      <AppSidebar sessionUser={sessionUser} />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <HeaderComponent sessionUser={sessionUser} />
+    <SidebarProvider className="h-screen overflow-hidden print:h-auto print:overflow-visible">
+      <div className="print:hidden">
+        <AppSidebar sessionUser={sessionUser} />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden print:h-auto print:overflow-visible">
+        <div className="print:hidden">
+          <HeaderComponent sessionUser={sessionUser} />
+        </div>
         {/* Main content scrolls */}
-        <main className="flex-1 overflow-y-auto p-4.5 bg-[#f0f4f7]">
+        <main className="flex-1 overflow-y-auto p-6 bg-[#f0f4f7] print:bg-white print:p-0 print:overflow-visible">
           {children}
         </main>
       </div>

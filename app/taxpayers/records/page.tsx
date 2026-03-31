@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
+
 import {
   ArrowLeft,
   FileBadge,
@@ -14,6 +15,7 @@ import {
   CalendarIcon,
 } from "lucide-react";
 
+import { CertificatePDF } from "@/components/print/CertificatePDF";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { Button } from "@/components/ui/button";
@@ -110,6 +112,7 @@ export default function CertificationsRecordsPage() {
   const [taxpayerId, setTaxpayerId] = React.useState("");
   const [tin, setTin] = React.useState("");
   const [ownerAddress, setOwnerAddress] = React.useState("");
+  const [taxpayerName, setTaxpayerName] = React.useState("");
 
   // State: Certification Request
   const [certType, setCertType] = React.useState("");
@@ -124,31 +127,59 @@ export default function CertificationsRecordsPage() {
     new Date(),
   );
 
-  // Mock data for combobox
-  const [taxpayerOptions] = React.useState<ComboboxOption[]>([
-    { value: "1", label: "Juan Dela Cruz", sublabel: "TIN: 123-456-789-000" },
-    { value: "2", label: "Maria Clara", sublabel: "TIN: 987-654-321-000" },
-    { value: "3", label: "Acme Corporation", sublabel: "TIN: 111-222-333-000" },
-  ]);
+  // State: PDF preview
+  const [isClient, setIsClient] = React.useState(false);
 
-  // Simulate fetching taxpayer details
   React.useEffect(() => {
-    if (taxpayerId) {
-      if (taxpayerId === "1") {
-        setTin("123-456-789-000");
-        setOwnerAddress("Brgy. San Jose, Sta. Rita, Samar");
-      } else if (taxpayerId === "2") {
-        setTin("987-654-321-000");
-        setOwnerAddress("Brgy. Poblacion, Sta. Rita, Samar");
-      } else {
-        setTin("111-222-333-000");
-        setOwnerAddress("Manila City");
+    setIsClient(true);
+  }, []);
+
+  // State: Taxpayer List
+  const [taxpayerOptions, setTaxpayerOptions] = React.useState<ComboboxOption[]>([]);
+  const [rawTaxpayers, setRawTaxpayers] = React.useState<any[]>([]);
+  const [isLoadingTaxpayers, setIsLoadingTaxpayers] = React.useState(true);
+
+  // Fetch all taxpayers on mount
+  React.useEffect(() => {
+    async function fetchTaxpayers() {
+      try {
+        setIsLoadingTaxpayers(true);
+        const res = await fetch('/api/taxpayers/list');
+        const json = await res.json();
+        if (res.ok && json.taxpayers) {
+          setRawTaxpayers(json.taxpayers);
+          const options = json.taxpayers.map((t: any) => ({
+            value: String(t.id),
+            label: t.owner_name,
+            sublabel: `TIN: ${t.tin || 'N/A'}`
+          }));
+          setTaxpayerOptions(options);
+        }
+      } catch (err) {
+        console.error('Failed to fetch taxpayers:', err);
+      } finally {
+        setIsLoadingTaxpayers(false);
+      }
+    }
+    fetchTaxpayers();
+  }, []);
+
+  // Sync details when a taxpayer is selected
+  React.useEffect(() => {
+    if (taxpayerId && rawTaxpayers.length > 0) {
+      const selected = rawTaxpayers.find((t) => String(t.id) === taxpayerId);
+      if (selected) {
+        setTaxpayerName(selected.owner_name || "");
+        setTin(selected.tin || "");
+        // Construct address from what's available
+        setOwnerAddress(selected.address || "Sta. Rita, Samar");
       }
     } else {
+      setTaxpayerName("");
       setTin("");
       setOwnerAddress("");
     }
-  }, [taxpayerId]);
+  }, [taxpayerId, rawTaxpayers]);
 
   return (
     <div className="flex">
@@ -179,18 +210,23 @@ export default function CertificationsRecordsPage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="font-inter inline-flex h-10 items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-xs font-medium text-slate-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                className="cursor-pointer font-inter inline-flex h-10 items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-xs font-medium text-slate-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 Cancel
               </button>
 
-              <button
-                type="button"
-                className="font-inter inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800"
-              >
-                <Printer className="h-4 w-4" />
-                Preview & Issue
-              </button>
+              {/* Native Print Trigger */}
+              {isClient && (
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  disabled={!taxpayerName || !orNumber || !amountPaid}
+                  className="cursor-pointer font-inter inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Printer className="h-4 w-4" />
+                  Preview & Issue
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -206,11 +242,12 @@ export default function CertificationsRecordsPage() {
                 <div>
                   <Combobox
                     label="Taxpayer Name"
-                    placeholder="Search taxpayer..."
+                    placeholder={isLoadingTaxpayers ? "Loading..." : "Search taxpayer..."}
                     searchPlaceholder="Search by name or TIN"
                     options={taxpayerOptions}
                     value={taxpayerId}
                     onChange={setTaxpayerId}
+                    disabled={isLoadingTaxpayers}
                     required
                   />
                   <p className="font-inter mt-1 text-xs text-slate-400">
@@ -358,6 +395,23 @@ export default function CertificationsRecordsPage() {
             </Section>
           </div>
         </div>
+        {/* Print-only Certificate Container */}
+        {isClient && (
+          <div className="sr-only print:not-sr-only">
+            <CertificatePDF
+              taxpayerName={taxpayerName}
+              tin={tin}
+              ownerAddress={ownerAddress}
+              certType={certType}
+              purpose={purpose}
+              relatedTd={relatedTd}
+              remarks={remarks}
+              orNumber={orNumber}
+              amountPaid={amountPaid}
+              paymentDate={paymentDate}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

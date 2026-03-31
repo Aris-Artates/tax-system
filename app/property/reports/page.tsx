@@ -18,13 +18,9 @@ import {
   TaxDeclarationPrint,
   type TaxDeclarationData,
 } from '@/components/print/TaxDeclarationPrint';
+import { GeneralReportPrint, type ReportRow } from '@/components/print/GeneralReportPrint';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 
-const barangays = [
-  'All Barangays', 'Bacubac', 'Bagacay', 'Balonga-as', 'Barayong', 'Binalayan',
-  'Buenavista', 'Cagbigti', 'Calunangan', 'Caluwayan', 'Camumucmuc', 'Capacuhan',
-  'Corocawayan', 'Cotmon', 'Dao', 'Flores', 'Gabas', 'Ilag', 'Pinamorotan',
-  'Poblacion', 'San Jose', 'Tagalag', 'Urdaneta', 'Zaragoza',
-];
 
 const reportTypes = [
   {
@@ -99,6 +95,23 @@ export default function ReportsCertificationsPage() {
   const [fetchError,  setFetchError]  = useState<string | null>(null);
   const [printData,   setPrintData]   = useState<TaxDeclarationData | null>(null);
 
+  // ── General Report Data (for tabular reports) ─────────────────────────────
+  const [reportData, setReportData] = useState<{ title: string; subtitle: string; rows: ReportRow[] } | null>(null);
+
+  // ── Property Options (for Combobox) ───────────────────────────────────────
+  const [allOptions, setAllOptions] = useState<ComboboxOption[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+
+  // ── Barangay Options (for Combobox) ───────────────────────────────────────
+  const [barangayOptions, setBarangayOptions] = useState<ComboboxOption[]>([]);
+  const [isLoadingBarangays, setIsLoadingBarangays] = useState(true);
+
+  // ── Year Options (static for now) ─────────────────────────────────────────
+  const yearOptions: ComboboxOption[] = ['2024', '2023', '2022', '2021', '2020', '2019'].map(y => ({
+    value: y,
+    label: y
+  }));
+
   // triggerPrint: set to 'preview' or 'download' after data is ready so
   // useEffect can call window.print() on the next render (data + DOM ready).
   const printIntent = useRef<'preview' | 'download' | null>(null);
@@ -110,43 +123,101 @@ export default function ReportsCertificationsPage() {
     setFetchState('idle');
     setFetchError(null);
     setPrintData(null);
+    setReportData(null);
     printIntent.current = null;
-  }, [selectedReport, tdNumber]);
+  }, [selectedReport, tdNumber, year, barangay, classification]);
 
-  // ── Trigger window.print() once printData is rendered in the DOM ──────────
+  // ── Fetch all properties for combobox ─────────────────────────────────────
   useEffect(() => {
-    if (fetchState === 'ready' && printData && printIntent.current) {
-      // Small timeout lets React flush the TaxDeclarationPrint render first
+    async function fetchAll() {
+      setIsLoadingProperties(true);
+      try {
+        const res = await fetch('/api/properties/listing');
+        if (!res.ok) throw new Error('Failed to load properties');
+        const { rows } = await res.json();
+        const options: ComboboxOption[] = (rows || []).map((row: any) => ({
+          value: row.td_number || '',
+          label: row.td_number || '',
+          sublabel: row.taxpayers?.owner_name || 'Unknown Owner',
+        }));
+        setAllOptions(options);
+      } catch (err) {
+        console.error('Property fetch error:', err);
+      } finally {
+        setIsLoadingProperties(false);
+      }
+    }
+    fetchAll();
+  }, []);
+
+  // ── Fetch all barangays for combobox ──────────────────────────────────────
+  useEffect(() => {
+    async function fetchBarangays() {
+      setIsLoadingBarangays(true);
+      try {
+        const res = await fetch('/api/barangays/list');
+        if (!res.ok) throw new Error('Failed to load barangays');
+        const { barangays } = await res.json();
+        const options: ComboboxOption[] = [
+          { value: 'All Barangays', label: 'All Barangays' },
+          ...(barangays || []).map((b: any) => ({
+            value: b.name,
+            label: b.name,
+          })),
+        ];
+        setBarangayOptions(options);
+      } catch (err) {
+        console.error('Barangay fetch error:', err);
+      } finally {
+        setIsLoadingBarangays(false);
+      }
+    }
+    fetchBarangays();
+  }, []);
+
+  // ── Trigger window.print() once printData or reportData is rendered in the DOM
+  useEffect(() => {
+    if (fetchState === 'ready' && (printData || reportData) && printIntent.current) {
+      // Small timeout lets React flush the print component render first
       const t = setTimeout(() => window.print(), 120);
       return () => clearTimeout(t);
     }
-  }, [fetchState, printData]);
+  }, [fetchState, printData, reportData]);
 
-  // ── Fetch TD data from API, then set intent ────────────────────────────────
+  // ── Fetch Report data from API, then set intent ────────────────────────────
   async function fetchAndPrint(intent: 'preview' | 'download') {
-    if (!tdNumber.trim()) return;
+    if (isTDReport && !tdNumber.trim()) return;
 
     setFetchState('loading');
     setFetchError(null);
     setPrintData(null);
+    setReportData(null);
     printIntent.current = intent;
 
     try {
-      const res = await fetch(
-        `/api/tax-declarations/by-number?td_number=${encodeURIComponent(tdNumber.trim())}`,
-      );
+      let url = '';
+      if (isTDReport) {
+        url = `/api/tax-declarations/by-number?td_number=${encodeURIComponent(tdNumber.trim())}`;
+      } else {
+        url = `/api/reports/generate?type=${selectedReport}&year=${year}&barangay=${encodeURIComponent(barangay)}&classification=${encodeURIComponent(classification)}`;
+      }
+
+      const res = await fetch(url);
       const json = await res.json();
 
       if (!res.ok) {
-        setFetchError(json.error ?? 'Failed to load tax declaration.');
+        setFetchError(json.error ?? 'Failed to load report data.');
         setFetchState('error');
         printIntent.current = null;
         return;
       }
 
-      setPrintData(json.td as TaxDeclarationData);
+      if (isTDReport) {
+        setPrintData(json.td as TaxDeclarationData);
+      } else {
+        setReportData(json.data);
+      }
       setFetchState('ready');
-      // window.print() fires in the useEffect above once render is complete
     } catch {
       setFetchError('Network error. Please try again.');
       setFetchState('error');
@@ -165,8 +236,19 @@ export default function ReportsCertificationsPage() {
           inside TaxDeclarationPrint itself (#td-print-root visibility trick).
       ──────────────────────────────────────────────────────────────────────── */}
       {printData && (
-        <div className="sr-only print:not-sr-only">
+        <div className="sr-only print:not-sr-only relative">
+          {selectedReport === 'certified-copy' && (
+            <div className="absolute top-40 right-10 rotate-12 border-4 border-red-600 px-4 py-2 text-red-600 font-bold text-2xl uppercase tracking-widest opacity-80 pointer-events-none z-50">
+              Certified True Copy
+            </div>
+          )}
           <TaxDeclarationPrint data={printData} />
+        </div>
+      )}
+
+      {reportData && selectedReport && (
+        <div className="sr-only print:not-sr-only">
+          <GeneralReportPrint data={reportData} type={selectedReport} />
         </div>
       )}
 
@@ -252,39 +334,45 @@ export default function ReportsCertificationsPage() {
                       <label className="font-inter text-xs font-medium text-slate-600">
                         TD Number <span className="text-rose-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        value={tdNumber}
-                        onChange={(e) => setTdNumber(e.target.value)}
-                        placeholder="e.g. TD-2024-0001"
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 font-inter text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                      />
+                      <div className="mt-1">
+                        <Combobox
+                          placeholder={isLoadingProperties ? 'Loading…' : 'Select TD Number…'}
+                          searchPlaceholder="Type to search…"
+                          options={allOptions}
+                          value={tdNumber}
+                          onChange={setTdNumber}
+                          disabled={isLoadingProperties}
+                        />
+                      </div>
                     </div>
                   )}
                   {selected.fields.includes('year') && (
                     <div>
                       <label className="font-inter text-xs font-medium text-slate-600">Tax Year</label>
-                      <select
-                        value={year}
-                        onChange={(e) => setYear(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 font-inter text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                      >
-                        {['2024', '2023', '2022', '2021', '2020', '2019'].map((y) => (
-                          <option key={y}>{y}</option>
-                        ))}
-                      </select>
+                      <div className="mt-1">
+                        <Combobox
+                          placeholder="Select Year…"
+                          options={yearOptions}
+                          value={year}
+                          onChange={setYear}
+                          hideSearch={true}
+                        />
+                      </div>
                     </div>
                   )}
                   {selected.fields.includes('barangay') && (
                     <div>
                       <label className="font-inter text-xs font-medium text-slate-600">Barangay</label>
-                      <select
-                        value={barangay}
-                        onChange={(e) => setBarangay(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 font-inter text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                      >
-                        {barangays.map((b) => <option key={b}>{b}</option>)}
-                      </select>
+                      <div className="mt-1">
+                        <Combobox
+                          placeholder={isLoadingBarangays ? 'Loading…' : 'Select Barangay…'}
+                          searchPlaceholder="Type to search…"
+                          options={barangayOptions}
+                          value={barangay}
+                          onChange={setBarangay}
+                          disabled={isLoadingBarangays}
+                        />
+                      </div>
                     </div>
                   )}
                   {selected.fields.includes('classification') && (
@@ -334,11 +422,7 @@ export default function ReportsCertificationsPage() {
                   <button
                     type="button"
                     disabled={!canGenerate}
-                    onClick={() =>
-                      isTDReport
-                        ? fetchAndPrint('download')
-                        : console.log('TODO: generate', selectedReport)
-                    }
+                    onClick={() => fetchAndPrint('download')}
                     className="font-inter w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-[#0f1729] px-4 py-2.5 text-xs font-medium text-[#8A9098] hover:bg-slate-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isLoading && printIntent.current === 'download'
@@ -353,11 +437,7 @@ export default function ReportsCertificationsPage() {
                   <button
                     type="button"
                     disabled={!canGenerate}
-                    onClick={() =>
-                      isTDReport
-                        ? fetchAndPrint('preview')
-                        : console.log('TODO: preview', selectedReport)
-                    }
+                    onClick={() => fetchAndPrint('preview')}
                     className="font-inter w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-gray-200 bg-white px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-gray-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isLoading && printIntent.current === 'preview'
