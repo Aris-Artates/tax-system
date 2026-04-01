@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
     amount_paid NUMERIC(15, 2) NOT NULL,
     payment_method TEXT NOT NULL,
     or_number TEXT UNIQUE NOT NULL,
+    status TEXT DEFAULT 'Posted',
     payment_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

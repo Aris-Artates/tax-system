@@ -1,35 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const isNextOrRequest = req.nextUrl.searchParams.get('next-or') === 'true';
+
+    if (isNextOrRequest) {
+      const { data, error } = await supabaseAdmin
+        .from('payments')
+        .select('or_number')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error && error.code !== 'PGRST116') {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+
+      const currentYear = new Date().getFullYear();
+      let nextOrNumber = `OR-${currentYear}-000001`;
+
+      if (data && data.length > 0) {
+        const lastOr = data[0].or_number;
+        const match = lastOr.match(/OR-(\d+)-(\d+)/);
+        if (match) {
+          const year = parseInt(match[1]);
+          const seq = parseInt(match[2]);
+          
+          if (year === currentYear) {
+            nextOrNumber = `OR-${currentYear}-${(seq + 1).toString().padStart(6, '0')}`;
+          }
+        }
+      }
+
+      return NextResponse.json({ nextOrNumber });
+    }
+
+    // Default: Fetch all payments for the Log page
     const { data, error } = await supabaseAdmin
       .from('payments')
-      .select('or_number')
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const currentYear = new Date().getFullYear();
-    let nextOrNumber = `OR-${currentYear}-000001`;
-
-    if (data && data.length > 0) {
-      const lastOr = data[0].or_number;
-      const match = lastOr.match(/OR-(\d+)-(\d+)/);
-      if (match) {
-        const year = parseInt(match[1]);
-        const seq = parseInt(match[2]);
-        
-        if (year === currentYear) {
-          nextOrNumber = `OR-${currentYear}-${(seq + 1).toString().padStart(6, '0')}`;
-        }
-      }
-    }
-
-    return NextResponse.json({ nextOrNumber });
+    return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
