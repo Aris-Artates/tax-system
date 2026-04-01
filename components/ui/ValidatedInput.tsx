@@ -36,7 +36,10 @@ function digitsBeforeCursor(str: string, cursorPos: number): number {
 
 function cursorAfterNthDigit(masked: string, n: number): number {
   if (n === 0) {
-    return masked.startsWith("TD-") ? 3 : 0;
+    if (masked.startsWith("TD-")) return 3;
+    if (masked.startsWith("OR-")) return 3;
+    if (masked.startsWith("DOC-")) return 9; // For DOC-YYYY-
+    return 0;
   }
   let count = 0;
   for (let i = 0; i < masked.length; i++) {
@@ -111,10 +114,15 @@ export function ValidatedInput({
       const { selectionStart: ss, selectionEnd: se } = e.currentTarget;
 
       // Handle specific prefix protections
-      if (resolvedValidator === "td-number" || resolvedValidator === "ORnumber") {
-        const PREFIX_LEN = 3;
+      if (
+        resolvedValidator === "td-number" ||
+        resolvedValidator === "ORnumber" ||
+        resolvedValidator === "reference-number"
+      ) {
+        const PREFIX_LEN = resolvedValidator === "reference-number" ? 9 : 3;
         if (e.key === "Backspace") {
-          const caretAtPrefix = ss !== null && se !== null && ss === se && ss <= PREFIX_LEN;
+          const caretAtPrefix =
+            ss !== null && se !== null && ss === se && ss <= PREFIX_LEN;
           const selectionInPrefix = ss !== null && ss < PREFIX_LEN;
           if (caretAtPrefix || selectionInPrefix) {
             e.preventDefault();
@@ -188,15 +196,26 @@ export function ValidatedInput({
     (_e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
 
-      if (resolvedValidator === "td-number" || resolvedValidator === "ORnumber") {
-        const prefix = resolvedValidator === "td-number" ? "TD-" : "OR-";
+      if (
+        resolvedValidator === "td-number" ||
+        resolvedValidator === "ORnumber" ||
+        resolvedValidator === "reference-number"
+      ) {
+        const PREFIX_LEN = resolvedValidator === "reference-number" ? 9 : 3;
+        const prefix =
+          resolvedValidator === "td-number"
+            ? "TD-"
+            : resolvedValidator === "ORnumber"
+              ? "OR-"
+              : `DOC-${new Date().getFullYear()}-`;
+
         if (!value) {
           onChange(prefix, false);
         }
 
         requestAnimationFrame(() => {
           if (!inputRef.current) return;
-          const pos = Math.max(3, inputRef.current.selectionStart ?? 3);
+          const pos = Math.max(PREFIX_LEN, inputRef.current.selectionStart ?? PREFIX_LEN);
           inputRef.current.setSelectionRange(pos, pos);
         });
       }
@@ -206,11 +225,19 @@ export function ValidatedInput({
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLInputElement>) => {
-      if (resolvedValidator === "td-number") {
+      if (
+        resolvedValidator === "td-number" ||
+        resolvedValidator === "ORnumber" ||
+        resolvedValidator === "reference-number"
+      ) {
+        const PREFIX_LEN = resolvedValidator === "reference-number" ? 9 : 3;
         const target = e.currentTarget;
         requestAnimationFrame(() => {
-          if (target.selectionStart !== null && target.selectionStart < 3) {
-            target.setSelectionRange(3, 3);
+          if (
+            target.selectionStart !== null &&
+            target.selectionStart < PREFIX_LEN
+          ) {
+            target.setSelectionRange(PREFIX_LEN, PREFIX_LEN);
           }
         });
       }

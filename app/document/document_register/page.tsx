@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -18,6 +18,7 @@ import {
   CalendarDays,
   User2,
   FolderOpen,
+  RefreshCw,
 } from "lucide-react";
 import {
   Dialog,
@@ -27,6 +28,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { DocumentRegisterPrint } from "@/components/print/DocumentRegisterPrint";
+import { RegisterDocumentModal } from "@/components/document/RegisterDocumentModal";
+import { toast } from "sonner";
 
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
@@ -73,85 +76,65 @@ type Document = {
   status: "Received" | "Pending" | "Approved" | "Archived";
 };
 
-const MOCK_DOCUMENTS: Document[] = [
-  {
-    id: "1",
-    refNumber: "DOC-2024-001",
-    date: "2024-03-20",
-    subject: "Tax Ordinance No. 12 series of 2024",
-    category: "Legal",
-    origin: "Sangguniang Bayan",
-    status: "Approved",
-  },
-  {
-    id: "2",
-    refNumber: "DOC-2024-002",
-    date: "2024-03-19",
-    subject: "Request for Real Property Assessment Review",
-    category: "Correspondence",
-    origin: "Maria Clara",
-    status: "Pending",
-  },
-  {
-    id: "3",
-    refNumber: "DOC-2024-003",
-    date: "2024-03-18",
-    subject: "Quarterly Revenue Collection Report - Q1",
-    category: "Financial",
-    origin: "Treasurer's Office",
-    status: "Received",
-  },
-  {
-    id: "4",
-    refNumber: "DOC-2024-004",
-    date: "2024-03-18",
-    subject: "Memorandum: Updated Tax Valuation Guidelines",
-    category: "Administrative",
-    origin: "Assessor's Office",
-    status: "Approved",
-  },
-  {
-    id: "5",
-    refNumber: "DOC-2024-005",
-    date: "2024-03-17",
-    subject: "Notice of Delinquency - Batongbacal Res.",
-    category: "Taxation",
-    origin: "Legal Division",
-    status: "Pending",
-  },
-  {
-    id: "6",
-    refNumber: "DOC-2024-006",
-    date: "2024-03-15",
-    subject: "Annual Budget Proposal for CY 2025",
-    category: "Financial",
-    origin: "Budget Office",
-    status: "Received",
-  },
-  {
-    id: "7",
-    refNumber: "DOC-2024-007",
-    date: "2024-03-12",
-    subject: "Internal Audit Findings - Property Registry",
-    category: "Legal",
-    origin: "COA Official",
-    status: "Archived",
-  },
-];
-
 export default function DocumentRegisterPage() {
+  console.log("DocumentRegisterPage component mounting...");
   const router = useRouter();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewDoc, setViewDoc] = useState<Document | null>(null);
   const [printDoc, setPrintDoc] = useState<Document | null>(null);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    console.log("Fetching documents from API...");
+    try {
+      const response = await fetch("/api/documents/register/list");
+      const data = await response.json();
+
+      console.log("API Response:", data);
+
+      if (response.ok) {
+        // Map snake_case to camelCase
+        const mappedDocs = (data.documents || []).map((doc: any) => ({
+          id: doc.id,
+          refNumber: doc.ref_number,
+          date: doc.date_received,
+          subject: doc.subject,
+          category: doc.category,
+          origin: doc.origin,
+          status: doc.status,
+        }));
+        console.log("Mapped Documents:", mappedDocs);
+        setDocuments(mappedDocs);
+      } else {
+        console.error("API error:", data.error);
+        toast.error(data.error || "Failed to fetch documents.");
+      }
+    } catch (error) {
+      console.error("Network or parsing error:", error);
+      toast.error("A network error occurred while fetching documents.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
   const handlePrint = () => window.print();
 
+  const handleRegisterSuccess = (newDoc: Document) => {
+    setDocuments((prev) => [newDoc, ...prev]);
+  };
+
   // Pre-filter the data before passing it to TanStack table
   const filteredItems = useMemo(() => {
-    return MOCK_DOCUMENTS.filter((doc) => {
+    return documents.filter((doc) => {
       const matchesSearch =
         doc.refNumber.toLowerCase().includes(search.toLowerCase()) ||
         doc.subject.toLowerCase().includes(search.toLowerCase()) ||
@@ -162,34 +145,36 @@ export default function DocumentRegisterPage() {
         statusFilter === "All" || doc.status === statusFilter;
       return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [search, categoryFilter, statusFilter]);
+  }, [search, categoryFilter, statusFilter, documents]);
 
-  const stats = [
-    {
-      label: "Total Documents",
-      count: 1248,
-      icon: <FileText className="h-5 w-5 text-blue-600" />,
-      bgColor: "bg-blue-50",
-    },
-    {
-      label: "Pending Action",
-      count: 42,
-      icon: <Clock className="h-5 w-5 text-amber-600" />,
-      bgColor: "bg-amber-50",
-    },
-    {
-      label: "Recently Received",
-      count: 15,
-      icon: <Inbox className="h-5 w-5 text-emerald-600" />,
-      bgColor: "bg-emerald-50",
-    },
-    {
-      label: "Archived Records",
-      count: 852,
-      icon: <Archive className="h-5 w-5 text-slate-600" />,
-      bgColor: "bg-slate-50",
-    },
-  ];
+  const stats = useMemo(() => {
+    return [
+      {
+        label: "Total Documents",
+        count: documents.length,
+        icon: <FileText className="h-5 w-5 text-blue-600" />,
+        bgColor: "bg-blue-50",
+      },
+      {
+        label: "Pending Action",
+        count: documents.filter((d) => d.status === "Pending").length,
+        icon: <Clock className="h-5 w-5 text-amber-600" />,
+        bgColor: "bg-amber-50",
+      },
+      {
+        label: "Recently Received",
+        count: documents.filter((d) => d.status === "Received").length,
+        icon: <Inbox className="h-5 w-5 text-emerald-600" />,
+        bgColor: "bg-emerald-50",
+      },
+      {
+        label: "Archived Records",
+        count: documents.filter((d) => d.status === "Archived").length,
+        icon: <Archive className="h-5 w-5 text-slate-600" />,
+        bgColor: "bg-slate-50",
+      },
+    ];
+  }, [documents]);
 
   const columns = useMemo(
     () => [
@@ -290,7 +275,7 @@ export default function DocumentRegisterPage() {
         ),
       },
     ],
-    [],
+    [setViewDoc, setPrintDoc],
   );
 
   const table = useReactTable({
@@ -330,7 +315,7 @@ export default function DocumentRegisterPage() {
           </div>
           <button
             className="font-inter inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
-            onClick={() => {}}
+            onClick={() => setIsRegisterModalOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Register New Document
@@ -391,6 +376,16 @@ export default function DocumentRegisterPage() {
               placeholder="Filter by Status"
               triggerClassName="w-[150px] rounded-md text-xs border-gray-200"
             />
+            <button
+              title="Refresh Data"
+              onClick={fetchDocuments}
+              disabled={loading}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-slate-500 hover:bg-slate-50 transition disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
+            </button>
             <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-slate-500 hover:bg-slate-50 transition">
               <ArrowUpDown className="h-4 w-4" />
             </button>
@@ -420,7 +415,19 @@ export default function DocumentRegisterPage() {
             </TableHeader>
 
             <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="py-10 text-center font-inter italic text-slate-400"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-800" />
+                      Loading documents...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -665,6 +672,12 @@ export default function DocumentRegisterPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <RegisterDocumentModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSuccess={handleRegisterSuccess}
+      />
     </main>
   );
 }

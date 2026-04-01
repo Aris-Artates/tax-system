@@ -29,7 +29,8 @@ export type ValidatorKey =
   | 'lot-number'
   | 'decimal-numeric'
   | 'year'
-  | 'percentage';
+  | 'percentage'
+  | 'reference-number';
 
 export interface Validator {
   /** Returns true when the fully-formatted value is complete and valid. */
@@ -155,5 +156,9 @@ export const VALIDATORS: Record<ValidatorKey, Validator> = {
       return !isNaN(num) && num >= 0 && num <= 100;
     },
     errorMessage: 'Percentage must be between 0 and 100',
+  },
+  'reference-number': {
+    validate: (v) => /^DOC-\d{4}-\d{4}$/.test(v),
+    errorMessage: 'Reference number must be DOC-YYYY-#### format',
   },
 };

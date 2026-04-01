@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -9,7 +9,23 @@ import {
   Download,
   FileWarning,
   Search,
+  Loader2,
+  RefreshCw,
+  Printer,
 } from "lucide-react";
+import { toast } from "sonner";
+import { DelinquentAccountsPrint } from "@/components/print/DelinquentAccountsPrint";
+
+type DelinquentTaxpayer = {
+  id: number;
+  full_name: string;
+  tin: string;
+  barangay_name: string;
+  property_count: number;
+  bucket: "Current" | "1 Year" | "2 Years" | "3 Years" | "5+ Years";
+  total_due: string;
+  years_due: string;
+};
 
 const delinquentAccounts = [
   {
@@ -54,42 +70,59 @@ const delinquentAccounts = [
   },
 ] as const;
 
-const statusClasses: Record<
-  (typeof delinquentAccounts)[number]["status"],
-  string
-> = {
-  "Final Demand": "bg-red-50 text-red-600",
-  "For Visit": "bg-amber-50 text-amber-700",
-  "Legal Review": "bg-slate-100 text-slate-600",
-  "Partial Payment": "bg-emerald-50 text-emerald-700",
-  "Warrant Prep": "bg-blue-50 text-blue-700",
+const statusClasses: Record<string, string> = {
+  "5+ Years": "bg-red-50 text-red-600",
+  "3 Years": "bg-amber-50 text-amber-700",
+  "2 Years": "bg-blue-50 text-blue-700",
+  "1 Year": "bg-slate-100 text-slate-600",
+  Current: "bg-emerald-50 text-emerald-700",
 };
 
 export default function DeliquentAccountsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [accounts, setAccounts] = useState<DelinquentTaxpayer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [meta, setMeta] = useState({ totalItems: 0, totalPages: 1 });
 
-  const filteredAccounts = useMemo(() => {
-    const query = search.toLowerCase();
+  const handlePrint = () => window.print();
 
-    return delinquentAccounts.filter((account) => {
-      if (!query) {
-        return true;
-      }
-
-      return (
-        account.tdNumber.toLowerCase().includes(query) ||
-        account.taxpayer.toLowerCase().includes(query) ||
-        account.barangay.toLowerCase().includes(query) ||
-        account.status.toLowerCase().includes(query)
+  const fetchDelinquents = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `/api/taxpayers/delinquents?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`,
       );
-    });
-  }, [search]);
+      const res = await response.json();
+
+      if (response.ok) {
+        setAccounts(res.data || []);
+        setMeta(res.meta || { totalItems: 0, totalPages: 1 });
+      } else {
+        toast.error(res.error || "Failed to fetch delinquent accounts.");
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("A network error occurred while fetching delinquents.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDelinquents();
+    }, 300); // Simple debounce
+
+    return () => clearTimeout(timer);
+  }, [search, page]);
 
   const stats = [
     {
       label: "Total Delinquent Accounts",
-      value: "1,248",
+      value: meta.totalItems.toLocaleString(),
       color: "text-[#595a5d]",
     },
     { label: "For Final Demand", value: "426", color: "text-red-600" },
@@ -124,10 +157,11 @@ export default function DeliquentAccountsPage() {
 
         <button
           type="button"
+          onClick={handlePrint}
           className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
         >
-          <Download className="h-4 w-4" />
-          Export List
+          <Printer className="h-4 w-4" />
+          Export List (Print)
         </button>
       </header>
 
@@ -161,9 +195,21 @@ export default function DeliquentAccountsPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <FileWarning className="h-4 w-4" />
-            154 accounts tagged for immediate action
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <FileWarning className="h-4 w-4" />
+              Potential delinquents requiring action
+            </div>
+            <button
+              onClick={fetchDelinquents}
+              disabled={loading}
+              className="p-1.5 rounded-md hover:bg-slate-50 text-slate-400 transition-colors disabled:opacity-50"
+              title="Refresh List"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              />
+            </button>
           </div>
         </div>
       </div>
@@ -191,38 +237,47 @@ export default function DeliquentAccountsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredAccounts.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-20 text-center">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <p>Loading delinquent accounts...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : accounts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-10 text-center text-slate-400">
                     No delinquent accounts found matching your search.
                   </td>
                 </tr>
               ) : (
-                filteredAccounts.map((account) => (
+                accounts.map((account) => (
                   <tr
-                    key={account.tdNumber}
+                    key={account.id}
                     className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                   >
-                    <td className="whitespace-nowrap px-4 py-3 font-medium text-[#595a5d]">
-                      {account.tdNumber}
+                    <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-[#595a5d]">
+                      TD-{account.id.toString().padStart(5, "0")}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-700">
-                      {account.taxpayer}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-slate-500">
-                      {account.barangay}
+                    <td className="px-4 py-3 whitespace-nowrap text-slate-700 font-medium">
+                      {account.full_name}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-slate-500">
-                      {account.yearsDue}
+                      {account.barangay_name}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-[#595a5d]">
-                      {account.balance}
+                    <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                      {account.years_due}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-lexend font-bold text-[#595a5d]">
+                      {account.total_due}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[account.status]}`}
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium border ${statusClasses[account.bucket] || "bg-slate-50 text-slate-400 border-slate-100"} ${account.bucket === "5+ Years" ? "border-red-100" : account.bucket === "3 Years" ? "border-amber-100" : ""}`}
                       >
-                        {account.status}
+                        {account.bucket}
                       </span>
                     </td>
                   </tr>
@@ -234,27 +289,34 @@ export default function DeliquentAccountsPage() {
 
         <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
           <p className="font-inter text-xs text-slate-400">
-            Showing {filteredAccounts.length} of {delinquentAccounts.length}{" "}
-            delinquent accounts
+            Showing {accounts.length} of {meta.totalItems} delinquent accounts
           </p>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={14} />
             </button>
             <span className="font-inter px-2 text-xs text-slate-500">
-              Page 1 of 1
+              Page {page} of {meta.totalPages}
             </span>
             <button
               type="button"
-              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600"
+              disabled={page >= meta.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight size={14} />
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="sr-only print:not-sr-only">
+        <DelinquentAccountsPrint data={accounts} />
       </div>
     </div>
   );

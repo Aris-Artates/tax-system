@@ -18,39 +18,44 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { toast } from "sonner";
 
 import { Combobox } from "@/components/ui/combobox";
 import type { ComboboxOption } from "@/components/ui/combobox";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 
-export function CalendarInput({ className }: { className?: string }) {
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
-
+export function CalendarInput({ 
+  className,
+  value,
+  onChange,
+}: { 
+  className?: string;
+  value?: Date;
+  onChange?: (date: Date | undefined) => void;
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          // We merge the default button styling with any custom classes you pass in
           className={`w-full justify-start text-left font-normal ${
-            !date ? "text-slate-400" : "text-slate-900"
+            !value ? "text-slate-400" : "text-slate-900"
           } ${className || ""}`}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {/* This formats the date as MM/dd/yyyy. Example: 03/15/2026 */}
-          {date ? format(date, "MM/dd/yyyy") : <span>Pick a date</span>}
+          {value ? format(value, "MM/dd/yyyy") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
 
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          selected={date}
-          onSelect={setDate}
+          selected={value}
+          onSelect={onChange}
           className="rounded-lg border bg-white shadow-md"
           captionLayout="dropdown"
-          fromYear={1950} // Optional: limits how far back they can scroll
-          toYear={2050} // Optional: limits how far forward they can scroll
+          fromYear={1950}
+          toYear={2050}
           initialFocus
         />
       </PopoverContent>
@@ -61,7 +66,8 @@ export function CalendarInput({ className }: { className?: string }) {
 const paymentOptions: ComboboxOption[] = [
   { value: 'gcash', label: 'GCash' },
   { value: 'managers-check', label: "Manager's Check" },
-  { value: 'landbank', label: 'Online Transfer (Landbank)' }
+  { value: 'landbank', label: 'Online Transfer (Landbank)' },
+  { value: 'cash', label: 'Cash' }
 ];
 
 export default function RecordPaymentPage() {
@@ -69,7 +75,85 @@ export default function RecordPaymentPage() {
   const [paymentMethod, setPaymentMethod] = React.useState('');
   const [tdn, setTdn] = React.useState('');
   const [taxpayerName, setTaxpayerName] = React.useState('');
+  const [amountPaid, setAmountPaid] = React.useState('');
   const [ORnumber, setOrNumber] = React.useState('');
+  const [paymentDate, setPaymentDate] = React.useState<Date | undefined>(new Date());
+  
+  const [tdnOptions, setTdnOptions] = React.useState<ComboboxOption[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        // Fetch TDNs
+        const tdRes = await fetch('/api/tax-declarations');
+        const tdData = await tdRes.json();
+        if (Array.isArray(tdData)) {
+          setTdnOptions(tdData);
+        }
+
+        // Fetch Next OR
+        const orRes = await fetch('/api/payments?next-or=true');
+        const orData = await orRes.json();
+        if (orData.nextOrNumber) {
+          setOrNumber(orData.nextOrNumber);
+        }
+      } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleTdnChange = (val: string) => {
+    setTdn(val);
+    const selected = tdnOptions.find(o => o.value === val);
+    if (selected) {
+      setTaxpayerName(selected.sublabel || '');
+    } else {
+      setTaxpayerName('');
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!tdn || !paymentMethod || !ORnumber || !amountPaid) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tdn,
+          taxpayer_name: taxpayerName,
+          amount_paid: parseFloat(amountPaid.replace(/,/g, '')),
+          payment_method: paymentMethod,
+          or_number: ORnumber,
+          payment_date: paymentDate?.toISOString(),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Payment recorded successfully!");
+        router.push('/payments');
+      } else {
+        toast.error(data.error || "Failed to record payment.");
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
+      toast.error("A network error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex">
@@ -106,10 +190,12 @@ export default function RecordPaymentPage() {
 
               <button
                 type="button"
-                className="font-inter inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
+                onClick={handleSubmit}
+                disabled={isSubmitting || isLoading}
+                className="font-inter inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="h-4 w-4" />
-                Save Payment
+                {isSubmitting ? 'Saving...' : 'Save Payment'}
               </button>
             </div>
           </div>
@@ -133,13 +219,14 @@ export default function RecordPaymentPage() {
                   Tax Declaration No. (TDN){" "}
                   <span className="text-rose-500">*</span>
                 </label>
-                <ValidatedInput
-                  validator="td-number"
+                <Combobox
+                  label=""
+                  options={tdnOptions}
                   value={tdn}
-                  placeholder="TD-2024-0001"
-                  onChange={setTdn}
-                  className="font-inter mt-1"
-                  prefix="TD-"
+                  onChange={handleTdnChange}
+                  placeholder={isLoading ? "Loading..." : "Select TDN"}
+                  disabled={isLoading}
+                  className="mt-1"
                 />
               </div>
               <div>
@@ -150,8 +237,9 @@ export default function RecordPaymentPage() {
                   validator="name"
                   value={taxpayerName}
                   onChange={setTaxpayerName}
-                  placeholder="Juan Dela Cruz"
+                  placeholder="Selected Owner Name"
                   className="font-inter mt-1"
+                  readOnly
                 />
               </div>
             </div>
@@ -173,10 +261,12 @@ export default function RecordPaymentPage() {
                 <label className="font-inter text-xs font-medium text-slate-600">
                   Amount Paid (₱) <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="number"
+                <ValidatedInput
+                  validator="decimal-numeric"
+                  value={amountPaid}
                   placeholder="0.00"
-                  className="font-inter mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200 placeholder:text-slate-400 text-slate-900"
+                  onChange={(val) => setAmountPaid(val)}
+                  className="font-inter mt-1"
                 />
               </div>
               <div>
@@ -204,13 +294,18 @@ export default function RecordPaymentPage() {
                   placeholder="OR-2026-000123"
                   className="font-inter mt-1"
                   maxLength={14}
+                  readOnly
                 />
               </div>
               <div>
                 <label className="font-inter text-xs font-medium text-slate-600">
                   Payment Date <span className="text-rose-500">*</span>
                 </label>
-                <CalendarInput className="font-inter mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-slate-200" />
+                <CalendarInput 
+                  className="font-inter mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-slate-200" 
+                  value={paymentDate}
+                  onChange={setPaymentDate}
+                />
               </div>
             </div>
           </section>
