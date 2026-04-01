@@ -95,7 +95,7 @@ export default function RecordPaymentPage() {
         }
 
         // Fetch Next OR
-        const orRes = await fetch('/api/payments');
+        const orRes = await fetch('/api/payments?next-or=true');
         const orData = await orRes.json();
         if (orData.nextOrNumber) {
           setOrNumber(orData.nextOrNumber);

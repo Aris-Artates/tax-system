@@ -44,33 +44,6 @@ type LogEntry = {
   time: string;
 };
 
-const rawLogs: Omit<LogEntry, "id">[] = [
-  {
-    orNumber: "OR-2026-000123",
-    payer: "Juan Dela Cruz",
-    description: "RPT Payment - Full Settlement for Property Tax 2026",
-    channel: "Cash Counter",
-    status: "Posted",
-    time: "Mar 01, 2026 - 09:32 AM",
-  },
-  {
-    orNumber: "OR-2026-000122",
-    payer: "ABC Trading",
-    description: "RPT Payment - Partial Payment for Business Permit",
-    channel: "Bank Deposit",
-    status: "Posted",
-    time: "Mar 01, 2026 - 09:10 AM",
-  },
-  {
-    orNumber: "OR-2026-000121",
-    payer: "Maria Santos",
-    description: "RPT Payment - Voided due to incorrect amount entry",
-    channel: "GCash",
-    status: "Voided",
-    time: "Feb 28, 2026 - 04:55 PM",
-  },
-];
-
 export default function PaymentsLogsPage() {
   const router = useRouter();
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -82,9 +55,31 @@ export default function PaymentsLogsPage() {
   const [{ pageIndex, pageSize }, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   useEffect(() => {
-    const logEntries: LogEntry[] = rawLogs.map((log, index) => ({ ...log, id: index + 1 }));
-    setLogs(logEntries);
-    setIsLoading(false);
+    async function fetchLogs() {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/payments');
+        const data = await res.json();
+        
+        if (Array.isArray(data)) {
+          const mappedLogs: LogEntry[] = data.map((item: any, index: number) => ({
+            id: index + 1,
+            orNumber: item.or_number,
+            payer: item.taxpayer_name,
+            description: `Payment for ${item.tdn}`,
+            channel: item.payment_method,
+            status: item.status as "Posted" | "Voided",
+            time: format(new Date(item.payment_date), "MMM dd, yyyy - hh:mm a")
+          }));
+          setLogs(mappedLogs);
+        }
+      } catch (err) {
+        console.error("Failed to fetch payment logs:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchLogs();
   }, []);
 
   const filteredLogs = useMemo(() => {
