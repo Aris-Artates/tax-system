@@ -5,25 +5,53 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
+  Undo2,
   ShieldCheck,
-  UsersRound,
   KeyRound,
-  Pencil,
   Trash2,
+  Plus,
   Search,
   ChevronLeft,
   ChevronRight,
+  Settings2,
+  Users,
+  Shield,
+  Key,
+  Lock,
+  Unlock,
+  Briefcase,
+  GraduationCap,
+  Gavel,
+  BadgeCheck,
+  Database,
+  Eye,
+  Globe,
+  Building,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  PiggyBank,
+  UserRound,
 } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import {
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
   flexRender,
+  SortingState,
 } from "@tanstack/react-table";
 
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableContainer,
@@ -32,10 +60,10 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/table";
+} from "@/components/Table";
 
-import { AddRoleDialog } from "@/components/AddRoleDialog";
-import { ConfirmationDialog } from "@/components/ConfirmationDialog";
+import { RoleMasterModal } from "@/components/RoleMasterModal";
+import { AddRoleModal } from "@/components/AddRoleModal";
 
 type ApiUser = {
   firstname?: string;
@@ -59,6 +87,7 @@ type ApiRole = {
   name?: string;
   permission_id?: number;
   created_at?: string;
+  icon?: string;
   permission_names?: string[];
   role_permissions?: Array<{
     permission_id?: number;
@@ -80,6 +109,7 @@ type ListedRole = {
   name: string;
   permissionNames: string[];
   permissionIds: string[];
+  icon: string;
   createdAt: string;
 };
 
@@ -95,6 +125,40 @@ const normalizeRole = (role?: string) => {
   return value;
 };
 
+const RoleIcon = ({
+  name,
+  className,
+}: {
+  name?: string;
+  className?: string;
+}) => {
+  const icons: Record<string, any> = {
+    KeyRound,
+    ShieldCheck,
+    Users,
+    Shield,
+    Key,
+    Settings2,
+    Lock,
+    Unlock,
+    UserRound,
+    Briefcase,
+    GraduationCap,
+    Gavel,
+    BadgeCheck,
+    Database,
+    Eye,
+    Globe,
+    Building,
+    CreditCard,
+    FileText,
+    LayoutDashboard,
+    PiggyBank,
+  };
+  const IconComp = icons[name || "KeyRound"] || KeyRound;
+  return <IconComp className={className} />;
+};
+
 export default function ManageRolePage() {
   const router = useRouter();
 
@@ -105,17 +169,10 @@ export default function ManageRolePage() {
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
 
   const [globalFilter, setGlobalFilter] = useState("");
-
-  // Clean dialog states
-  const [isAddRoleDialogOpen, setIsAddRoleDialogOpen] = useState(false);
-  const [selectedRoleForEdit, setSelectedRoleForEdit] = useState<ListedRole | null>(null);
-
-  const [isDeletingRole, setIsDeletingRole] = useState(false);
-  const [selectedRoleUsers, setSelectedRoleUsers] = useState<{
-    roleName: string;
-    names: string[];
-  } | null>(null);
-  const [rolePendingDelete, setRolePendingDelete] = useState<string | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [isMasterModalOpen, setIsMasterModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<ListedRole | null>(null);
 
   const mapRole = (role: ApiRole, index: number): ListedRole => {
     const rawName = role.name ?? "";
@@ -176,6 +233,7 @@ export default function ManageRolePage() {
       name,
       permissionNames,
       permissionIds,
+      icon: role.icon || "KeyRound",
       createdAt,
     };
   };
@@ -224,32 +282,32 @@ export default function ManageRolePage() {
     }
   };
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setIsLoadingUsers(true);
+  const fetchUsers = useCallback(async () => {
+    setIsLoadingUsers(true);
 
-      try {
-        const response = await fetch("/api/user/list", { cache: "no-store" });
-        const data = (await response.json()) as {
-          error?: string;
-          users?: ApiUser[];
-        };
+    try {
+      const response = await fetch("/api/user/list", { cache: "no-store" });
+      const data = (await response.json()) as {
+        error?: string;
+        users?: ApiUser[];
+      };
 
-        if (!response.ok) {
-          setUsers([]);
-          return;
-        }
-
-        setUsers(data.users ?? []);
-      } catch {
+      if (!response.ok) {
         setUsers([]);
-      } finally {
-        setIsLoadingUsers(false);
+        return;
       }
-    };
 
-    fetchUsers();
+      setUsers(data.users ?? []);
+    } catch {
+      setUsers([]);
+    } finally {
+      setIsLoadingUsers(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   useEffect(() => {
     fetchRoles();
@@ -282,166 +340,193 @@ export default function ManageRolePage() {
 
   const handleBack = () => router.push("/user");
 
-  const openRoleDialog = useCallback((editRole: ListedRole | null = null) => {
-    setSelectedRoleForEdit(editRole);
-    setIsAddRoleDialogOpen(true);
+  const openMasterModal = useCallback((editRole: ListedRole) => {
+    setSelectedRole(editRole);
+    setIsMasterModalOpen(true);
   }, []);
 
-  // Fix 3: Updated handleDialogClose to actually close the dialog modal correctly
-  const handleDialogClose = useCallback(() => {
-    setIsAddRoleDialogOpen(false);
-    setSelectedRoleForEdit(null);
+  const handleMasterModalClose = useCallback(() => {
+    setIsMasterModalOpen(false);
+    setSelectedRole(null);
   }, []);
 
-  const handleDialogSuccess = async () => {
+  const openAddModal = useCallback(() => {
+    setIsAddModalOpen(true);
+  }, []);
+
+  const handleAddModalClose = useCallback(() => {
+    setIsAddModalOpen(false);
+  }, []);
+
+  const handleMasterModalSuccess = async () => {
     await fetchRoles();
-    toast.success("Role saved successfully");
-    handleDialogClose();
+    await fetchUsers();
   };
 
-  const handleViewRoleUsers = (roleName: string) => {
-    const roleKey = normalizeRole(roleName);
-    const names = usersByRole.get(roleKey) ?? [];
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "ID",
+        cell: ({ row }: any) => ` #${row.original.id}`,
+      },
+      {
+        accessorKey: "name",
+        header: "Role",
+        cell: ({ row }: any) => (
+          <div className="inline-flex items-center gap-2 font-medium text-slate-700">
+            <RoleIcon
+              name={row.original.icon}
+              className="h-4 w-4 text-slate-400"
+            />
+            {row.original.name}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "permissionNames",
+        header: "Permissions",
+        cell: ({ row }: any) => {
+          const permissions = row.original.permissionNames || [];
+          if (permissions.length === 0)
+            return (
+              <span className="text-slate-400 text-xs italic">Unassigned</span>
+            );
 
-    setSelectedRoleUsers({ roleName, names });
-  };
+          const displayPermissions = permissions.slice(0, 2);
+          const hasMore = permissions.length > 2;
 
-  const handleDeleteRole = (roleName: string) => {
-    setRolePendingDelete(roleName);
-  };
-
-  const confirmDeleteRole = async () => {
-    if (!rolePendingDelete) return;
-
-    setIsDeletingRole(true);
-
-    try {
-      const response = await fetch("/api/roles/delete", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name: rolePendingDelete }),
-      });
-
-      const data = (await response.json()) as {
-        error?: string;
-        message?: string;
-      };
-      
-      if (!response.ok) {
-        toast.error(data.error ?? "Failed to delete role.");
-        return;
-      }
-
-      setRolePendingDelete(null);
-      await fetchRoles();
-      toast.success("Role deleted successfully");
-    } catch {
-      toast.error("Unable to connect to server.");
-    } finally {
-      setIsDeletingRole(false);
-    }
-  };
-
-  const columns = useMemo(() => [
-    {
-      accessorKey: "name",
-      header: "Role",
-      cell: ({ row }: any) => (
-        <div className="inline-flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-slate-400" />
-          {row.original.name}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "permissionNames",
-      header: "Permissions",
-      cell: ({ row }: any) => {
-        const role = row.original;
-        return (
-          <div className="flex flex-wrap gap-2">
-            {role.permissionNames.length === 0 ? (
-              <span className="rounded bg-slate-50 px-2 py-1 text-xs text-slate-400">
-                Unassigned
-              </span>
-            ) : (
-              // Fix 2: Added index parameter to the map function
-              role.permissionNames.map((permissionName: string, index: number) => (
+          return (
+            <div className="flex items-center gap-1.5">
+              {displayPermissions.map((name: string, index: number) => (
                 <span
-                  key={`${role.key}-${permissionName}-${index}`}
-                  className="rounded bg-slate-50 px-2 py-1 text-xs text-slate-600 border border-gray-200"
+                  key={`${row.original.key}-${name}-${index}`}
+                  className="whitespace-nowrap inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
                 >
-                  {permissionName}
+                  {name}
                 </span>
-              ))
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      id: "users",
-      header: "Users",
-      cell: ({ row }: any) => {
-        const role = row.original;
-        const roleKey = normalizeRole(role.name);
-        const roleUsers = usersByRole.get(roleKey) ?? [];
-        const roleUsersCount = roleUsers.length;
+              ))}
 
-        return (
-          <button
-            type="button"
-            onClick={() => handleViewRoleUsers(role.name)}
-            className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-gray-50 cursor-pointer"
-            title="View users with this role"
-            disabled={isLoadingUsers}
-          >
-            <UsersRound className="h-3.5 w-3.5" />
-            {isLoadingUsers ? "..." : roleUsersCount}
-          </button>
-        );
+              {hasMore && (
+                <TooltipProvider>
+                  <Tooltip delayDuration={500}>
+                    <TooltipTrigger asChild>
+                      <div className="whitespace-nowrap shrink-0 inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 shadow-sm hover:bg-slate-50 hover:text-slate-900 hover:ring-slate-300 transition-all cursor-default">
+                        +{permissions.length - 2} more
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="bg-white border border-slate-200 shadow-xl p-3 rounded-lg max-w-[250px]"
+                    >
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-semibold text-slate-900 border-b border-slate-100 pb-1.5">
+                          Additional Permissions
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {permissions
+                            .slice(2)
+                            .map((name: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 text-[10px] font-medium border border-slate-100 shadow-sm"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+          );
+        },
       },
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Created",
-      cell: ({ row }: any) => (
-        <span className="text-xs text-slate-600">
-          {row.original.createdAt}
-        </span>
-      ),
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }: any) => {
-        const role = row.original;
-        return (
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => openRoleDialog(row.original)}
-              className="font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-gray-50 cursor-pointer"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </button>
+      {
+        id: "users",
+        header: "Users",
+        cell: ({ row }: any) => {
+          const role = row.original;
+          const roleKey = normalizeRole(role.name);
+          const roleUsers = usersByRole.get(roleKey) ?? [];
 
-            <button
-              type="button"
-              onClick={() => handleDeleteRole(role.name)}
-              className="font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete
-            </button>
-          </div>
-        );
+          if (roleUsers.length === 0)
+            return (
+              <span className="text-slate-400 text-[10px] italic">
+                No users
+              </span>
+            );
+
+          return (
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-50 text-slate-700 text-[10px] font-bold border border-slate-100 cursor-default hover:bg-white hover:shadow-sm transition-all select-none">
+                    <UserRound className="h-3 w-3 text-blue-500" />
+                    {roleUsers.length} Users
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="bg-white border border-slate-200 shadow-xl p-3 rounded-lg max-w-[280px]"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 border-b border-slate-100 pb-1.5">
+                      <p className="text-[11px] font-bold text-slate-900">
+                        Assigned Users
+                      </p>
+                      <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black">
+                        {roleUsers.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.25">
+                      {roleUsers.map((name, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-50 text-slate-600 text-[10px] font-medium border border-slate-200"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        },
       },
-    },
-  ], [usersByRole, isLoadingUsers, openRoleDialog]);
+      {
+        accessorKey: "createdAt",
+        header: "Created",
+        cell: ({ row }: any) => (
+          <span className="text-slate-500 font-inter">
+            {row.original.createdAt}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Action</div>,
+        cell: ({ row }: any) => {
+          const role = row.original;
+          return (
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => openMasterModal(role)}
+                className="font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 cursor-pointer active:scale-95"
+              >
+                <Settings2 className="h-3.5 w-3.5 text-blue-500" /> Configure
+              </button>
+            </div>
+          );
+        },
+      },
+    ],
+    [usersByRole, openMasterModal],
+  );
 
   const table = useReactTable({
     data: roles,
@@ -458,7 +543,9 @@ export default function ManageRolePage() {
     },
 
     onGlobalFilterChange: setGlobalFilter,
-    state: { globalFilter },
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: { globalFilter, sorting },
 
     initialState: {
       pagination: { pageSize: 5 },
@@ -467,225 +554,160 @@ export default function ManageRolePage() {
 
   return (
     <div className="flex w-full overflow-x-hidden">
-      <main className="flex-1 w-full">
-        <header className="mb-8">
-          <button
-            type="button"
-            onClick={handleBack}
-            className={`font-lexend mb-5 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700 cursor-pointer`}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to User Management
-          </button>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className={`font-lexend text-2xl font-bold text-[#595a5d]`}>
-                Manage Roles
-              </h1>
-              <p className={`font-inter mt-1 text-xs text-slate-400`}>
-                Create roles, assign permissions, and manage access levels
-              </p>
-            </div>
-
-            <button
+      <main className="flex-1 w-full max-w-7xl mx-auto h-auto">
+        <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+              Manage Roles
+            </h1>
+            <p className="font-inter mt-1 text-xs text-slate-400">
+              Create roles, assign permissions, and manage access levels
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
               type="button"
-              onClick={() => openRoleDialog()}
-              className={`font-lexend h-10 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 cursor-pointer`}
+              onClick={handleBack}
+              className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
             >
-              Add New Role
-            </button>
+              <Undo2 className="h-4 w-4" />
+              Back to User Management
+            </Button>
+            <Button
+              onClick={openAddModal}
+              className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New Role
+            </Button>
           </div>
         </header>
 
-        <section className="w-full rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-md bg-slate-100 p-2">
-                <ShieldCheck className="h-5 w-5 text-[#00154A]" />
+                <ShieldCheck className="h-4 w-4 text-[#00154A]" />
               </div>
-              <h2 className={`font-lexend text-sm font-semibold text-[#848794]`}>
+              <h2 className="font-lexend text-sm font-semibold text-[#848794]">
                 Role Directory
               </h2>
             </div>
 
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={globalFilter ?? ""}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search roles or permissions..."
-                className="w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-sm font-inter outline-none focus:ring-2 focus:ring-slate-100"
-              />
+            <div className="flex w-full flex-col gap-2 sm:max-w-lg sm:flex-row sm:items-center">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={globalFilter ?? ""}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search roles or permissions..."
+                  className="font-inter w-full h-9 rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none transition-all focus:border-slate-300 shadow-sm"
+                />
+              </div>
             </div>
           </div>
+        </div>
 
-          <TableContainer>
-            <Table zebra className="min-w-155">
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
+        <TableContainer>
+          <Table zebra>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className="bg-gray-50/50">
+                  {hg.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoadingRoles ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="py-10 text-center text-slate-400"
+                  >
+                    Loading roles...
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableHeader>
-
-              <TableBody>
-                {isLoadingRoles && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-10 text-center text-slate-400"
-                    >
-                      Loading roles...
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {!isLoadingRoles && roles.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-10 text-center text-slate-400"
-                    >
-                      No roles found.
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {!isLoadingRoles && table.getRowModel().rows.length === 0 && roles.length > 0 && (
-                    <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-slate-400">
-                            No roles match your search.
-                        </TableCell>
-                    </TableRow>
-                )}
-
-                {!isLoadingRoles &&
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-slate-50 transition-colors">
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className="text-slate-700"
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                ))
+              )}
+            </TableBody>
+          </Table>
 
           {!isLoadingRoles && roles.length > 0 && (
-              <div className="flex items-center justify-between px-2 mt-4">
-                  <div className="font-inter text-xs text-slate-500">
-                      Page <span className="font-medium text-slate-900">{table.getPageCount() === 0 ? 0 : table.getState().pagination.pageIndex + 1}</span> of{" "}
-                      <span className="font-medium text-slate-900">{table.getPageCount()}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                      <button
-                          onClick={() => table.previousPage()}
-                          disabled={!table.getCanPreviousPage()}
-                          className="inline-flex h-8 items-center rounded-md border border-gray-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                      >
-                          <ChevronLeft className="mr-1 h-3 w-3" />
-                          Previous
-                      </button>
-                      <button
-                          onClick={() => table.nextPage()}
-                          disabled={!table.getCanNextPage()}
-                          className="inline-flex h-8 items-center rounded-md border border-gray-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                      >
-                          Next
-                          <ChevronRight className="ml-1 h-3 w-3" />
-                      </button>
-                  </div>
-              </div>
-          )}
-        </section>
-
-        {/* View Role Users Modal */}
-        {selectedRoleUsers && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onClick={() => setSelectedRoleUsers(null)}
-          >
-            <div
-              className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="font-lexend mb-1 text-lg font-semibold text-[#0F172A]">
-                {selectedRoleUsers.roleName} Users
-              </h2>
-              <p className="font-inter mb-3 text-xs text-slate-500">
-                Total assigned users: <span className="font-semibold text-[#0F172A]">
-                  {selectedRoleUsers.names.length}
-                </span>
+            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 bg-gray-50/30 font-inter">
+              <p className="text-[11px] text-slate-400">
+                Showing{" "}
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}
+                -
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  table.getFilteredRowModel().rows.length,
+                )}{" "}
+                of {table.getFilteredRowModel().rows.length} roles
               </p>
-
-              {selectedRoleUsers.names.length === 0 ? (
-                <p className="font-inter text-sm text-slate-500">
-                  No users assigned to this role.
-                </p>
-              ) : (
-                <div className="max-h-64 overflow-y-auto rounded-md border border-gray-100">
-                  <ul className="divide-y divide-gray-100">
-                    {selectedRoleUsers.names.map((name, index) => (
-                      <li
-                        key={index}
-                        className="px-3 py-2 font-inter text-sm text-slate-700"
-                      >
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="mt-5 flex justify-end">
+              <div className="flex items-center gap-1">
                 <button
-                  type="button"
-                  onClick={() => setSelectedRoleUsers(null)}
-                  className="bg-[#0F172A] text-white text-xs font-inter px-4 py-2 rounded-md hover:bg-slate-800 transition cursor-pointer"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  title="Previous Page"
                 >
-                  Close
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="px-2 text-xs text-slate-500 whitespace-nowrap">
+                  Page {table.getState().pagination.pageIndex + 1} of{" "}
+                  {table.getPageCount() || 1}
+                </span>
+                <button
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  title="Next Page"
+                >
+                  <ChevronRight size={14} />
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </TableContainer>
 
-        <ConfirmationDialog
-          isOpen={!!rolePendingDelete}
-          onClose={() => setRolePendingDelete(null)}
-          onConfirm={confirmDeleteRole}
-          title="Delete Role"
-          description="Are you sure you want to remove this role? This will affect users currently assigned to it."
-          entityName={rolePendingDelete || ""}
-          confirmText={isDeletingRole ? "Deleting..." : "Delete Role"}
+        <RoleMasterModal
+          isOpen={isMasterModalOpen}
+          onClose={handleMasterModalClose}
+          onSuccess={handleMasterModalSuccess}
+          role={selectedRole}
+          allPermissions={permissions}
+          allUsers={users}
+          allRoles={roles}
         />
-        <AddRoleDialog 
-          isOpen={isAddRoleDialogOpen}
-          onClose={handleDialogClose}
-          onSuccess={handleDialogSuccess}
-          role={selectedRoleForEdit || undefined}
-          permissions={permissions}
+
+        <AddRoleModal
+          isOpen={isAddModalOpen}
+          onClose={handleAddModalClose}
+          onSuccess={handleMasterModalSuccess}
+          allPermissions={permissions}
         />
       </main>
     </div>

@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CircleAlert, Search, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CircleAlert,
+  Search,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/table";
+} from "@/components/Table";
 
 type HotspotRow = {
   barangay: string;
@@ -77,14 +83,20 @@ export default function DelinquencyHotspotsPage() {
     <div className="w-full">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">Delinquency Hotspots</h1>
+          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+            Delinquency Hotspots
+          </h1>
           <p className="font-inter mt-1 text-xs text-slate-400">
-            Identify barangays with high delinquency rates and overdue RPT exposure.
+            Identify barangays with high delinquency rates and overdue RPT
+            exposure.
           </p>
         </div>
 
         <Link href="/barangay">
-          <Button variant="outline" className="font-inter h-9 cursor-pointer text-xs text-slate-600">
+          <Button
+            variant="outline"
+            className="font-inter h-9 cursor-pointer text-xs text-slate-600"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Barangay Overview
           </Button>
@@ -96,7 +108,9 @@ export default function DelinquencyHotspotsPage() {
           <div className="mb-2 inline-flex rounded-md bg-slate-100 p-2">
             <ShieldAlert className="h-4 w-4 text-[#00154A]" />
           </div>
-          <p className="font-inter text-xs text-slate-500">High-Risk Barangays</p>
+          <p className="font-inter text-xs text-slate-500">
+            High-Risk Barangays
+          </p>
           <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">2</p>
         </div>
 
@@ -104,27 +118,40 @@ export default function DelinquencyHotspotsPage() {
           <div className="mb-2 inline-flex rounded-md bg-slate-100 p-2">
             <CircleAlert className="h-4 w-4 text-[#00154A]" />
           </div>
-          <p className="font-inter text-xs text-slate-500">Total Delinquent Taxpayers</p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">193</p>
+          <p className="font-inter text-xs text-slate-500">
+            Total Delinquent Taxpayers
+          </p>
+          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
+            193
+          </p>
         </div>
 
         <div className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
           <div className="mb-2 inline-flex rounded-md bg-slate-100 p-2">
             <AlertTriangle className="h-4 w-4 text-[#00154A]" />
           </div>
-          <p className="font-inter text-xs text-slate-500">Total Overdue Exposure</p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">₱1,746,000</p>
+          <p className="font-inter text-xs text-slate-500">
+            Total Overdue Exposure
+          </p>
+          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
+            ₱1,746,000
+          </p>
         </div>
       </div>
 
       <section className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-inter text-xs font-semibold uppercase tracking-wide text-[#848794]">Hotspot Monitoring</h2>
+          <h2 className="font-inter text-xs font-semibold uppercase tracking-wide text-[#848794]">
+            Hotspot Monitoring
+          </h2>
 
           <div className="flex w-full gap-2 sm:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input placeholder="Search barangay" className="h-9 pl-8 text-xs" />
+              <Input
+                placeholder="Search barangay"
+                className="h-9 pl-8 text-xs"
+              />
             </div>
             <Button variant="outline" className="h-9 px-3 text-xs">
               Current Year
@@ -136,20 +163,50 @@ export default function DelinquencyHotspotsPage() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">Barangay</TableHead>
-                <TableHead align="center" className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">Delinquent</TableHead>
-                <TableHead align="center" className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">Total Taxpayers</TableHead>
-                <TableHead align="center" className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">Delinquency Rate</TableHead>
-                <TableHead className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">Overdue Amount</TableHead>
-                <TableHead align="center" className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">Risk Level</TableHead>
+                <TableHead className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">
+                  Barangay
+                </TableHead>
+                <TableHead
+                  align="center"
+                  className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]"
+                >
+                  Delinquent
+                </TableHead>
+                <TableHead
+                  align="center"
+                  className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]"
+                >
+                  Total Taxpayers
+                </TableHead>
+                <TableHead
+                  align="center"
+                  className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]"
+                >
+                  Delinquency Rate
+                </TableHead>
+                <TableHead className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]">
+                  Overdue Amount
+                </TableHead>
+                <TableHead
+                  align="center"
+                  className="px-4 py-3 text-[11px] uppercase tracking-wide text-[#595a5d]"
+                >
+                  Risk Level
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {hotspotRows.map((row) => (
                 <TableRow key={row.barangay} className="hover:bg-gray-50">
-                  <TableCell className="px-4 py-3 font-medium text-[#595a5d]">{row.barangay}</TableCell>
-                  <TableCell align="center" className="px-4 py-3">{row.delinquentTaxpayers}</TableCell>
-                  <TableCell align="center" className="px-4 py-3">{row.totalTaxpayers}</TableCell>
+                  <TableCell className="px-4 py-3 font-medium text-[#595a5d]">
+                    {row.barangay}
+                  </TableCell>
+                  <TableCell align="center" className="px-4 py-3">
+                    {row.delinquentTaxpayers}
+                  </TableCell>
+                  <TableCell align="center" className="px-4 py-3">
+                    {row.totalTaxpayers}
+                  </TableCell>
                   <TableCell align="center" className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
@@ -163,7 +220,9 @@ export default function DelinquencyHotspotsPage() {
                       {row.delinquencyRate}%
                     </span>
                   </TableCell>
-                  <TableCell className="px-4 py-3">{row.overdueAmount}</TableCell>
+                  <TableCell className="px-4 py-3">
+                    {row.overdueAmount}
+                  </TableCell>
                   <TableCell align="center" className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${

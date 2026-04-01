@@ -5,7 +5,7 @@ export async function GET() {
 	try {
 		const { data: roles, error: rolesError } = await supabaseAdmin
 			.from('roles')
-			.select('id, name, created_at')
+			.select('id, name, icon, created_at')
 			.order('name', { ascending: true });
 
 		if (rolesError) {

@@ -60,7 +60,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/table";
+} from "@/components/Table";
 
 type ListedUser = {
   empID: string;
@@ -731,7 +731,11 @@ export default function ViewUserPage() {
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => router.push(`/user/activity/logs?search=${encodeURIComponent(user.name)}`)}
+                onClick={() =>
+                  router.push(
+                    `/user/activity/logs?search=${encodeURIComponent(user.name)}`,
+                  )
+                }
                 className={`font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-gray-50 cursor-pointer`}
               >
                 <Activity className="h-3.5 w-3.5" />

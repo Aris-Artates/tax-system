@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 type UpdateRolePayload = {
     id: number | string;
     name: string;
+    icon?: string;
     permission_id?: number;
     permission_ids?: number[];
 };
@@ -65,9 +66,11 @@ export async function POST(request: Request) {
         }
 
         // 3. Update the Role Name
+        const icon = body.icon ?? 'KeyRound';
+
         const { error: updateRoleError } = await supabaseAdmin
             .from('roles')
-            .update({ name })
+            .update({ name, icon })
             .eq('id', roleId);
 
         if (updateRoleError) {

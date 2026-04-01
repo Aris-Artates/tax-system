@@ -35,7 +35,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/table";
+} from "@/components/Table";
 
 const OWNER_TYPE_OPTIONS: ComboboxOption[] = [
   { value: "Individual", label: "Individual" },
@@ -625,7 +625,7 @@ export default function TaxpayerListPage() {
                   <TableHead
                     key={h}
                     className={cn(
-                      h.toLowerCase() === "full name" ? "min-w-50" : ""
+                      h.toLowerCase() === "full name" ? "min-w-50" : "",
                     )}
                   >
                     {h}
@@ -668,7 +668,7 @@ export default function TaxpayerListPage() {
                             t.owner_type === "Corporation"
                               ? "Corporate"
                               : (t.owner_type ?? "Individual")
-                          ]
+                          ],
                         )}
                       >
                         {t.owner_type === "Corporation"
@@ -680,7 +680,7 @@ export default function TaxpayerListPage() {
                       <span
                         className={cn(
                           "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-                          statusColor[getTaxpayerStatus(t)]
+                          statusColor[getTaxpayerStatus(t)],
                         )}
                       >
                         {getTaxpayerStatus(t)}
@@ -689,8 +689,12 @@ export default function TaxpayerListPage() {
                     <TableCell className="text-slate-500 min-w-60 max-w-xs truncate">
                       {t.address || "—"}
                     </TableCell>
-                    <TableCell className="text-slate-500">{t.phone || "—"}</TableCell>
-                    <TableCell className="text-slate-500">{t.email || "—"}</TableCell>
+                    <TableCell className="text-slate-500">
+                      {t.phone || "—"}
+                    </TableCell>
+                    <TableCell className="text-slate-500">
+                      {t.email || "—"}
+                    </TableCell>
                     <TableCell align="right">
                       <div className="flex justify-end gap-1">
                         <button
@@ -786,7 +790,9 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.first_name}
-                  onChange={(v, isValid) => updateField("first_name", v, isValid)}
+                  onChange={(v, isValid) =>
+                    updateField("first_name", v, isValid)
+                  }
                 />
 
                 <ValidatedInput
@@ -794,7 +800,9 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.middle_name}
-                  onChange={(v, isValid) => updateField("middle_name", v, isValid)}
+                  onChange={(v, isValid) =>
+                    updateField("middle_name", v, isValid)
+                  }
                 />
 
                 <ValidatedInput
@@ -803,7 +811,9 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.last_name}
-                  onChange={(v, isValid) => updateField("last_name", v, isValid)}
+                  onChange={(v, isValid) =>
+                    updateField("last_name", v, isValid)
+                  }
                 />
 
                 <div>
@@ -864,11 +874,14 @@ export default function TaxpayerListPage() {
 
                 <div className="sm:col-span-2">
                   <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                    Other Address Details <span className="text-rose-500">*</span>
+                    Other Address Details{" "}
+                    <span className="text-rose-500">*</span>
                   </label>
                   <input
                     value={editForm.address_details}
-                    onChange={(e) => updateField("address_details", e.target.value)}
+                    onChange={(e) =>
+                      updateField("address_details", e.target.value)
+                    }
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 font-inter"
                     placeholder="Street, Purok, Sitio, Landmark"
                   />
@@ -942,7 +955,9 @@ export default function TaxpayerListPage() {
 
       <ConfirmationDialog
         isOpen={confirmState.isOpen}
-        onClose={() => setConfirmState({ isOpen: false, type: null, taxpayer: null })}
+        onClose={() =>
+          setConfirmState({ isOpen: false, type: null, taxpayer: null })
+        }
         onConfirm={
           confirmState.type === "delete"
             ? handleConfirmDelete

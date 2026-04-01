@@ -38,7 +38,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/table";
+} from "@/components/Table";
 
 type Permission = {
   id: number;

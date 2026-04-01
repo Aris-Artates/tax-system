@@ -44,7 +44,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/table";
+} from "@/components/Table";
 
 const CATEGORY_OPTIONS: ComboboxOption[] = [
   { value: "All", label: "All Categories" },
@@ -637,7 +637,10 @@ export default function DocumentRegisterPage() {
               </div>
 
               <p className="font-inter text-[11px] text-slate-400 leading-relaxed">
-                Clicking <strong className="text-slate-600">Print</strong> will open the browser&apos;s print dialog with the full official document layout. Use <em>Save as PDF</em> in the dialog to download.
+                Clicking <strong className="text-slate-600">Print</strong> will
+                open the browser&apos;s print dialog with the full official
+                document layout. Use <em>Save as PDF</em> in the dialog to
+                download.
               </p>
 
               {/* Actions */}
