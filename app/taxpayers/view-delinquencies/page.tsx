@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  User,
   FileText,
   MapPin,
   Building2
@@ -440,10 +439,7 @@ export default function ViewDelinquenciesPage() {
                       {pagination.pageIndex * pagination.pageSize + i + 1}
                     </TableCell>
                     <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb] font-medium text-slate-700 truncate">
-                      <div className="flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{t.full_name}</span>
-                      </div>
+                      {t.full_name}
                     </TableCell>
                     <TableCell className="w-[120px] min-w-[120px] text-xs font-mono text-slate-500 truncate">
                       <div className="flex items-center gap-1.5">
