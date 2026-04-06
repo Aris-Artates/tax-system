@@ -131,8 +131,8 @@ export default function PaymentsListPage() {
   useEffect(() => {
     const loadPayments = async () => {
       setIsLoading(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Simulated API call delay for visible skeleton evaluation
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       setPayments(mockPayments);
       setIsLoading(false);
     };
@@ -277,49 +277,63 @@ export default function PaymentsListPage() {
       </header>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 p-5 bg-white shadow-sm">
+      <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-3 print:hidden">
+        <div className="rounded-xl border border-gray-100 p-5 bg-white shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-emerald-600" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+              <TrendingUp className="h-5 w-5 text-emerald-500" strokeWidth={2} />
             </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Total Filtered Collections
-              </p>
-              <p className="text-xl font-bold text-slate-800">
-                ₱{totalCollections.toLocaleString()}
-              </p>
+            <div className="flex-1 min-w-0">
+              <p className="font-inter text-xs font-medium text-slate-500">Total Collections</p>
+              <div className="flex flex-col">
+                {isLoading ? (
+                  <div className="mt-1 h-6 w-24 animate-pulse rounded bg-slate-200" />
+                ) : (
+                  <p className="font-lexend mt-0.5 text-xl font-bold text-slate-900 truncate">
+                    ₱{totalCollections.toLocaleString()}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 p-5 bg-white shadow-sm">
+        <div className="rounded-xl border border-gray-100 p-5 bg-white shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-rose-50 rounded-xl">
-              <AlertCircle className="h-6 w-6 text-rose-600" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-50">
+              <AlertCircle className="h-5 w-5 text-rose-500" strokeWidth={2} />
             </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Overdue Accounts
-              </p>
-              <p className="text-xl font-bold text-slate-800">{overdueCount}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-inter text-xs font-medium text-slate-500">Overdue Accounts</p>
+              <div className="flex flex-col">
+                {isLoading ? (
+                  <div className="mt-1 h-6 w-16 animate-pulse rounded bg-slate-200" />
+                ) : (
+                  <p className="font-lexend mt-0.5 text-xl font-bold text-rose-700 truncate">
+                    {overdueCount}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="hidden lg:block rounded-xl border border-gray-200 p-5 bg-white shadow-sm">
+        <div className="hidden lg:block rounded-xl border border-gray-100 p-5 bg-white shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <FileText className="h-6 w-6 text-blue-600" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50">
+              <FileText className="h-5 w-5 text-blue-500" strokeWidth={2} />
             </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Total Transactions
-              </p>
-              <p className="text-xl font-bold text-slate-800">
-                {filteredPayments.length}
-              </p>
+            <div className="flex-1 min-w-0">
+              <p className="font-inter text-xs font-medium text-slate-500">Total Transactions</p>
+              <div className="flex flex-col">
+                {isLoading ? (
+                  <div className="mt-1 h-6 w-16 animate-pulse rounded bg-slate-200" />
+                ) : (
+                  <p className="font-lexend mt-0.5 text-xl font-bold text-slate-900 truncate">
+                    {filteredPayments.length}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
