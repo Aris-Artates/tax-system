@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { toast } from "sonner";
 import { User, Lock, Eye, EyeOff, LogIn, Mail, Facebook } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -8,12 +9,10 @@ export default function LoginComponent() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     try {
@@ -26,13 +25,15 @@ export default function LoginComponent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login failed. Please try again.");
+        const errorMessage = data.error || "Login failed. Please try again.";
+        toast.error(errorMessage);
         return;
       }
 
       router.push("/dashboard");
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      const errorMessage = "An unexpected error occurred. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -140,15 +141,6 @@ export default function LoginComponent() {
                 Forgot password?
               </a>
             </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="p-3 rounded-md bg-red-50 border border-red-100">
-                <p className="font-inter text-xs text-red-600 text-center">
-                  {error}
-                </p>
-              </div>
-            )}
 
             {/* Submit Button */}
             <button
