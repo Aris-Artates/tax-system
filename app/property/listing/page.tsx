@@ -12,9 +12,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  Building2,
   TreePine,
   Map,
+  FileText,
+  MapPin,
+  User,
+  Wallet,
+  Building2,
 } from "lucide-react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { toast } from "sonner";
@@ -727,40 +731,84 @@ export default function PropertyListingPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-sm border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden print:hidden">
         <div className="overflow-x-auto">
-          <table className="w-full font-inter text-xs">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                {[
-                  "TD Number",
-                  "PIN",
-                  "Owner Name",
-                  "Classification",
-                  "Barangay",
-                  "Land Area (sqm)",
-                  "Market Value (₱)",
-                  "Assess. Level",
-                  "Assessed Value (₱)",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className={`whitespace-nowrap px-4 py-3 text-left text-[#595a5d] font-semibold uppercase tracking-wide ${h === "Actions" ? "sticky right-0 z-20 bg-gray-50 border-l border-gray-200" : ""}`}
-                  >
-                    {h}
-                  </th>
-                ))}
+          <table className="w-full text-left font-inter text-[#595a5d] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide">
+            <thead className="bg-slate-50 text-xs border-b border-gray-200">
+              <tr>
+                <th className="sticky left-0 z-20 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] w-[200px] min-w-[200px] px-4 py-3">
+                  TD Number
+                </th>
+                <th className="w-[180px] min-w-[180px] px-4 py-3">PIN</th>
+                <th className="w-[250px] min-w-[250px] px-4 py-3">
+                  Owner Name
+                </th>
+                <th className="w-[150px] min-w-[150px] px-4 py-3">
+                  Classification
+                </th>
+                <th className="w-[150px] min-w-[150px] px-4 py-3">Barangay</th>
+                <th className="w-[120px] min-w-[120px] px-4 py-3 text-right">
+                  Land Area
+                </th>
+                <th className="w-[150px] min-w-[150px] px-4 py-3 text-right">
+                  Market Value
+                </th>
+                <th className="w-[100px] min-w-[100px] px-4 py-3 text-center">
+                  Assess. Lvl
+                </th>
+                <th className="w-[150px] min-w-[150px] px-4 py-3 text-right">
+                  Assessed Value
+                </th>
+                <th className="w-[100px] min-w-[100px] px-4 py-3 text-center">
+                  Status
+                </th>
+                <th className="sticky right-0 z-20 bg-slate-50 shadow-[-1px_0_0_0_#e2e8f0] w-[100px] min-w-[100px] px-4 py-3 text-center">
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-xs">
               {loading ? (
-                <tr>
-                  <td colSpan={11} className="py-10 text-center text-slate-400">
-                    Loading property records...
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr
+                    key={`skeleton-${i}`}
+                    className="border-b border-gray-100 even:bg-slate-50"
+                  >
+                    <td className="sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#f1f5f9] px-4 py-3">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-5 w-24 animate-pulse rounded-full bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="ml-auto h-4 w-16 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="ml-auto h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="mx-auto h-4 w-10 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="ml-auto h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="mx-auto h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                    </td>
+                    <td className="sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#f1f5f9] px-4 py-3">
+                      <div className="mx-auto h-6 w-20 animate-pulse rounded bg-slate-200" />
+                    </td>
+                  </tr>
+                ))
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="py-10 text-center text-slate-400">
@@ -771,16 +819,32 @@ export default function PropertyListingPage() {
                 pageRows.map((p) => (
                   <tr
                     key={p.id}
-                    className="group border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    className="group border-b border-gray-100 hover:bg-slate-100 transition-colors even:bg-slate-50"
                   >
-                    <td className="px-4 py-3 font-medium text-[#595a5d] whitespace-nowrap">
-                      {p.tdNumber}
+                    <td className="sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-slate-100 shadow-[1px_0_0_0_#f1f5f9] px-4 py-3 whitespace-nowrap font-medium text-slate-700">
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        {p.tdNumber}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {p.pin}
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <code className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 font-mono text-[10px]">
+                          {p.pin}
+                        </code>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                      {p.owner}
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-slate-700">
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span
+                          className="truncate max-w-[190px]"
+                          title={p.owner}
+                        >
+                          {p.owner}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
@@ -792,45 +856,51 @@ export default function PropertyListingPage() {
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                       {p.barangay}
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-600">
+                    <td className="px-4 py-3 text-right font-mono text-slate-600 text-[11px] font-medium">
                       {p.landArea}
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-600">
-                      {p.marketValue}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5 text-slate-700 font-medium whitespace-nowrap">
+                        <Wallet className="h-3 w-3 text-slate-400 shrink-0" />
+                        {p.marketValue}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-center text-slate-500">
+                    <td className="px-4 py-3 text-center text-slate-500 font-mono text-[11px]">
                       {p.assessLevel}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-[#595a5d]">
-                      {p.assessedValue}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5 text-slate-900 font-semibold whitespace-nowrap">
+                        <Wallet className="h-3 w-3 text-slate-400 shrink-0" />
+                        {p.assessedValue}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[p.status] ?? "bg-gray-100 text-gray-600"}`}
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusColors[p.status] ?? "bg-gray-100 text-gray-600"}`}
                       >
                         {p.status}
                       </span>
                     </td>
-                    <td className="sticky right-0 z-10 border-l border-gray-100 bg-white px-4 py-3 group-hover:bg-gray-50">
+                    <td className="sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-slate-100 shadow-[-1px_0_0_0_#f1f5f9] px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           title="View"
                           onClick={() => handleViewProperty(p)}
-                          className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer p-1"
                         >
                           <Eye size={14} />
                         </button>
                         <button
                           title="Edit"
                           onClick={() => openEditModal(p)}
-                          className="text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-amber-600 transition-colors cursor-pointer p-1"
                         >
                           <SquarePen size={14} />
                         </button>
                         <button
                           title="Print"
                           onClick={() => handlePrintProperty(p)}
-                          className="text-slate-400 hover:text-green-600 transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-green-600 transition-colors cursor-pointer p-1"
                         >
                           <Printer size={14} />
                         </button>
