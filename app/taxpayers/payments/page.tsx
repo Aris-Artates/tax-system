@@ -12,6 +12,9 @@ import {
   Receipt,
   TrendingUp,
   AlertCircle,
+  CalendarDays,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
 
 import {
@@ -340,88 +343,145 @@ export default function PaymentsListPage() {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 text-slate-400 -translate-y-1/2" />
+      <div className="mb-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm print:hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative flex-1 min-w-45 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
             <input
+              type="text"
               placeholder="Search taxpayer name or OR #..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              className="font-inter w-full rounded-sm border border-gray-200 py-2 pl-8 pr-3 text-xs text-[#595a5d] focus:outline-none focus:border-slate-400"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="min-w-40">
             <Combobox
               options={STATUS_OPTIONS}
               value={statusFilter}
               onChange={setStatusFilter}
               placeholder="Status"
-              className="w-40"
+              searchPlaceholder="Search status..."
+              triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
             />
+          </div>
+          <div className="min-w-40">
             <Combobox
               options={METHOD_OPTIONS}
               value={methodFilter}
               onChange={setMethodFilter}
               placeholder="Method"
-              className="w-40"
+              searchPlaceholder="Search method..."
+              triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
             />
           </div>
         </div>
       </div>
 
       {/* Table Section */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-        <TableContainer>
-          <Table>
+      <div className="rounded-sm border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden print:hidden">
+        <TableContainer className="border-none shadow-none rounded-none w-full">
+          <Table zebra className="min-w-[1000px]">
             <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="bg-slate-50/50">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
+              <TableRow>
+                <TableHead className="w-[150px] min-w-[150px] bg-gray-50">Date</TableHead>
+                <TableHead className="w-[250px] min-w-[250px] bg-gray-50">Taxpayer</TableHead>
+                <TableHead className="w-[150px] min-w-[150px] bg-gray-50">OR #</TableHead>
+                <TableHead className="w-[150px] min-w-[150px] bg-gray-50" align="right">Amount</TableHead>
+                <TableHead className="w-[120px] min-w-[120px] bg-gray-50" align="center">Method</TableHead>
+                <TableHead className="w-[120px] min-w-[120px] bg-gray-50" align="center">Status</TableHead>
+                <TableHead className="w-[80px] min-w-[80px] bg-gray-50" align="center">Actions</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="h-32 text-center text-slate-400 font-inter text-sm"
-                  >
-                    Loading payment records...
-                  </TableCell>
-                </TableRow>
-              ) : table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="hover:bg-slate-50/50 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell className="w-[150px] min-w-[150px] bg-white [tr:nth-child(even)_&]:bg-slate-50">
+                      <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] bg-white [tr:nth-child(even)_&]:bg-slate-50">
+                      <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px] bg-white [tr:nth-child(even)_&]:bg-slate-50">
+                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="right">
+                      <div className="ml-auto h-4 w-20 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[120px] min-w-[120px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="center">
+                      <div className="mx-auto h-4 w-16 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[120px] min-w-[120px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="center">
+                      <div className="mx-auto h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[80px] min-w-[80px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="center">
+                      <div className="mx-auto h-6 w-12 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
                   </TableRow>
                 ))
+              ) : table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => {
+                  const p = row.original;
+                  const statusColors: Record<PaymentStatus, string> = {
+                    paid: "bg-emerald-50 text-emerald-700 border-emerald-100",
+                    pending: "bg-amber-50 text-amber-700 border-amber-100",
+                    overdue: "bg-rose-50 text-rose-700 border-rose-100",
+                    voided: "bg-slate-50 text-slate-600 border-slate-200",
+                  };
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell className="w-[150px] min-w-[150px] bg-white [tr:nth-child(even)_&]:bg-slate-50 text-xs font-medium text-slate-600">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarDays className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span>{new Date(p.date).toLocaleDateString()}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[250px] min-w-[250px] max-w-[250px] bg-white [tr:nth-child(even)_&]:bg-slate-50 font-medium text-slate-700 truncate">
+                        {p.taxpayer_name}
+                      </TableCell>
+                      <TableCell className="w-[150px] min-w-[150px] bg-white [tr:nth-child(even)_&]:bg-slate-50">
+                        <div className="flex items-center gap-1.5">
+                          <Receipt className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <code className="text-xs font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 text-slate-600">
+                            {p.or_number}
+                          </code>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[150px] min-w-[150px] bg-white [tr:nth-child(even)_&]:bg-slate-50 font-semibold text-slate-900" align="right">
+                        ₱{p.amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="w-[120px] min-w-[120px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {p.method === "cash" || p.method === "check" ? (
+                            <Banknote className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          ) : (
+                            <CreditCard className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          )}
+                          <span className="capitalize text-slate-600 text-xs font-medium">{p.method}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[120px] min-w-[120px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColors[p.status]}`}>
+                          {p.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="w-[80px] min-w-[80px] bg-white [tr:nth-child(even)_&]:bg-slate-50" align="center">
+                        <div className="flex justify-center gap-2">
+                          <button className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="View Receipt">
+                            <Receipt size={14} />
+                          </button>
+                          <button className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Download Report">
+                            <FileText size={14} />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="h-32 text-center text-slate-400 font-inter text-sm"
-                  >
+                  <TableCell colSpan={7} className="py-10 text-center text-slate-400 font-inter text-sm">
                     No matching payment records found.
                   </TableCell>
                 </TableRow>
@@ -431,50 +491,30 @@ export default function PaymentsListPage() {
         </TableContainer>
 
         {/* Pagination Footer */}
-        {!isLoading && table.getPageCount() > 1 && (
-          <div className="border-t border-gray-100 px-6 py-4 bg-white">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-500 font-inter">
-                Showing{" "}
-                <span className="font-semibold text-slate-700">
-                  {table.getState().pagination.pageIndex * PAGE_SIZE + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-semibold text-slate-700">
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) * PAGE_SIZE,
-                    filteredPayments.length,
-                  )}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-slate-700">
-                  {filteredPayments.length}
-                </span>{" "}
-                entries
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="p-1.5 rounded-lg border border-gray-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="text-xs font-medium text-slate-600">
-                  Page {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </span>
-                <button
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="p-1.5 rounded-lg border border-gray-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
+        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 bg-white w-full shrink-0">
+          <p className="font-inter text-xs text-slate-400">
+            Showing Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1} ({filteredPayments.length} total)
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-inter px-2 text-xs text-slate-500">
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+            </span>
+            <button
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
