@@ -497,7 +497,7 @@ export default function TaxpayerListPage() {
 
   return (
     <>
-      <div className="w-full">
+      <div className="w-full min-w-0">
         <button
           type="button"
           onClick={() => router.push("/taxpayers")}
@@ -607,30 +607,20 @@ export default function TaxpayerListPage() {
           </div>
         </div>
 
-        <TableContainer>
-          <Table zebra>
+        <div className="rounded-sm border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden">
+          <TableContainer className="border-none shadow-none rounded-none w-full">
+            <Table zebra className="min-w-[1300px]">
             <TableHeader>
               <TableRow>
-                {[
-                  "#",
-                  "Full Name",
-                  "TIN",
-                  "Type",
-                  "Status",
-                  "Address",
-                  "Phone",
-                  "Email",
-                  "Actions",
-                ].map((h) => (
-                  <TableHead
-                    key={h}
-                    className={cn(
-                      h.toLowerCase() === "full name" ? "min-w-50" : ""
-                    )}
-                  >
-                    {h}
-                  </TableHead>
-                ))}
+                <TableHead className="w-[50px] min-w-[50px] sticky left-0 z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">#</TableHead>
+                <TableHead className="w-[250px] min-w-[250px] sticky left-[50px] z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">Full Name</TableHead>
+                <TableHead className="w-[120px] min-w-[120px]">TIN</TableHead>
+                <TableHead className="w-[100px] min-w-[100px]">Type</TableHead>
+                <TableHead className="w-[100px] min-w-[100px]">Status</TableHead>
+                <TableHead className="w-[250px] min-w-[250px]">Address</TableHead>
+                <TableHead className="w-[150px] min-w-[150px]">Phone</TableHead>
+                <TableHead className="w-[200px] min-w-[200px]">Email</TableHead>
+                <TableHead className="w-[80px] min-w-[80px] sticky right-0 z-20 bg-gray-50 shadow-[-1px_0_0_0_#e5e7eb]" align="right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -655,12 +645,14 @@ export default function TaxpayerListPage() {
               ) : (
                 paginated.map((t, i) => (
                   <TableRow key={t.id}>
-                    <TableCell>{(page - 1) * PAGE_SIZE + i + 1}</TableCell>
-                    <TableCell className="font-medium text-slate-700">
+                    <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb]">
+                      {(page - 1) * PAGE_SIZE + i + 1}
+                    </TableCell>
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb] font-medium text-slate-700 truncate">
                       {t.owner_name}
                     </TableCell>
-                    <TableCell>{t.tin || "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="w-[120px] min-w-[120px] truncate">{t.tin || "—"}</TableCell>
+                    <TableCell className="w-[100px] min-w-[100px]">
                       <span
                         className={cn(
                           "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
@@ -676,7 +668,7 @@ export default function TaxpayerListPage() {
                           : t.owner_type}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[100px] min-w-[100px]">
                       <span
                         className={cn(
                           "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
@@ -686,12 +678,12 @@ export default function TaxpayerListPage() {
                         {getTaxpayerStatus(t)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-slate-500 min-w-60 max-w-xs truncate">
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] text-slate-500 truncate">
                       {t.address || "—"}
                     </TableCell>
-                    <TableCell className="text-slate-500">{t.phone || "—"}</TableCell>
-                    <TableCell className="text-slate-500">{t.email || "—"}</TableCell>
-                    <TableCell align="right">
+                    <TableCell className="w-[150px] min-w-[150px] text-slate-500 truncate">{t.phone || "—"}</TableCell>
+                    <TableCell className="w-[200px] min-w-[200px] max-w-[200px] text-slate-500 truncate">{t.email || "—"}</TableCell>
+                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]" align="right">
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleOpenEditModal(t)}
@@ -732,8 +724,9 @@ export default function TaxpayerListPage() {
               )}
             </TableBody>
           </Table>
+          </TableContainer>
 
-          <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+          <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 bg-white w-full shrink-0">
             <p className="font-inter text-xs text-slate-400">
               Showing {paginated.length} of {filtered.length} taxpayers
             </p>
@@ -757,7 +750,7 @@ export default function TaxpayerListPage() {
               </button>
             </div>
           </div>
-        </TableContainer>
+        </div>
       </div>
 
       {/* Edit User Modal */}

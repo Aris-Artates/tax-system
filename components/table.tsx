@@ -27,8 +27,8 @@ const TableContainer = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "w-full overflow-x-auto rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden",
-      scrollableY && "overflow-y-auto",
+      "w-full overflow-x-auto rounded-sm border border-gray-200 bg-white shadow-sm",
+      scrollableY ? "overflow-y-auto" : "overflow-y-hidden",
       className
     )}
     style={scrollableY ? { ...style, maxHeight: scrollableY } : style}
