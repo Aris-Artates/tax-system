@@ -216,17 +216,23 @@ export default function PaymentsListPage() {
         header: () => <div className="text-right">Actions</div>,
         cell: () => (
           <div className="flex justify-end gap-2">
-            <button className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="View Receipt">
+            <button
+              className="text-slate-400 hover:text-blue-600 transition-colors p-1"
+              title="View Receipt"
+            >
               <Receipt size={16} />
             </button>
-            <button className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Download Report">
+            <button
+              className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
+              title="Download Report"
+            >
               <FileText size={16} />
             </button>
           </div>
         ),
       }),
     ],
-    [columnHelper]
+    [columnHelper],
   );
 
   const table = useReactTable({
@@ -243,8 +249,13 @@ export default function PaymentsListPage() {
     },
   });
 
-  const totalCollections = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
-  const overdueCount = filteredPayments.filter((p) => p.status === "overdue").length;
+  const totalCollections = filteredPayments.reduce(
+    (sum, p) => sum + p.amount,
+    0,
+  );
+  const overdueCount = filteredPayments.filter(
+    (p) => p.status === "overdue",
+  ).length;
 
   return (
     <div className="w-full">
@@ -273,21 +284,25 @@ export default function PaymentsListPage() {
               <TrendingUp className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Filtered Collections</p>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Total Filtered Collections
+              </p>
               <p className="text-xl font-bold text-slate-800">
                 ₱{totalCollections.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="rounded-xl border border-gray-200 p-5 bg-white shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-rose-50 rounded-xl">
               <AlertCircle className="h-6 w-6 text-rose-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Overdue Accounts</p>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Overdue Accounts
+              </p>
               <p className="text-xl font-bold text-slate-800">{overdueCount}</p>
             </div>
           </div>
@@ -299,8 +314,12 @@ export default function PaymentsListPage() {
               <FileText className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Transactions</p>
-              <p className="text-xl font-bold text-slate-800">{filteredPayments.length}</p>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Total Transactions
+              </p>
+              <p className="text-xl font-bold text-slate-800">
+                {filteredPayments.length}
+              </p>
             </div>
           </div>
         </div>
@@ -348,7 +367,10 @@ export default function PaymentsListPage() {
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -357,23 +379,35 @@ export default function PaymentsListPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-slate-400 font-inter text-sm">
+                  <TableCell
+                    colSpan={7}
+                    className="h-32 text-center text-slate-400 font-inter text-sm"
+                  >
                     Loading payment records...
                   </TableCell>
                 </TableRow>
               ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} className="hover:bg-slate-50/50 transition-colors">
+                  <TableRow
+                    key={row.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-slate-400 font-inter text-sm">
+                  <TableCell
+                    colSpan={7}
+                    className="h-32 text-center text-slate-400 font-inter text-sm"
+                  >
                     No matching payment records found.
                   </TableCell>
                 </TableRow>
@@ -387,10 +421,22 @@ export default function PaymentsListPage() {
           <div className="border-t border-gray-100 px-6 py-4 bg-white">
             <div className="flex items-center justify-between">
               <p className="text-xs text-slate-500 font-inter">
-                Showing <span className="font-semibold text-slate-700">{table.getState().pagination.pageIndex * PAGE_SIZE + 1}</span> to{" "}
+                Showing{" "}
                 <span className="font-semibold text-slate-700">
-                  {Math.min((table.getState().pagination.pageIndex + 1) * PAGE_SIZE, filteredPayments.length)}
-                </span> of <span className="font-semibold text-slate-700">{filteredPayments.length}</span> entries
+                  {table.getState().pagination.pageIndex * PAGE_SIZE + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-semibold text-slate-700">
+                  {Math.min(
+                    (table.getState().pagination.pageIndex + 1) * PAGE_SIZE,
+                    filteredPayments.length,
+                  )}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-slate-700">
+                  {filteredPayments.length}
+                </span>{" "}
+                entries
               </p>
               <div className="flex items-center gap-3">
                 <button
@@ -401,7 +447,8 @@ export default function PaymentsListPage() {
                   <ChevronLeft size={16} />
                 </button>
                 <span className="text-xs font-medium text-slate-600">
-                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                  Page {table.getState().pagination.pageIndex + 1} of{" "}
+                  {table.getPageCount()}
                 </span>
                 <button
                   onClick={() => table.nextPage()}

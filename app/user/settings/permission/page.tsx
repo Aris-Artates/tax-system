@@ -131,8 +131,8 @@ export default function PermissionSettingsPage() {
         accessorKey: "name",
         header: "Permission",
         cell: ({ row }: any) => (
-          <div className="inline-flex items-center gap-2 font-medium text-slate-700">
-            <KeyRound className="h-4 w-4 text-slate-400" />
+          <div className="inline-flex min-w-max items-center gap-2 whitespace-nowrap font-medium text-slate-700">
+            <KeyRound className="h-4 w-4 shrink-0 text-slate-400" />
             {row.original.name}
           </div>
         ),
@@ -258,9 +258,10 @@ export default function PermissionSettingsPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => handleOpenSettings(p)}
-                className="font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 cursor-pointer active:scale-95"
+                className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 cursor-pointer active:scale-95"
               >
-                <Settings2 className="h-3.5 w-3.5 text-slate-500" /> Configure
+                <Settings2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />{" "}
+                Configure
               </button>
             </div>
           );

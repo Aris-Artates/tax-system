@@ -472,7 +472,9 @@ function StatusBadge({ status }: { status: string }) {
       : "bg-slate-50 text-slate-800 border-slate-200";
 
   return (
-    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${color}`}>
+    <span
+      className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${color}`}
+    >
       {status}
     </span>
   );

@@ -5,6 +5,7 @@ type CreateRolePayload = {
 	name: string;
 	permission_id?: number;
 	permission_ids?: number[];
+	icon?: string;
 };
 
 export async function POST(request: Request) {
@@ -56,9 +57,11 @@ export async function POST(request: Request) {
 			);
 		}
 
+		const icon = body.icon ?? 'KeyRound';
+
 		const { data, error } = await supabaseAdmin
 			.from('roles')
-			.insert({ name })
+			.insert({ name, icon })
 			.select('*')
 			.single();
 
