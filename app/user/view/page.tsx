@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
+  Undo2,
   UsersRound,
   ShieldCheck,
   Activity,
@@ -24,6 +24,7 @@ import {
   X,
   Eye,
   EyeOff,
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -787,155 +788,157 @@ export default function ViewUserPage() {
 
   return (
     <div className="flex w-full overflow-x-hidden">
-      <main className="flex-1 w-full">
-        {/* Page Header */}
-        <header className="mb-8">
-          <button
-            type="button"
-            onClick={() => router.push("/user")}
-            className="font-lexend mb-5 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700 cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to User Management
-          </button>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-                View Users
-              </h1>
-              <p className="font-inter mt-1 text-xs text-slate-400">
-                Review user accounts, assigned roles, and account status.
-              </p>
-            </div>
-            <button
-              onClick={handleAddUser}
-              className="font-lexend h-10 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 cursor-pointer"
+      <main className="flex-1 w-full max-w-7xl mx-auto h-auto">
+        <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+              View Users
+            </h1>
+            <p className="font-inter mt-1 text-xs text-slate-400">
+              Review user accounts, assigned roles, and account status.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              onClick={() => router.push("/user")}
+              className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
             >
-              Add New User
-            </button>
+              <Undo2 className="h-4 w-4" />
+              Back to User Management
+            </Button>
+            <Button
+              onClick={handleAddUser}
+              className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New User
+            </Button>
           </div>
         </header>
 
-        {/* Main Section Style (referenced from OR Logs) */}
-        <section className="w-full rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-md bg-slate-100 p-2">
-                <UsersRound className="h-5 w-5 text-[#00154A]" />
+                <UsersRound className="h-4 w-4 text-[#00154A]" />
               </div>
               <h2 className="font-lexend text-sm font-semibold text-[#848794]">
                 User Directory
               </h2>
             </div>
-
-            {/* Search Integrated into the section header row */}
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 placeholder="Search users..."
-                className="w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-sm font-inter outline-none focus:ring-2 focus:ring-slate-100"
+                className="font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none"
               />
             </div>
           </div>
+        </div>
 
-          <TableContainer>
-            <Table zebra className="min-w-155">
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </TableHead>
+        <TableContainer>
+          <Table zebra>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="bg-gray-50/50">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="py-10 text-center text-slate-400"
+                  >
+                    Loading users...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="py-10 text-center text-slate-400"
+                  >
+                    No users found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={
+                          cell.column.id === "name"
+                            ? "text-slate-700 font-medium"
+                            : ""
+                        }
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="py-10 text-center text-slate-400"
-                    >
-                      Loading users...
-                    </TableCell>
-                  </TableRow>
-                ) : table.getRowModel().rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="py-10 text-center text-slate-400"
-                    >
-                      No users found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className={
-                            cell.column.id === "name"
-                              ? "text-slate-700 font-medium"
-                              : ""
-                          }
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                ))
+              )}
+            </TableBody>
+          </Table>
 
-          {/* Pagination Controls */}
-          <div className="mt-4 flex items-center justify-between px-2">
-            <div className="font-inter text-xs text-slate-500">
-              Page{" "}
-              <span className="font-medium text-slate-900">
-                {table.getState().pagination.pageIndex + 1}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-slate-900">
-                {table.getPageCount()}
-              </span>
+          {!isLoading && users.length > 0 && (
+            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 bg-gray-50/30 font-inter">
+              <p className="text-[11px] text-slate-400">
+                Showing{" "}
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}
+                -
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  table.getFilteredRowModel().rows.length,
+                )}{" "}
+                of {table.getFilteredRowModel().rows.length} users
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  title="Previous Page"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="px-2 text-xs text-slate-500 whitespace-nowrap">
+                  Page {table.getState().pagination.pageIndex + 1} of{" "}
+                  {table.getPageCount() || 1}
+                </span>
+                <button
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  title="Next Page"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="inline-flex h-8 items-center rounded border border-gray-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
-              >
-                <ChevronLeft className="mr-1 h-3 w-3" /> Previous
-              </button>
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="inline-flex h-8 items-center rounded border border-gray-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
-              >
-                Next <ChevronRight className="ml-1 h-3 w-3" />
-              </button>
-            </div>
-          </div>
-        </section>
+          )}
+        </TableContainer>
       </main>
 
       {/* Edit User Modal */}
