@@ -13,6 +13,15 @@ import {
   ArchiveRestore,
   ChevronLeft,
   ChevronRight,
+  Users,
+  User,
+  Building2,
+  Landmark,
+  MapPin,
+  Phone,
+  Mail,
+  FileText,
+  CheckCircle2,
 } from "lucide-react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
@@ -139,6 +148,7 @@ export default function TaxpayerListPage() {
     const fetchTaxpayers = async () => {
       setIsLoading(true);
       try {
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulated network delay
         const res = await fetch("/api/taxpayers/list", { cache: "no-store" });
         const data = (await res.json()) as { taxpayers?: Taxpayer[] };
         setTaxpayers(data.taxpayers ?? []);
@@ -531,39 +541,62 @@ export default function TaxpayerListPage() {
           {[
             {
               label: "Total Taxpayers",
-              value: isLoading ? "—" : taxpayers.length.toLocaleString(),
-              color: "text-[#595a5d]",
+              value: isLoading ? null : taxpayers.length.toLocaleString(),
+              color: "text-[#0F172A]",
+              bgColor: "bg-slate-100",
+              iconColor: "text-slate-600",
+              icon: Users,
             },
             {
               label: "Individual",
               value: isLoading
-                ? "—"
+                ? null
                 : normalizedOwnerTypeCount.Individual.toLocaleString(),
-              color: "text-blue-600",
+              color: "text-blue-700",
+              bgColor: "bg-blue-50",
+              iconColor: "text-blue-600",
+              icon: User,
             },
             {
               label: "Corporate",
               value: isLoading
-                ? "—"
+                ? null
                 : normalizedOwnerTypeCount.Corporate.toLocaleString(),
-              color: "text-amber-600",
+              color: "text-amber-700",
+              bgColor: "bg-amber-50",
+              iconColor: "text-amber-600",
+              icon: Building2,
             },
             {
               label: "Government",
               value: isLoading
-                ? "—"
+                ? null
                 : normalizedOwnerTypeCount.Government.toLocaleString(),
-              color: "text-emerald-600",
+              color: "text-emerald-700",
+              bgColor: "bg-emerald-50",
+              iconColor: "text-emerald-600",
+              icon: Landmark,
             },
           ].map((s) => (
             <div
               key={s.label}
-              className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm"
+              className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md"
             >
-              <p className="font-inter text-xs text-slate-400">{s.label}</p>
-              <p className={`font-lexend mt-1 text-xl font-bold ${s.color}`}>
-                {s.value}
-              </p>
+              <div className="flex items-center gap-4">
+                <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full", s.bgColor)}>
+                  <s.icon className={cn("h-5 w-5", s.iconColor)} strokeWidth={2} />
+                </div>
+                <div>
+                  <p className="font-inter text-xs font-medium text-slate-500">{s.label}</p>
+                  {s.value !== null ? (
+                    <p className={cn("font-lexend mt-0.5 text-xl font-bold", s.color)}>
+                      {s.value}
+                    </p>
+                  ) : (
+                    <div className="mt-1.5 h-6 w-16 animate-pulse rounded-md bg-slate-200" />
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -625,14 +658,40 @@ export default function TaxpayerListPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="py-10 text-center text-slate-400"
-                  >
-                    Loading taxpayers...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
+                      <div className="h-4 w-6 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[120px] min-w-[120px]">
+                      <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[100px] min-w-[100px]">
+                      <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[100px] min-w-[100px]">
+                      <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px]">
+                      <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px]">
+                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[200px] min-w-[200px] max-w-[200px]">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#e5e7eb]" align="right">
+                      <div className="flex justify-end gap-2">
+                        <div className="h-6 w-6 animate-pulse rounded bg-slate-200" />
+                        <div className="h-6 w-6 animate-pulse rounded bg-slate-200" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : paginated.length === 0 ? (
                 <TableRow>
                   <TableCell
@@ -651,11 +710,20 @@ export default function TaxpayerListPage() {
                     <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb] font-medium text-slate-700 truncate">
                       {t.owner_name}
                     </TableCell>
-                    <TableCell className="w-[120px] min-w-[120px] truncate">{t.tin || "—"}</TableCell>
+                    <TableCell className="w-[120px] min-w-[120px] truncate">
+                      {t.tin ? (
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{t.tin}</span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                     <TableCell className="w-[100px] min-w-[100px]">
                       <span
                         className={cn(
-                          "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
                           ownerTypeColor[
                             t.owner_type === "Corporation"
                               ? "Corporate"
@@ -663,26 +731,65 @@ export default function TaxpayerListPage() {
                           ]
                         )}
                       >
-                        {t.owner_type === "Corporation"
-                          ? "Corporate"
-                          : t.owner_type}
+                        {t.owner_type === "Corporation" || t.owner_type === "Corporate" ? (
+                          <Building2 className="h-3 w-3" />
+                        ) : t.owner_type === "Government" ? (
+                          <Landmark className="h-3 w-3" />
+                        ) : (
+                          <User className="h-3 w-3" />
+                        )}
+                        <span>
+                          {t.owner_type === "Corporation"
+                            ? "Corporate"
+                            : t.owner_type}
+                        </span>
                       </span>
                     </TableCell>
                     <TableCell className="w-[100px] min-w-[100px]">
                       <span
                         className={cn(
-                          "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
                           statusColor[getTaxpayerStatus(t)]
                         )}
                       >
-                        {getTaxpayerStatus(t)}
+                        {getTaxpayerStatus(t) === "Active" ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <Archive className="h-3 w-3" />
+                        )}
+                        <span>{getTaxpayerStatus(t)}</span>
                       </span>
                     </TableCell>
                     <TableCell className="w-[250px] min-w-[250px] max-w-[250px] text-slate-500 truncate">
-                      {t.address || "—"}
+                      {t.address ? (
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{t.address}</span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px] text-slate-500 truncate">{t.phone || "—"}</TableCell>
-                    <TableCell className="w-[200px] min-w-[200px] max-w-[200px] text-slate-500 truncate">{t.email || "—"}</TableCell>
+                    <TableCell className="w-[150px] min-w-[150px] text-slate-500 truncate">
+                      {t.phone ? (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{t.phone}</span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="w-[200px] min-w-[200px] max-w-[200px] text-slate-500 truncate">
+                      {t.email ? (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{t.email}</span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                     <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]" align="right">
                       <div className="flex justify-end gap-1">
                         <button
