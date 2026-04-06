@@ -3,9 +3,20 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Download, Search, Eye } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Clock, 
+  Download, 
+  Search, 
+  Eye,
+  CheckCircle2,
+  CalendarDays,
+  AlertCircle,
+  AlertTriangle
+} from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/tanstack-table";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -45,35 +56,50 @@ const bucketPanels = [
     bucket: "Current",
     total: "128",
     balance: "PHP 2.1M",
-    accent: "border-emerald-200 bg-emerald-50/40",
+    textColor: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+    iconColor: "text-emerald-500",
+    icon: CheckCircle2,
   },
   {
     bucket: "1 Year",
     total: "388",
     balance: "PHP 6.1M",
-    accent: "border-emerald-200 bg-emerald-50/40",
+    textColor: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+    iconColor: "text-emerald-500",
+    icon: Clock,
   },
   {
     bucket: "2 Years",
     total: "274",
     balance: "PHP 8.8M",
-    accent: "border-blue-200 bg-blue-50/40",
+    textColor: "text-blue-700",
+    bgColor: "bg-blue-50",
+    iconColor: "text-blue-500",
+    icon: CalendarDays,
   },
   {
     bucket: "3 Years",
     total: "238",
     balance: "PHP 10.2M",
-    accent: "border-amber-200 bg-amber-50/40",
+    textColor: "text-amber-700",
+    bgColor: "bg-amber-50",
+    iconColor: "text-amber-500",
+    icon: AlertCircle,
   },
   {
     bucket: "5+ Years",
     total: "348",
     balance: "PHP 13.5M",
-    accent: "border-rose-200 bg-rose-50/40",
+    textColor: "text-rose-700",
+    bgColor: "bg-rose-50",
+    iconColor: "text-rose-500",
+    icon: AlertTriangle,
   },
 ];
 
-function fetchDelinquents(
+async function fetchDelinquents(
   search: string,
   pageIndex: number,
   pageSize: number,
@@ -83,6 +109,8 @@ function fetchDelinquents(
     page: (pageIndex + 1).toString(),
     limit: pageSize.toString(),
   });
+
+  await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulated network delay
 
   return fetch(`/api/taxpayers/delinquents?${params}`).then((res) => {
     if (!res.ok) {
@@ -99,19 +127,24 @@ export default function ViewDelinquenciesPage() {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [selectedDelinquent, setSelectedDelinquent] = useState<DelinquentTaxpayer | null>(null);
+  const [selectedDelinquent, setSelectedDelinquent] =
+    useState<DelinquentTaxpayer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const {
     data: delinquentsData,
-    isLoading,
+    isLoading: isInitialLoading,
+    isFetching,
     error,
   } = useQuery({
     queryKey: ["delinquents", { search, pagination: pagination.pageIndex }],
     queryFn: () =>
       fetchDelinquents(search, pagination.pageIndex, pagination.pageSize),
-    staleTime: 5 * 60 * 1000,
+    gcTime: 0,
+    staleTime: 0,
   });
+
+  const isLoading = isInitialLoading || isFetching;
 
   const totalCount = delinquentsData?.meta?.totalItems ?? 0;
   const totalPages = delinquentsData?.meta?.totalPages ?? 1;
@@ -161,7 +194,7 @@ export default function ViewDelinquenciesPage() {
         accessorKey: "total_due",
         header: () => <span className="text-right">Total Due</span>,
         cell: ({ row }) => (
-          <div className="text-right font-bold text-slate-900">
+          <div className="text-right font-semibold text-slate-900">
             {row.original.total_due}
           </div>
         ),
@@ -330,28 +363,37 @@ export default function ViewDelinquenciesPage() {
       </div>
 
       {/* Aging Buckets */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 text-center print:hidden">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 print:hidden">
         {bucketPanels.map((panel) => (
           <div
             key={panel.bucket}
-            className={`rounded-xl border p-5 shadow-sm transition-transform hover:scale-[1.02] ${panel.accent}`}
+            className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md"
           >
-            <div className="flex items-center justify-between">
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[panel.bucket as DelinquentTaxpayer["bucket"]]}`}
-              >
-                {panel.bucket}
-              </span>
-              <div className="font-lexend text-xl font-bold text-slate-700">
-                {panel.total}
+            <div className="flex items-center gap-4">
+              <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full", panel.bgColor)}>
+                <panel.icon className={cn("h-5 w-5", panel.iconColor)} strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-inter text-xs font-medium text-slate-500">{panel.bucket}</p>
+                <div className="flex flex-col">
+                  {isLoading ? (
+                    <>
+                      <div className="mt-1 h-6 w-24 animate-pulse rounded bg-slate-200" />
+                      <div className="mt-1.5 h-3 w-16 animate-pulse rounded bg-slate-200" />
+                    </>
+                  ) : (
+                    <>
+                      <p className={cn("font-lexend mt-0.5 text-xl font-bold truncate", panel.textColor)}>
+                        {panel.balance}
+                      </p>
+                      <p className="font-inter mt-0.5 text-[10px] font-medium text-slate-400">
+                        {panel.total} Due Accounts
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-            <p className="mt-4 font-inter text-lg font-bold text-slate-800">
-              {panel.balance}
-            </p>
-            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
-              Outstanding Balance
-            </p>
           </div>
         ))}
       </div>
@@ -405,37 +447,61 @@ export default function ViewDelinquenciesPage() {
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-4 divide-y divide-slate-100">
                 <div className="pt-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Full Name</p>
-                  <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedDelinquent.full_name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Full Name
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900 mt-0.5">
+                    {selectedDelinquent.full_name}
+                  </p>
                 </div>
 
                 <div className="pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">TIN</p>
-                  <p className="text-sm font-mono text-slate-700 mt-0.5">{selectedDelinquent.tin}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    TIN
+                  </p>
+                  <p className="text-sm font-mono text-slate-700 mt-0.5">
+                    {selectedDelinquent.tin}
+                  </p>
                 </div>
 
                 <div className="pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Barangay</p>
-                  <p className="text-sm text-slate-700 mt-0.5">{selectedDelinquent.barangay_name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Barangay
+                  </p>
+                  <p className="text-sm text-slate-700 mt-0.5">
+                    {selectedDelinquent.barangay_name}
+                  </p>
                 </div>
 
                 <div className="pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Properties Count</p>
-                  <p className="text-sm font-medium text-slate-700 mt-0.5">{selectedDelinquent.property_count} Registered Properties</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Properties Count
+                  </p>
+                  <p className="text-sm font-medium text-slate-700 mt-0.5">
+                    {selectedDelinquent.property_count} Registered Properties
+                  </p>
                 </div>
 
                 <div className="pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Delinquency Age</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Delinquency Age
+                  </p>
                   <div className="mt-1 flex items-center">
-                    <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[selectedDelinquent.bucket]}`}>
+                    <span
+                      className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[selectedDelinquent.bucket]}`}
+                    >
                       {selectedDelinquent.bucket}
                     </span>
                   </div>
                 </div>
 
                 <div className="pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Outstanding Due</p>
-                  <p className="text-lg font-black text-slate-900 mt-0.5">{selectedDelinquent.total_due}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Total Outstanding Due
+                  </p>
+                  <p className="text-lg font-black text-slate-900 mt-0.5">
+                    {selectedDelinquent.total_due}
+                  </p>
                 </div>
               </div>
 
