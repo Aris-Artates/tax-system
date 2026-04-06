@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/Table";
+} from "@/components/table";
 
 type ReportRow = {
   reportName: string;

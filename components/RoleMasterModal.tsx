@@ -18,6 +18,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
   Search,
@@ -233,18 +239,12 @@ export function RoleMasterModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Detect unsaved changes (mirrors PermissionSettingsModal hasChanges logic)
-  const hasChanges = useMemo(() => {
-    if (!role) return name.trim().length > 0 || assignedPermissions.length > 0;
-
-    const nameChanged = name !== role.name;
-    const iconChanged = iconName !== (role.icon || "KeyRound");
-
-    // Calculate what the "initial" active permission IDs were based on what was loaded
+  const initialIds = useMemo(() => {
+    if (!role) return new Set<string>();
     const normalizedNames = (role.permissionNames || []).map((n) =>
       n.trim().toLowerCase(),
     );
-    const initialIds = new Set(
+    return new Set(
       allPermissions
         .filter(
           (p) =>
@@ -253,6 +253,14 @@ export function RoleMasterModal({
         )
         .map((p) => String(p.id)),
     );
+  }, [role, allPermissions]);
+
+  // Detect unsaved changes (mirrors PermissionSettingsModal hasChanges logic)
+  const hasChanges = useMemo(() => {
+    if (!role) return name.trim().length > 0 || assignedPermissions.length > 0;
+
+    const nameChanged = name !== role.name;
+    const iconChanged = iconName !== (role.icon || "KeyRound");
 
     const currentIds = assignedPermissions
       .filter((p) => !permissionsToRemove.has(p.id))
@@ -263,11 +271,17 @@ export function RoleMasterModal({
       currentIds.some((id) => !initialIds.has(id));
 
     return nameChanged || iconChanged || permsChanged;
-  }, [name, iconName, assignedPermissions, permissionsToRemove, role, allPermissions]);
+  }, [name, iconName, assignedPermissions, permissionsToRemove, role, initialIds]);
 
   // Handlers for Edit Tab
   const handleMarkForRemoval = (p: Permission) => {
-    // Stage all removals as "Pending Removal" so they can be retrieved/restored
+    const isNew = !initialIds.has(String(p.id));
+    if (isNew) {
+      setAssignedPermissions((prev) => prev.filter((perm) => perm.id !== p.id));
+      toast.warning("Staged assignment removed.");
+      return;
+    }
+
     setPermissionsToRemove((prev) => {
       const next = new Set(prev);
       next.add(p.id);
@@ -335,7 +349,7 @@ export function RoleMasterModal({
         [...prev, ...toAdd].sort((a, b) => a.name.localeCompare(b.name)),
       );
     }
-    toast.success(`${pickerSelectedIds.size} permission(s) added.`);
+    toast.info(`${pickerSelectedIds.size} permission(s) added to staging list.`);
     setPickerSelectedIds(new Set());
     setPickerOpen(false);
     setPermissionSearch("");
@@ -391,19 +405,21 @@ export function RoleMasterModal({
   };
 
   // Handlers for Users Tab
-  const roleUsers = useMemo(() => {
+  const totalRoleUsers = useMemo(() => {
     if (!role) return [];
     const target = normalizeRoleName(role.name);
-    return allUsers
-      .filter(
-        (u) => normalizeRoleName(u.roles?.name ?? u.role ?? "") === target,
-      )
-      .filter((u) => {
-        const fullSearch =
-          `${u.firstname} ${u.lastname} ${u.empID}`.toLowerCase();
-        return fullSearch.includes(userSearchTerm.toLowerCase());
-      });
-  }, [role, allUsers, userSearchTerm]);
+    return allUsers.filter(
+      (u) => normalizeRoleName(u.roles?.name ?? u.role ?? "") === target,
+    );
+  }, [role, allUsers]);
+
+  const roleUsers = useMemo(() => {
+    return totalRoleUsers.filter((u) => {
+      const fullSearch =
+        `${u.firstname} ${u.lastname} ${u.empID}`.toLowerCase();
+      return fullSearch.includes(userSearchTerm.toLowerCase());
+    });
+  }, [totalRoleUsers, userSearchTerm]);
 
   const handleUserAction = async (
     user: ApiUser,
@@ -437,8 +453,8 @@ export function RoleMasterModal({
         department: fullUser.department || "General",
         position: fullUser.position || "Staff",
         image_path: fullUser.image_path,
-        status: action === "kick" ? false : (fullUser.status ?? true),
-        role_id: action === "demote" ? newRoleId : fullUser.role_id,
+        status: fullUser.status ?? true,
+        role_id: action === "kick" ? 19 : (action === "demote" ? newRoleId : fullUser.role_id),
       };
 
       const response = await fetch("/api/user/update", {
@@ -529,12 +545,12 @@ export function RoleMasterModal({
             onValueChange={(v) => setActiveTab(v as ModalTab)} 
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="px-6 border-b border-slate-100 bg-white">
-              <TabsList className="h-12 w-full justify-start gap-6 bg-transparent p-0 rounded-none border-none">
+            <div className="border-b border-slate-100 bg-white">
+              <TabsList className="h-12 w-full bg-transparent p-0 rounded-none border-none">
                 <TabsTrigger 
                   value="edit" 
                   className={cn(
-                    "h-12 rounded-none border-b-2 bg-transparent px-2 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none",
+                    "h-12 rounded-none border-b-2 bg-transparent px-4 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none -mb-px",
                     activeTab === "edit"
                       ? "border-blue-600 text-blue-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
@@ -546,7 +562,7 @@ export function RoleMasterModal({
                   value="users" 
                   disabled={!role}
                   className={cn(
-                    "h-12 rounded-none border-b-2 bg-transparent px-2 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none",
+                    "h-12 rounded-none border-b-2 bg-transparent px-4 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none -mb-px",
                     activeTab === "users"
                       ? "border-blue-600 text-blue-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
@@ -558,7 +574,7 @@ export function RoleMasterModal({
                   value="delete" 
                   disabled={!role}
                   className={cn(
-                    "h-12 rounded-none border-b-2 bg-transparent px-2 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none",
+                    "h-12 rounded-none border-b-2 bg-transparent px-4 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none -mb-px",
                     activeTab === "delete"
                       ? "border-rose-600 text-rose-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
@@ -592,37 +608,6 @@ export function RoleMasterModal({
                         validator="permission-&-role-name"
                         type="text"
                       />
-                      <div className="space-y-2.5">
-                        <label className="font-inter text-[11px] font-semibold text-slate-600 mb-1.5 block">
-                          Icon Selection
-                        </label>
-                        <div className="grid grid-cols-5 gap-2 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                          {AVAILABLE_ICONS.map((item) => {
-                            const IconComp = item.icon;
-                            const isActive = iconName === item.name;
-                            return (
-                              <button
-                                key={item.name}
-                                onClick={() => setIconName(item.name)}
-                                aria-label={item.label}
-                                className={cn(
-                                  "relative flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 cursor-pointer focus-visible:outline-none border-2",
-                                  isActive
-                                    ? "bg-blue-600 border-blue-700 text-white shadow-lg shadow-blue-200 scale-105 ring-2 ring-blue-300 ring-offset-1"
-                                    : "bg-white border-slate-100 text-slate-500 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50 hover:scale-105 shadow-sm active:scale-95",
-                                )}
-                              >
-                                <IconComp size={18} className="transition-transform duration-200" />
-                                {isActive && (
-                                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm border border-blue-200">
-                                    <Check size={9} className="text-blue-600" />
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
                     </div>
                   </section>
 
@@ -633,29 +618,67 @@ export function RoleMasterModal({
                         Access Permissions
                       </h3>
                       <div className="flex items-center gap-2 mb-2">
-                        <Button
-                          onClick={handleToggleEditMode}
-                          className={cn(
-                            "h-7 px-4 text-[10px] tracking-wider transition-all duration-200 rounded-full flex items-center gap-1.5 cursor-pointer border-2 select-none active:scale-95 focus-visible:outline-none shadow-none",
-                            isEditMode
-                              ? "bg-rose-600 text-white border-rose-700 shadow-[0_0_15px_rgba(225,29,72,0.3)] hover:bg-rose-700 ring-2 ring-rose-100 ring-offset-1"
-                              : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200",
-                          )}
-                        >
-                          {isEditMode ? <Check className="w-3 h-3" /> : <Trash2 className="w-3 h-3" />}
-                          {isEditMode ? "Finish Delete" : "Bulk Delete"}
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip delayDuration={250}>
+                            <TooltipTrigger asChild>
+                              <Button
+                                onClick={handleToggleEditMode}
+                                className={cn(
+                                  "h-7 px-4 text-[10px] tracking-wider transition-all duration-200 rounded-full flex items-center gap-1.5 cursor-pointer border-2 select-none active:scale-95 focus-visible:outline-none shadow-none",
+                                  isEditMode
+                                    ? "bg-rose-600 text-white border-rose-700 shadow-[0_0_15px_rgba(225,29,72,0.3)] hover:bg-rose-700 ring-2 ring-rose-100 ring-offset-1"
+                                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200",
+                                )}
+                              >
+                                {isEditMode ? (
+                                  <Check className="w-3 h-3" />
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                                {isEditMode ? "Finish Delete" : "Bulk Delete"}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              className="bg-white text-xs border border-slate-200 shadow-xl px-4 rounded-lg"
+                            >
+                              <p className="text-slate-600 leading-relaxed">
+                                {isEditMode
+                                  ? "Apply selected items as pending removal"
+                                  : "Select multiple permissions to remove"}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <div ref={pickerRef} className="relative">
-                          <Button
-                            onClick={() => !isEditMode && setPickerOpen(!pickerOpen)}
-                            disabled={isEditMode}
-                            className={cn(
-                              "h-7 px-3 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-none rounded-full flex items-center gap-1.5 transition-all duration-200 active:scale-95 focus-visible:outline-none",
-                              isEditMode ? "opacity-50 cursor-not-allowed border-slate-200 text-slate-400 bg-slate-50" : "cursor-pointer",
-                            )}
-                          >
-                            <Plus className="w-3 h-3" /> Add Permission
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip delayDuration={250}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() =>
+                                    !isEditMode && setPickerOpen(!pickerOpen)
+                                  }
+                                  disabled={isEditMode}
+                                  className={cn(
+                                    "h-7 px-3 text-[10px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-none rounded-full flex items-center gap-1.5 transition-all duration-200 active:scale-95 focus-visible:outline-none",
+                                    isEditMode
+                                      ? "opacity-50 cursor-not-allowed border-slate-200 text-slate-400 bg-slate-50"
+                                      : "cursor-pointer",
+                                  )}
+                                >
+                                  <Plus className="w-3 h-3" /> Add Permission
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="top"
+                                className="bg-white text-xs border border-slate-200 shadow-xl px-4 rounded-lg"
+                              >
+                                <p className="text-slate-600 leading-relaxed">
+                                  Add permissions to the staging list
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           {pickerOpen && (
                             <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-200 ring-4 ring-slate-100">
                               <div className="p-3 bg-slate-100/50 border-b border-slate-100">
@@ -724,8 +747,10 @@ export function RoleMasterModal({
                         <div className="divide-y divide-slate-100">
                           {assignedPermissions.map((p) => {
                             const isMarkedForRemoval = permissionsToRemove.has(p.id);
+                            const isNew = !initialIds.has(String(p.id));
                             const isSelectedForBulk = selectedForBulk.has(p.id);
                             const isPendingConfirm = pendingRemoveConfirm === p.id;
+
                             return (
                               <div
                                 key={p.id}
@@ -737,11 +762,13 @@ export function RoleMasterModal({
                                       ? "bg-blue-50/50 border-l-blue-400"
                                       : isPendingConfirm
                                         ? "bg-amber-50/40 border-l-amber-400"
-                                        : "hover:bg-slate-50 border-l-transparent",
+                                        : isNew
+                                          ? "bg-emerald-50/50 border-l-emerald-500 hover:bg-emerald-50"
+                                          : "hover:bg-slate-50 border-l-transparent",
                                 )}
                               >
                                 <div className="flex items-center gap-3">
-                                  {isEditMode && (
+                                  {isEditMode && !isNew && (
                                     <div
                                       className={cn(
                                         "w-5 h-5 rounded border flex items-center justify-center transition-all duration-200",
@@ -765,12 +792,15 @@ export function RoleMasterModal({
                                           ? "bg-blue-100 text-blue-600 ring-blue-200"
                                           : isPendingConfirm
                                             ? "bg-amber-100 text-amber-700 ring-amber-200"
-                                            : "bg-blue-50 text-blue-600 ring-blue-100",
+                                            : isNew
+                                              ? "bg-emerald-100 text-emerald-700 ring-emerald-200"
+                                              : "bg-blue-50 text-blue-600 ring-blue-100",
+                                      isEditMode && isNew && "opacity-40",
                                     )}
                                   >
                                     {p.name.substring(0, 2).toUpperCase()}
                                   </div>
-                                  <div>
+                                  <div className={cn("transition-all duration-300", isEditMode && isNew && "opacity-40")}>
                                     <div className="flex items-center gap-2">
                                       <span
                                         className={cn(
@@ -784,6 +814,11 @@ export function RoleMasterModal({
                                       >
                                         {p.name}
                                       </span>
+                                      {isNew && !isMarkedForRemoval && (
+                                        <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm animate-pulse">
+                                          New
+                                        </span>
+                                      )}
                                     </div>
                                     <span
                                       className={cn(
@@ -794,7 +829,9 @@ export function RoleMasterModal({
                                             ? "text-blue-500"
                                             : isPendingConfirm
                                               ? "text-amber-600"
-                                              : "text-slate-400",
+                                              : isNew
+                                                ? "text-emerald-600"
+                                                : "text-slate-400",
                                       )}
                                     >
                                       {isMarkedForRemoval
@@ -803,7 +840,9 @@ export function RoleMasterModal({
                                           ? "Selected for removal"
                                           : isPendingConfirm
                                             ? "Confirm removal?"
-                                            : "Active Access Scope"}
+                                            : isNew
+                                              ? "Staged Assignment"
+                                              : "Assigned Permission"}
                                     </span>
                                   </div>
                                 </div>
@@ -822,31 +861,87 @@ export function RoleMasterModal({
                                   <div className="flex items-center gap-1.5">
                                     {isPendingConfirm ? (
                                       <div className="flex items-center gap-1.5 animate-in fade-in zoom-in duration-200">
-                                        <button
-                                          onClick={() => setPendingRemoveConfirm(null)}
-                                          className="h-8 w-8 bg-white text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
-                                          title="Cancel"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            handleMarkForRemoval(p);
-                                            setPendingRemoveConfirm(null);
-                                          }}
-                                          className="h-8 w-8 bg-white text-slate-400 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
-                                          title="Confirm Removal"
-                                        >
-                                          <Check className="w-4 h-4" />
-                                        </button>
+                                        <TooltipProvider>
+                                          <Tooltip delayDuration={200}>
+                                            <TooltipTrigger asChild>
+                                              <button
+                                                onClick={() =>
+                                                  setPendingRemoveConfirm(null)
+                                                }
+                                                className="h-8 w-8 bg-white text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+                                              >
+                                                <X className="w-4 h-4" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                              side="top"
+                                              className="bg-white text-xs border border-slate-200 shadow-xl px-3 py-1.5 rounded-lg"
+                                            >
+                                              <p className="text-slate-600">
+                                                Cancel
+                                              </p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+
+                                        <TooltipProvider>
+                                          <Tooltip delayDuration={200}>
+                                            <TooltipTrigger asChild>
+                                              <button
+                                                onClick={() => {
+                                                  handleMarkForRemoval(p);
+                                                  setPendingRemoveConfirm(null);
+                                                }}
+                                                className="h-8 w-8 bg-white text-slate-400 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+                                              >
+                                                <Check className="w-4 h-4" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                              side="top"
+                                              className="bg-white text-xs border border-slate-200 shadow-xl px-3 py-1.5 rounded-lg"
+                                            >
+                                              <p className="text-slate-600">
+                                                Confirm removal
+                                              </p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
                                       </div>
                                     ) : (
-                                      <button
-                                        onClick={() => setPendingRemoveConfirm(p.id)}
-                                        className="transition-all duration-200 p-2 rounded-lg flex items-center justify-center cursor-pointer shadow-sm border active:scale-95 bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
+                                      <TooltipProvider>
+                                        <Tooltip delayDuration={200}>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              onClick={() =>
+                                                setPendingRemoveConfirm(p.id)
+                                              }
+                                              className={cn(
+                                                "transition-all duration-200 p-2 rounded-lg flex items-center justify-center cursor-pointer shadow-sm border active:scale-95",
+                                                isNew
+                                                  ? "bg-slate-50 text-slate-400 border-slate-100 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100"
+                                                  : "bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100",
+                                              )}
+                                            >
+                                              {isNew ? (
+                                                <X className="w-4 h-4" />
+                                              ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent
+                                            side="top"
+                                            className="bg-white text-xs border border-slate-200 shadow-xl px-3 py-1.5 rounded-lg"
+                                          >
+                                            <p className="text-slate-600">
+                                              {isNew
+                                                ? "Remove staged permission"
+                                                : "Mark for removal"}
+                                            </p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
                                     )}
                                   </div>
                                 )}
@@ -865,21 +960,65 @@ export function RoleMasterModal({
                       )}
                     </div>
                   </section>
+
+                  <section>
+                    <div className="flex items-center gap-1.5 mb-4 border-b border-slate-100">
+                      <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
+                        <Settings2 className="w-3.5 h-3.5 text-slate-500" />
+                        Icon Selection
+                      </h3>
+                    </div>
+                    <div className="space-y-5">
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-5 gap-2 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                          {AVAILABLE_ICONS.map((item) => {
+                            const IconComp = item.icon;
+                            const isActive = iconName === item.name;
+                            return (
+                              <button
+                                key={item.name}
+                                onClick={() => setIconName(item.name)}
+                                aria-label={item.label}
+                                className={cn(
+                                  "relative flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 cursor-pointer focus-visible:outline-none border-2",
+                                  isActive
+                                    ? "bg-blue-600 border-blue-700 text-white shadow-lg shadow-blue-200 scale-105 ring-2 ring-blue-300 ring-offset-1"
+                                    : "bg-white border-slate-100 text-slate-500 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50 hover:scale-105 shadow-sm active:scale-95",
+                                )}
+                              >
+                                <IconComp
+                                  size={18}
+                                  className="transition-transform duration-200"
+                                />
+                                {isActive && (
+                                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm border border-blue-200">
+                                    <Check size={9} className="text-blue-600" />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
                 </div>
               </TabsContent>
 
               <TabsContent value="users" className="m-0 focus-visible:outline-none">
                 <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="relative mb-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                      placeholder="Search personnel..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm"
-                    />
-                  </div>
+                  {totalRoleUsers.length > 0 && (
+                    <div className="relative mb-6">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        placeholder="Search personnel..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm"
+                      />
+                    </div>
+                  )}
                   <div className="space-y-3 pb-4">
                     {roleUsers.length > 0 ? (
                       roleUsers.map((user) => (
@@ -932,8 +1071,9 @@ export function RoleMasterModal({
                                 <ArrowDownToLine size={12} className="mr-1.5" /> Demote
                               </Button>
                               <Button
+                                disabled={user.empID === currentUser?.empID}
                                 onClick={() => handleUserAction(user, "kick")}
-                                className="h-7 px-2.5 text-[10px] font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 focus-visible:ring-0 focus-visible:outline-none shadow-sm border border-rose-100"
+                                className="h-7 px-2.5 text-[10px] font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 focus-visible:ring-0 focus-visible:outline-none shadow-sm border border-rose-100 disabled:opacity-30 disabled:grayscale"
                               >
                                 <UserMinus size={12} className="mr-1.5" /> Kick
                               </Button>
@@ -1037,7 +1177,7 @@ export function RoleMasterModal({
               <X className="w-4 h-4" />
               Cancel
             </Button>
-            {activeTab === 'edit' && (
+            {(activeTab === 'edit' || activeTab === 'users') && (
               <Button
                 onClick={() => setShowSaveConfirm(true)}
                 disabled={isSubmitting || !name.trim() || !hasChanges}

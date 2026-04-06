@@ -30,7 +30,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/Table";
+} from "@/components/table";
 
 type RuleEntry = {
   type: "Discount" | "Penalty";

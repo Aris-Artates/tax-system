@@ -22,7 +22,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/Table";
+} from "@/components/table";
 
 import {
   useReactTable,

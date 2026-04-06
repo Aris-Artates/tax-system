@@ -60,7 +60,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/Table";
+} from "@/components/table";
 
 type ListedUser = {
   empID: string;

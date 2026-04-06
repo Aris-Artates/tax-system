@@ -47,7 +47,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/Table";
+} from "@/components/table";
 
 const CATEGORY_OPTIONS: ComboboxOption[] = [
   { value: "All", label: "All Categories" },

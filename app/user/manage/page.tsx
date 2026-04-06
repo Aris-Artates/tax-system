@@ -60,7 +60,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/Table";
+} from "@/components/table";
 
 import { RoleMasterModal } from "@/components/RoleMasterModal";
 import { AddRoleModal } from "@/components/AddRoleModal";
@@ -374,10 +374,10 @@ export default function ManageRolePage() {
         accessorKey: "name",
         header: "Role",
         cell: ({ row }: any) => (
-          <div className="inline-flex items-center gap-2 font-medium text-slate-700">
+          <div className="inline-flex min-w-max items-center gap-2 whitespace-nowrap font-medium text-slate-700">
             <RoleIcon
               name={row.original.icon}
-              className="h-4 w-4 text-slate-400"
+              className="h-4 w-4 shrink-0 text-slate-400"
             />
             {row.original.name}
           </div>
@@ -516,9 +516,10 @@ export default function ManageRolePage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => openMasterModal(role)}
-                className="font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 cursor-pointer active:scale-95"
+                className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 cursor-pointer active:scale-95"
               >
-                <Settings2 className="h-3.5 w-3.5 text-blue-500" /> Configure
+                <Settings2 className="h-3.5 w-3.5 shrink-0 text-blue-500" />{" "}
+                Configure
               </button>
             </div>
           );

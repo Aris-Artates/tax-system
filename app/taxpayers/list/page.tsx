@@ -35,7 +35,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/Table";
+} from "@/components/table";
 
 const OWNER_TYPE_OPTIONS: ComboboxOption[] = [
   { value: "Individual", label: "Individual" },

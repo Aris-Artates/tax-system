@@ -89,6 +89,9 @@ export function PermissionSettingsModal({
   // Role picker state
   const [pickerOpen, setPickerOpen] = useState(false);
   const [roleSearch, setRoleSearch] = useState("");
+  const [pickerSelectedIds, setPickerSelectedIds] = useState<Set<number>>(
+    new Set(),
+  );
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,6 +106,7 @@ export function PermissionSettingsModal({
       fetchAllRoles();
       setPickerOpen(false);
       setRoleSearch("");
+      setPickerSelectedIds(new Set());
     }
   }, [permission, isOpen]);
 
@@ -191,21 +195,40 @@ export function PermissionSettingsModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, name, description, isSubmitting, assignedRoles, rolesToRemove]);
 
-  const handleAssignToRole = (role: Role) => {
-    // If it was marked for removal, just unmark it
-    if (rolesToRemove.has(role.id)) {
-      const next = new Set(rolesToRemove);
-      next.delete(role.id);
-      setRolesToRemove(next);
-      toast.info(`Restored ${role.name} to assignment list.`);
-    } else {
-      // Otherwise add to list
-      setAssignedRoles((prev) =>
-        [...prev, role].sort((a, b) => a.name.localeCompare(b.name)),
-      );
-      toast.info(`${role.name} added to staging list.`);
+  const togglePickerSelection = (roleId: number) => {
+    const next = new Set(pickerSelectedIds);
+    if (next.has(roleId)) next.delete(roleId);
+    else next.add(roleId);
+    setPickerSelectedIds(next);
+  };
+
+  const handleBulkAddFromPicker = () => {
+    if (pickerSelectedIds.size === 0) return;
+
+    const toRestore = [...pickerSelectedIds].filter((id) => rolesToRemove.has(id));
+    if (toRestore.length > 0) {
+      setRolesToRemove((prev) => {
+        const next = new Set(prev);
+        toRestore.forEach((id) => next.delete(id));
+        return next;
+      });
     }
+
+    const toAdd = allRoles.filter(
+      (role) =>
+        pickerSelectedIds.has(role.id) &&
+        !assignedRoles.some((assigned) => assigned.id === role.id),
+    );
+    if (toAdd.length > 0) {
+      setAssignedRoles((prev) =>
+        [...prev, ...toAdd].sort((a, b) => a.name.localeCompare(b.name)),
+      );
+    }
+
+    toast.info(`${pickerSelectedIds.size} role(s) added to staging list.`);
+    setPickerSelectedIds(new Set());
     setPickerOpen(false);
+    setRoleSearch("");
   };
 
   const handleMarkForRemoval = (roleId: number) => {
@@ -461,7 +484,7 @@ export function PermissionSettingsModal({
                   </TooltipProvider>
 
                   {pickerOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 bg-white shadow-xl z-60 overflow-hidden flex flex-col ring-4 ring-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-slate-200 bg-white shadow-xl z-60 overflow-hidden flex flex-col ring-4 ring-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="p-3 bg-slate-50 border-b border-slate-100">
                         <div className="relative">
                           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -476,18 +499,36 @@ export function PermissionSettingsModal({
                       </div>
                       <div className="max-h-52 overflow-y-auto py-1">
                         {availableRoles.length > 0 ? (
-                          availableRoles.map((role) => (
-                            <button
-                              key={role.id}
-                              onClick={() => handleAssignToRole(role)}
-                              className="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors cursor-pointer"
-                            >
-                              <div className="w-5 h-5 bg-slate-100 rounded-md flex items-center justify-center text-[10px] text-slate-500">
-                                {role.name.charAt(0)}
-                              </div>
-                              {role.name}
-                            </button>
-                          ))
+                          availableRoles.map((role) => {
+                            const isChecked = pickerSelectedIds.has(role.id);
+                            return (
+                              <button
+                                key={role.id}
+                                onClick={() => togglePickerSelection(role.id)}
+                                className={cn(
+                                  "w-full text-left px-3 py-2.5 text-xs flex items-center gap-3 transition-colors cursor-pointer",
+                                  isChecked
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-slate-600 hover:bg-slate-50 hover:text-blue-600",
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                                    isChecked
+                                      ? "bg-blue-500 border-blue-600 text-white"
+                                      : "bg-white border-slate-300",
+                                  )}
+                                >
+                                  {isChecked && <Check size={9} />}
+                                </div>
+                                <div className="w-5 h-5 bg-slate-100 rounded-md flex items-center justify-center text-[10px] text-slate-500">
+                                  {role.name.charAt(0)}
+                                </div>
+                                <span className="truncate">{role.name}</span>
+                              </button>
+                            );
+                          })
                         ) : (
                           <div className="p-6 text-center">
                             <p className="text-[10px] text-slate-400 italic">
@@ -495,6 +536,24 @@ export function PermissionSettingsModal({
                             </p>
                           </div>
                         )}
+                      </div>
+                      <div className="p-2.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-slate-400 font-medium font-inter">
+                          {pickerSelectedIds.size > 0
+                            ? `${pickerSelectedIds.size} selected`
+                            : "Select roles"}
+                        </span>
+                        <button
+                          onClick={handleBulkAddFromPicker}
+                          disabled={pickerSelectedIds.size === 0}
+                          className="h-7 px-3 text-[10px] font-bold bg-blue-600 text-white rounded-lg flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-700 shadow-sm cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add{pickerSelectedIds.size > 0
+                            ? ` ${pickerSelectedIds.size}`
+                            : ""}{" "}
+                          Role{pickerSelectedIds.size !== 1 ? "s" : ""}
+                        </button>
                       </div>
                     </div>
                   )}
@@ -511,6 +570,8 @@ export function PermissionSettingsModal({
                     const isNew = !permission.roles?.some(
                       (r) => r.id === role.id,
                     );
+                    const isPendingConfirm =
+                      roleIdPendingRemoveConfirm === role.id;
 
                     return (
                       <div
@@ -521,6 +582,8 @@ export function PermissionSettingsModal({
                             ? "bg-rose-50 border-l-rose-500 opacity-80"
                             : isSelectedForBulk
                               ? "bg-blue-50/50 border-l-blue-400"
+                              : isPendingConfirm
+                                ? "bg-amber-50/40 border-l-amber-400"
                               : isNew
                                 ? "bg-emerald-50/50 border-l-emerald-500 hover:bg-emerald-50"
                                 : "hover:bg-slate-50 border-l-transparent",
@@ -567,6 +630,8 @@ export function PermissionSettingsModal({
                                 ? "bg-rose-100 text-rose-600 ring-rose-200"
                                 : isSelectedForBulk
                                   ? "bg-blue-100 text-blue-600 ring-blue-200"
+                                  : isPendingConfirm
+                                    ? "bg-amber-100 text-amber-700 ring-amber-200"
                                   : isNew
                                     ? "bg-emerald-100 text-emerald-700 ring-emerald-200"
                                     : "bg-blue-50 text-blue-600 ring-blue-100",
@@ -587,6 +652,8 @@ export function PermissionSettingsModal({
                                   "text-sm font-bold block transition-all duration-300",
                                   isMarkedForRemoval
                                     ? "text-rose-700 line-through"
+                                    : isPendingConfirm
+                                      ? "text-amber-800"
                                     : "text-slate-700",
                                 )}
                               >
@@ -605,6 +672,8 @@ export function PermissionSettingsModal({
                                   ? "text-rose-400"
                                   : isSelectedForBulk
                                     ? "text-blue-500"
+                                    : isPendingConfirm
+                                      ? "text-amber-600"
                                     : isNew
                                       ? "text-emerald-600"
                                       : "text-slate-400",
@@ -614,6 +683,8 @@ export function PermissionSettingsModal({
                                 ? "Pending Removal"
                                 : isSelectedForBulk
                                   ? "Selected for removal"
+                                  : isPendingConfirm
+                                    ? "Confirm removal?"
                                   : isNew
                                     ? "Staged Assignment"
                                     : "Assigned Permission"}
@@ -653,7 +724,7 @@ export function PermissionSettingsModal({
                                     <TooltipTrigger asChild>
                                       <button
                                         onClick={handleCancelPending}
-                                        className="h-8 w-8 bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+                                        className="h-8 w-8 bg-white text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
                                       >
                                         <X className="w-4 h-4" />
                                       </button>
@@ -676,7 +747,7 @@ export function PermissionSettingsModal({
                                         onClick={() =>
                                           handleMarkForRemoval(role.id)
                                         }
-                                        className="h-8 w-8 bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+                                        className="h-8 w-8 bg-white text-slate-400 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
                                       >
                                         <Check className="w-4 h-4" />
                                       </button>

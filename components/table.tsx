@@ -8,7 +8,7 @@ const Table = React.forwardRef<
   <table
     ref={ref}
     className={cn(
-      "w-full border-collapse font-inter text-xs sm:text-sm",
+      "w-full border-collapse font-inter text-xs sm:text-sm [&_td_.inline-flex]:min-w-max [&_td_.inline-flex]:whitespace-nowrap [&_td_.inline-flex_svg]:shrink-0",
       zebra && "[&_tbody_tr:nth-child(even)]:bg-slate-50/50",
       className
     )}
