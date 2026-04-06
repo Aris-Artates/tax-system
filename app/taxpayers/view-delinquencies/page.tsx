@@ -12,10 +12,23 @@ import {
   CheckCircle2,
   CalendarDays,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  FileText,
+  MapPin,
+  Building2
 } from "lucide-react";
-import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/ui/tanstack-table";
+import {
+  Table,
+  TableContainer,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/table";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -149,77 +162,6 @@ export default function ViewDelinquenciesPage() {
   const totalCount = delinquentsData?.meta?.totalItems ?? 0;
   const totalPages = delinquentsData?.meta?.totalPages ?? 1;
   const delinquents = delinquentsData?.data ?? [];
-
-  const columns = useMemo<ColumnDef<DelinquentTaxpayer>[]>(
-    () => [
-      {
-        accessorKey: "full_name",
-        header: "Taxpayer Name",
-      },
-      {
-        accessorKey: "tin",
-        header: "TIN",
-        cell: ({ row }) => (
-          <span className="text-xs font-mono">{row.original.tin}</span>
-        ),
-      },
-      {
-        accessorKey: "barangay_name",
-        header: "Barangay",
-      },
-      {
-        accessorKey: "property_count",
-        header: () => <span className="text-center">Prop.</span>,
-        cell: ({ row }) => (
-          <div className="text-center font-medium">
-            {row.original.property_count}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "bucket",
-        header: "Aging Bucket",
-        cell: ({ row }) => {
-          const bucket = row.original.bucket as DelinquentTaxpayer["bucket"];
-          return (
-            <span
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[bucket]}`}
-            >
-              {bucket}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "total_due",
-        header: () => <span className="text-right">Total Due</span>,
-        cell: ({ row }) => (
-          <div className="text-right font-semibold text-slate-900">
-            {row.original.total_due}
-          </div>
-        ),
-      },
-      {
-        id: "actions",
-        header: () => <span className="text-center">Actions</span>,
-        cell: ({ row }) => (
-          <div className="text-center">
-            <button
-              onClick={() => {
-                setSelectedDelinquent(row.original);
-                setIsDetailsOpen(true);
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 cursor-pointer"
-              title="View Details"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
 
   if (error) {
     return (
@@ -363,7 +305,7 @@ export default function ViewDelinquenciesPage() {
       </div>
 
       {/* Aging Buckets */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 print:hidden">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:grid-cols-5 print:hidden">
         {bucketPanels.map((panel) => (
           <div
             key={panel.bucket}
@@ -399,7 +341,7 @@ export default function ViewDelinquenciesPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:hidden">
+      <div className="mb-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm print:hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -421,16 +363,157 @@ export default function ViewDelinquenciesPage() {
         </div>
       </div>
 
-      {/* TanStack DataTable - Fully replaces old manual implementation */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden print:hidden">
-        <DataTable
-          columns={columns}
-          data={delinquents}
-          pageCount={totalPages}
-          loading={isLoading}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-        />
+      <div className="rounded-sm border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden print:hidden">
+        <TableContainer className="border-none shadow-none rounded-none w-full">
+          <Table zebra className="min-w-[1000px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px] min-w-[50px] sticky left-0 z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">
+                  #
+                </TableHead>
+                <TableHead className="w-[250px] min-w-[250px] sticky left-[50px] z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">
+                  Taxpayer Name
+                </TableHead>
+                <TableHead className="w-[120px] min-w-[120px]">
+                  TIN
+                </TableHead>
+                <TableHead className="w-[200px] min-w-[200px]">
+                  Barangay
+                </TableHead>
+                <TableHead className="w-[100px] min-w-[100px]" align="center">
+                  Prop.
+                </TableHead>
+                <TableHead className="w-[150px] min-w-[150px]" align="center">
+                  Aging Bucket
+                </TableHead>
+                <TableHead className="w-[150px] min-w-[150px]" align="right">
+                  Total Due
+                </TableHead>
+                <TableHead className="w-[80px] min-w-[80px] sticky right-0 z-20 bg-gray-50 shadow-[-1px_0_0_0_#e5e7eb]" align="center">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
+                      <div className="h-4 w-6 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
+                      <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[120px] min-w-[120px]">
+                      <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[200px] min-w-[200px]">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[100px] min-w-[100px]" align="center">
+                      <div className="mx-auto h-4 w-6 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px]" align="center">
+                      <div className="mx-auto h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px]" align="right">
+                      <div className="ml-auto h-4 w-20 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#e5e7eb]" align="center">
+                      <div className="mx-auto h-8 w-8 animate-pulse rounded-lg bg-slate-200" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : delinquents.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-slate-400"
+                  >
+                    No delinquent accounts found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                delinquents.map((t, i) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb]">
+                      {pagination.pageIndex * pagination.pageSize + i + 1}
+                    </TableCell>
+                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb] font-medium text-slate-700 truncate">
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{t.full_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-[120px] min-w-[120px] text-xs font-mono text-slate-500 truncate">
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{t.tin || "—"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-[200px] min-w-[200px] truncate">
+                      <div className="flex items-center gap-1.5 text-slate-500">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{t.barangay_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-[100px] min-w-[100px] font-medium text-slate-500" align="center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>{t.property_count}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px]" align="center">
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[t.bucket]}`}>
+                        {t.bucket}
+                      </span>
+                    </TableCell>
+                    <TableCell className="w-[150px] min-w-[150px] font-semibold text-slate-900" align="right">
+                      {t.total_due}
+                    </TableCell>
+                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]" align="center">
+                      <button
+                        onClick={() => {
+                          setSelectedDelinquent(t);
+                          setIsDetailsOpen(true);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 cursor-pointer"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 bg-white w-full shrink-0">
+          <p className="font-inter text-xs text-slate-400">
+            Showing Page {pagination.pageIndex + 1} of {totalPages} ({totalCount} total)
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, pageIndex: Math.max(0, prev.pageIndex - 1) }))}
+              disabled={pagination.pageIndex === 0}
+              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-inter px-2 text-xs text-slate-500">
+              Page {pagination.pageIndex + 1} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, pageIndex: Math.min(totalPages - 1, prev.pageIndex + 1) }))}
+              disabled={pagination.pageIndex >= totalPages - 1}
+              className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Details Dialog */}
