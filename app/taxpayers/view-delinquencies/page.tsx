@@ -19,6 +19,7 @@ import {
   MapPin,
   Building2
 } from "lucide-react";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
   Table,
   TableContainer,
@@ -111,8 +112,18 @@ const bucketPanels = [
   },
 ];
 
+const BUCKET_FILTER_OPTIONS: ComboboxOption[] = [
+  { value: "__all__", label: "All Buckets" },
+  { value: "Current", label: "Current" },
+  { value: "1 Year", label: "1 Year" },
+  { value: "2 Years", label: "2 Years" },
+  { value: "3 Years", label: "3 Years" },
+  { value: "5+ Years", label: "5+ Years" },
+];
+
 async function fetchDelinquents(
   search: string,
+  bucketFilter: string,
   pageIndex: number,
   pageSize: number,
 ): Promise<DelinquentsResponse> {
@@ -121,6 +132,9 @@ async function fetchDelinquents(
     page: (pageIndex + 1).toString(),
     limit: pageSize.toString(),
   });
+  if (bucketFilter && bucketFilter !== "__all__") {
+    params.set("bucket", bucketFilter);
+  }
 
   await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulated network delay
 
@@ -135,6 +149,7 @@ async function fetchDelinquents(
 export default function ViewDelinquenciesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [bucketFilter, setBucketFilter] = useState("");
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -149,9 +164,9 @@ export default function ViewDelinquenciesPage() {
     isFetching,
     error,
   } = useQuery({
-    queryKey: ["delinquents", { search, pagination: pagination.pageIndex }],
+    queryKey: ["delinquents", { search, bucketFilter, pagination: pagination.pageIndex }],
     queryFn: () =>
-      fetchDelinquents(search, pagination.pageIndex, pagination.pageSize),
+      fetchDelinquents(search, bucketFilter, pagination.pageIndex, pagination.pageSize),
     gcTime: 0,
     staleTime: 0,
   });
@@ -341,9 +356,9 @@ export default function ViewDelinquenciesPage() {
 
       {/* Search Bar */}
       <div className="mb-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm print:hidden">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative flex-1 min-w-45 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
             <input
               type="text"
               placeholder="Search by name, TIN, or barangay..."
@@ -352,12 +367,21 @@ export default function ViewDelinquenciesPage() {
                 setSearch(e.target.value);
                 setPagination((prev) => ({ ...prev, pageIndex: 0 }));
               }}
-              className="w-full rounded-lg border border-gray-200 bg-slate-50 py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              className="font-inter w-full rounded-sm border border-gray-200 py-2 pl-8 pr-3 text-xs text-[#595a5d] focus:outline-none focus:border-slate-400"
             />
           </div>
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-gray-100">
-            <Clock className="h-4 w-4 text-slate-400" />
-            {totalCount} Delinquent Accounts Found
+          <div className="min-w-40">
+            <Combobox
+              placeholder="Aging Bucket"
+              searchPlaceholder="Search bucket..."
+              options={BUCKET_FILTER_OPTIONS}
+              value={bucketFilter}
+              onChange={(val) => {
+                setBucketFilter(val);
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+              triggerClassName="rounded-sm text-xs py-1.5 text-slate-500"
+            />
           </div>
         </div>
       </div>
