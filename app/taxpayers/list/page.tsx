@@ -529,7 +529,7 @@ export default function TaxpayerListPage() {
           <button
             type="button"
             onClick={() => router.push("/taxpayers/register")}
-            className="font-inter inline-flex cursor-pointer items-center gap-2 rounded bg-[#0f1729] px-4 py-2 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800"
+            className="font-inter inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             Register Taxpayer
@@ -583,13 +583,28 @@ export default function TaxpayerListPage() {
               className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md"
             >
               <div className="flex items-center gap-4">
-                <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full", s.bgColor)}>
-                  <s.icon className={cn("h-5 w-5", s.iconColor)} strokeWidth={2} />
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+                    s.bgColor,
+                  )}
+                >
+                  <s.icon
+                    className={cn("h-5 w-5", s.iconColor)}
+                    strokeWidth={2}
+                  />
                 </div>
                 <div>
-                  <p className="font-inter text-xs font-medium text-slate-500">{s.label}</p>
+                  <p className="font-inter text-xs font-medium text-slate-500">
+                    {s.label}
+                  </p>
                   {s.value !== null ? (
-                    <p className={cn("font-lexend mt-0.5 text-xl font-bold", s.color)}>
+                    <p
+                      className={cn(
+                        "font-lexend mt-0.5 text-xl font-bold",
+                        s.color,
+                      )}
+                    >
                       {s.value}
                     </p>
                   ) : (
@@ -643,194 +658,220 @@ export default function TaxpayerListPage() {
         <div className="rounded-sm border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden">
           <TableContainer className="border-none shadow-none rounded-none w-full">
             <Table zebra className="min-w-[1300px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px] min-w-[50px] sticky left-0 z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">#</TableHead>
-                <TableHead className="w-[250px] min-w-[250px] sticky left-[50px] z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">Full Name</TableHead>
-                <TableHead className="w-[120px] min-w-[120px]">TIN</TableHead>
-                <TableHead className="w-[100px] min-w-[100px]">Type</TableHead>
-                <TableHead className="w-[100px] min-w-[100px]">Status</TableHead>
-                <TableHead className="w-[250px] min-w-[250px]">Address</TableHead>
-                <TableHead className="w-[150px] min-w-[150px]">Phone</TableHead>
-                <TableHead className="w-[200px] min-w-[200px]">Email</TableHead>
-                <TableHead className="w-[80px] min-w-[80px] sticky right-0 z-20 bg-gray-50 shadow-[-1px_0_0_0_#e5e7eb]" align="right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={`skeleton-${i}`}>
-                    <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
-                      <div className="h-4 w-6 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
-                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[120px] min-w-[120px]">
-                      <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[100px] min-w-[100px]">
-                      <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[100px] min-w-[100px]">
-                      <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px]">
-                      <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px]">
-                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[200px] min-w-[200px] max-w-[200px]">
-                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#e5e7eb]" align="right">
-                      <div className="flex justify-end gap-2">
-                        <div className="h-6 w-6 animate-pulse rounded bg-slate-200" />
-                        <div className="h-6 w-6 animate-pulse rounded bg-slate-200" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : paginated.length === 0 ? (
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="py-10 text-center text-slate-400"
+                  <TableHead className="w-[50px] min-w-[50px] sticky left-0 z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">
+                    #
+                  </TableHead>
+                  <TableHead className="w-[250px] min-w-[250px] sticky left-[50px] z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">
+                    Full Name
+                  </TableHead>
+                  <TableHead className="w-[120px] min-w-[120px]">TIN</TableHead>
+                  <TableHead className="w-[100px] min-w-[100px]">
+                    Type
+                  </TableHead>
+                  <TableHead className="w-[100px] min-w-[100px]">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-[250px] min-w-[250px]">
+                    Address
+                  </TableHead>
+                  <TableHead className="w-[150px] min-w-[150px]">
+                    Phone
+                  </TableHead>
+                  <TableHead className="w-[200px] min-w-[200px]">
+                    Email
+                  </TableHead>
+                  <TableHead
+                    className="w-[80px] min-w-[80px] sticky right-0 z-20 bg-gray-50 shadow-[-1px_0_0_0_#e5e7eb]"
+                    align="right"
                   >
-                    No taxpayers found.
-                  </TableCell>
+                    Actions
+                  </TableHead>
                 </TableRow>
-              ) : (
-                paginated.map((t, i) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb]">
-                      {(page - 1) * PAGE_SIZE + i + 1}
-                    </TableCell>
-                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb] font-medium text-slate-700 truncate">
-                      {t.owner_name}
-                    </TableCell>
-                    <TableCell className="w-[120px] min-w-[120px] truncate">
-                      {t.tin ? (
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{t.tin}</span>
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell className="w-[100px] min-w-[100px]">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                          ownerTypeColor[
-                            t.owner_type === "Corporation"
-                              ? "Corporate"
-                              : (t.owner_type ?? "Individual")
-                          ]
-                        )}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
+                        <div className="h-4 w-6 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[1px_0_0_0_#e5e7eb]">
+                        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[120px] min-w-[120px]">
+                        <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[100px] min-w-[100px]">
+                        <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[100px] min-w-[100px]">
+                        <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[250px] min-w-[250px] max-w-[250px]">
+                        <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[150px] min-w-[150px]">
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell className="w-[200px] min-w-[200px] max-w-[200px]">
+                        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell
+                        className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#e5e7eb]"
+                        align="right"
                       >
-                        {t.owner_type === "Corporation" || t.owner_type === "Corporate" ? (
-                          <Building2 className="h-3 w-3" />
-                        ) : t.owner_type === "Government" ? (
-                          <Landmark className="h-3 w-3" />
-                        ) : (
-                          <User className="h-3 w-3" />
-                        )}
-                        <span>
-                          {t.owner_type === "Corporation"
-                            ? "Corporate"
-                            : t.owner_type}
-                        </span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="w-[100px] min-w-[100px]">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                          statusColor[getTaxpayerStatus(t)]
-                        )}
-                      >
-                        {getTaxpayerStatus(t) === "Active" ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : (
-                          <Archive className="h-3 w-3" />
-                        )}
-                        <span>{getTaxpayerStatus(t)}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="w-[250px] min-w-[250px] max-w-[250px] text-slate-500 truncate">
-                      {t.address ? (
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{t.address}</span>
+                        <div className="flex justify-end gap-2">
+                          <div className="h-6 w-6 animate-pulse rounded bg-slate-200" />
+                          <div className="h-6 w-6 animate-pulse rounded bg-slate-200" />
                         </div>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px] text-slate-500 truncate">
-                      {t.phone ? (
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{t.phone}</span>
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell className="w-[200px] min-w-[200px] max-w-[200px] text-slate-500 truncate">
-                      {t.email ? (
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{t.email}</span>
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]" align="right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenEditModal(t)}
-                          title="Edit"
-                          className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-blue-600"
-                        >
-                          <SquarePen size={14} />
-                        </button>
-
-                        {getTaxpayerStatus(t) === "Active" ? (
-                          <button
-                            onClick={() => handleArchiveClick(t)}
-                            title="Archive"
-                            className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-amber-600"
-                          >
-                            <Archive size={14} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRestoreClick(t)}
-                            title="Restore"
-                            className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-emerald-600"
-                          >
-                            <ArchiveRestore size={14} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteClick(t)}
-                          title="Delete"
-                          className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-rose-600"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : paginated.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="py-10 text-center text-slate-400"
+                    >
+                      No taxpayers found.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  paginated.map((t, i) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="w-[50px] min-w-[50px] sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb]">
+                        {(page - 1) * PAGE_SIZE + i + 1}
+                      </TableCell>
+                      <TableCell className="w-[250px] min-w-[250px] max-w-[250px] sticky left-[50px] z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[1px_0_0_0_#e5e7eb] font-medium text-slate-700 truncate">
+                        {t.owner_name}
+                      </TableCell>
+                      <TableCell className="w-[120px] min-w-[120px] truncate">
+                        {t.tin ? (
+                          <div className="flex items-center gap-1.5">
+                            <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{t.tin}</span>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="w-[100px] min-w-[100px]">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            ownerTypeColor[
+                              t.owner_type === "Corporation"
+                                ? "Corporate"
+                                : (t.owner_type ?? "Individual")
+                            ],
+                          )}
+                        >
+                          {t.owner_type === "Corporation" ||
+                          t.owner_type === "Corporate" ? (
+                            <Building2 className="h-3 w-3" />
+                          ) : t.owner_type === "Government" ? (
+                            <Landmark className="h-3 w-3" />
+                          ) : (
+                            <User className="h-3 w-3" />
+                          )}
+                          <span>
+                            {t.owner_type === "Corporation"
+                              ? "Corporate"
+                              : t.owner_type}
+                          </span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="w-[100px] min-w-[100px]">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            statusColor[getTaxpayerStatus(t)],
+                          )}
+                        >
+                          {getTaxpayerStatus(t) === "Active" ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <Archive className="h-3 w-3" />
+                          )}
+                          <span>{getTaxpayerStatus(t)}</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="w-[250px] min-w-[250px] max-w-[250px] text-slate-500 truncate">
+                        {t.address ? (
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{t.address}</span>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="w-[150px] min-w-[150px] text-slate-500 truncate">
+                        {t.phone ? (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{t.phone}</span>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="w-[200px] min-w-[200px] max-w-[200px] text-slate-500 truncate">
+                        {t.email ? (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{t.email}</span>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]"
+                        align="right"
+                      >
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => handleOpenEditModal(t)}
+                            title="Edit"
+                            className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-blue-600"
+                          >
+                            <SquarePen size={14} />
+                          </button>
+
+                          {getTaxpayerStatus(t) === "Active" ? (
+                            <button
+                              onClick={() => handleArchiveClick(t)}
+                              title="Archive"
+                              className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-amber-600"
+                            >
+                              <Archive size={14} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleRestoreClick(t)}
+                              title="Restore"
+                              className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-emerald-600"
+                            >
+                              <ArchiveRestore size={14} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteClick(t)}
+                            title="Delete"
+                            className="cursor-pointer p-1.5 text-slate-400 transition-colors hover:text-rose-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </TableContainer>
 
           <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 bg-white w-full shrink-0">
@@ -886,7 +927,9 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.first_name}
-                  onChange={(v, isValid) => updateField("first_name", v, isValid)}
+                  onChange={(v, isValid) =>
+                    updateField("first_name", v, isValid)
+                  }
                 />
 
                 <ValidatedInput
@@ -894,7 +937,9 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.middle_name}
-                  onChange={(v, isValid) => updateField("middle_name", v, isValid)}
+                  onChange={(v, isValid) =>
+                    updateField("middle_name", v, isValid)
+                  }
                 />
 
                 <ValidatedInput
@@ -903,7 +948,9 @@ export default function TaxpayerListPage() {
                   validator="name"
                   type="name"
                   value={editForm.last_name}
-                  onChange={(v, isValid) => updateField("last_name", v, isValid)}
+                  onChange={(v, isValid) =>
+                    updateField("last_name", v, isValid)
+                  }
                 />
 
                 <div>
@@ -964,11 +1011,14 @@ export default function TaxpayerListPage() {
 
                 <div className="sm:col-span-2">
                   <label className="font-inter mb-1 block text-xs font-medium text-slate-600">
-                    Other Address Details <span className="text-rose-500">*</span>
+                    Other Address Details{" "}
+                    <span className="text-rose-500">*</span>
                   </label>
                   <input
                     value={editForm.address_details}
-                    onChange={(e) => updateField("address_details", e.target.value)}
+                    onChange={(e) =>
+                      updateField("address_details", e.target.value)
+                    }
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-200 font-inter"
                     placeholder="Street, Purok, Sitio, Landmark"
                   />
@@ -1042,7 +1092,9 @@ export default function TaxpayerListPage() {
 
       <ConfirmationDialog
         isOpen={confirmState.isOpen}
-        onClose={() => setConfirmState({ isOpen: false, type: null, taxpayer: null })}
+        onClose={() =>
+          setConfirmState({ isOpen: false, type: null, taxpayer: null })
+        }
         onConfirm={
           confirmState.type === "delete"
             ? handleConfirmDelete
