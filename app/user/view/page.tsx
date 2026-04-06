@@ -70,6 +70,7 @@ type ListedUser = {
   status: "Active" | "Inactive";
   email: string;
   sex: boolean; // true = male, false = female
+  image_path?: string;
 };
 
 type ApiUser = {
@@ -85,6 +86,7 @@ type ApiUser = {
   status?: boolean;
   email?: string;
   sex?: boolean;
+  image_path?: string;
 };
 
 type ApiUserDetails = {
@@ -107,6 +109,7 @@ type ApiUserDetails = {
   department?: string;
   position?: string;
   status?: boolean;
+  image_path?: string;
 };
 
 type FormState = {
@@ -343,6 +346,7 @@ export default function ViewUserPage() {
             status: user.status ? "Active" : "Inactive",
             email: user.email || "",
             sex: typeof user.sex === "boolean" ? user.sex : true,
+            image_path: user.image_path || undefined,
           } as ListedUser;
         });
 
@@ -668,16 +672,41 @@ export default function ViewUserPage() {
     () => [
       {
         id: "avatar",
-        header: "",
+        header: "Image",
         cell: ({ row }: any) => {
-          const isMale: boolean = row.original.sex !== false;
+          const user = row.original;
+          const isMale = user.sex !== false;
+          const defaultAvatar = isMale ? "/avatars/men.png" : "/avatars/female.png";
+          
+          let imageSrc = defaultAvatar;
+          const rawPath = user.image_path;
+          
+          if (rawPath && typeof rawPath === 'string' && rawPath.length > 5 && rawPath !== "null" && rawPath !== "undefined") {
+            // Check if it's already a full URL or needs construction
+            if (rawPath.startsWith('http')) {
+              imageSrc = rawPath;
+            } else {
+              // Construct the Supabase URL manually just in case it is stored as a path
+              // Based on lib/supabaseClient.ts: yleykujigdisscpbtiby.supabase.co
+              imageSrc = `https://yleykujigdisscpbtiby.supabase.co/storage/v1/object/public/profiles/${rawPath}`;
+            }
+          }
+
           return (
-            <div className="flex justify-center">
-              <img
-                src={isMale ? "/avatars/men.png" : "/avatars/female.png"}
-                alt={isMale ? "Male" : "Female"}
-                className="h-8 w-8 rounded-full object-cover border border-gray-200"
-              />
+            <div className="flex justify-center select-none">
+              <div className="h-8 w-8 rounded-full overflow-hidden border border-slate-100 bg-slate-50 ring-2 ring-white shadow-sm flex items-center justify-center">
+                <img
+                  src={imageSrc}
+                  alt={user.name || "User Avatar"}
+                  className="h-full w-full object-cover transition-opacity duration-300"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== defaultAvatar) {
+                      target.src = defaultAvatar;
+                    }
+                  }}
+                />
+              </div>
             </div>
           );
         },
