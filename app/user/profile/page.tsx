@@ -28,7 +28,6 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -141,7 +140,7 @@ export default function UserProfilePage() {
             lastName: u.lastname || "",
             suffix: u.suffix || "",
             birthdate: u.birthdate || "",
-            age: u.age || "",
+            age: u.age ? String(u.age) : (u.birthdate ? calculateAge(u.birthdate) : ""),
             sex: u.sex ?? true,
             email: u.email || "",
             role: u.roles?.name || "User",

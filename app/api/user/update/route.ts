@@ -126,7 +126,7 @@ export async function PUT(request: Request) {
 				lastname: String(body.lastname ?? '').trim(),
 				suffix: String(body.suffix ?? '').trim(),
 				birthdate: String(body.birthdate ?? '').trim(),
-				age: String(body.age ?? '').trim(),
+				age: body.age ? parseInt(String(body.age)) : null,
 				sex: body.sex,
 				...(hasTempPass ? { temp_pass: normalizedTempPass } : {}),
 				...(hasPassword ? { password: normalizedPassword } : {}),
