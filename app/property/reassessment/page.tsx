@@ -75,7 +75,8 @@ export default function ReassessmentPage() {
       try {
         const res = await fetch('/api/properties/listing');
         if (!res.ok) throw new Error('Failed to load properties');
-        const { rows } = await res.json();
+        const json = await res.json();
+        const rows = json._data ? JSON.parse(atob(atob(atob(json._data)))) : (json.rows ?? []);
         const options: ComboboxOption[] = [];
         const data: Record<string, PropertyRecord> = {};
 

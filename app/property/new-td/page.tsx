@@ -203,12 +203,11 @@ export default function NewTaxDeclarationPage() {
           fetch("/api/taxpayers/list"),
         ]);
 
-        const { barangays = [] } = barangayRes.ok
-          ? await barangayRes.json()
-          : {};
-        const { taxpayers = [] } = taxpayerRes.ok
-          ? await taxpayerRes.json()
-          : {};
+        const barangayData = barangayRes.ok ? await barangayRes.json() : {};
+        const decodedBarangays = barangayData._data ? JSON.parse(atob(atob(atob(barangayData._data)))) : (barangayData.barangays ?? []);
+        
+        const taxpayerData = taxpayerRes.ok ? await taxpayerRes.json() : {};
+        const taxpayers = taxpayerData._data ? JSON.parse(atob(atob(atob(taxpayerData._data)))) : (taxpayerData.taxpayers ?? []);
 
         const fallbackBarangays: ComboboxOption[] =
           STA_RITA_BARANGAY_COORDINATES.map((b) => ({
@@ -216,7 +215,7 @@ export default function NewTaxDeclarationPage() {
             label: b.name,
           })).sort((a, b) => a.label.localeCompare(b.label));
 
-        const remoteBarangays: ComboboxOption[] = barangays.map(
+        const remoteBarangays: ComboboxOption[] = decodedBarangays.map(
           (b: { id: number; name: string }) => ({
             value: String(b.id),
             label: b.name,
