@@ -119,8 +119,11 @@ export default function BillingGenerationPage() {
           fetch("/api/assessment/billing/drafts"),
         ]);
 
-        const tpData = await tpRes.json();
-        const draftData = await draftRes.json();
+        const tpBody = await tpRes.json();
+        const draftBody = await draftRes.json();
+
+        const tpData = tpBody._data ? JSON.parse(atob(atob(atob(tpBody._data)))) : tpBody;
+        const draftData = draftBody._data ? JSON.parse(atob(atob(atob(draftBody._data)))) : draftBody;
 
         if (tpData.taxpayers) setTaxpayers(tpData.taxpayers);
         if (draftData.drafts) setDrafts(draftData.drafts);
@@ -161,7 +164,8 @@ export default function BillingGenerationPage() {
     // Fetch linked data (TDs and Properties)
     try {
       const res = await fetch(`/api/taxpayers/linked?id=${id}`);
-      const data = await res.json();
+      const body = await res.json();
+      const data = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
 
       const declarations = data.declarations || [];
       setLinkedDeclarations(declarations);
@@ -190,7 +194,8 @@ export default function BillingGenerationPage() {
   const fetchLinkedProperties = async (taxpayerId: string) => {
     try {
       const res = await fetch(`/api/taxpayers/linked?id=${taxpayerId}`);
-      const data = await res.json();
+      const body = await res.json();
+      const data = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
 
       const declarations = data.declarations || [];
       setLinkedDeclarations(declarations);
@@ -265,7 +270,8 @@ export default function BillingGenerationPage() {
         setCurrentDraftId(data.draft.id);
         // Refresh local drafts list
         const listRes = await fetch('/api/assessment/billing/drafts');
-        const listData = await listRes.json();
+        const listBody = await listRes.json();
+        const listData = listBody._data ? JSON.parse(atob(atob(atob(listBody._data)))) : listBody;
         if (listData.drafts) setDrafts(listData.drafts);
         toast.success(currentDraftId ? 'Draft updated' : 'Initial draft saved');
       } else {
