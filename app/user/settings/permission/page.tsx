@@ -81,7 +81,7 @@ export default function PermissionSettingsPage() {
       // Intercept and decode obscured payload
       try {
         if (data._data) {
-          const decoded = JSON.parse(atob(data._data));
+          const decoded = JSON.parse(atob(atob(atob(data._data))));
           setPermissions(decoded);
         } else {
           setPermissions([]);

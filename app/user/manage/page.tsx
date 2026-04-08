@@ -300,7 +300,7 @@ export default function ManageRolePage() {
         return;
       }
 
-      const decodedUsers = data._data ? JSON.parse(atob(data._data)) : (data.users ?? []);
+      const decodedUsers = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.users ?? []);
       setUsers(decodedUsers);
     } catch {
       setUsers([]);
