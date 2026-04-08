@@ -70,6 +70,8 @@ function UserLogsPage() {
     const fetchLogs = async () => {
       setIsLoading(true);
       try {
+        // Simulated dataset load
+        await new Promise((resolve) => setTimeout(resolve, 3000));
         const response = await fetch("/api/user/list", { cache: "no-store" });
         const data = await response.json();
 
@@ -291,16 +293,31 @@ function UserLogsPage() {
 
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-12 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                        <p className="font-inter text-xs text-slate-400">
-                          Loading system logs...
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
+                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
+                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-6 w-20 animate-pulse rounded-md bg-slate-200" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 ) : table.getRowModel().rows.length === 0 ? (
                   <TableRow>
                     <TableCell
