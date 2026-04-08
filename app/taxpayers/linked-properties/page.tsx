@@ -166,7 +166,8 @@ export default function LinkedPropertiesPage() {
   useEffect(() => {
     fetch('/api/taxpayers/list', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((d) => {
+      .then((body) => {
+        const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
         const opts: ComboboxOption[] = (d.taxpayers ?? []).map(
           (t: TaxpayerOption) => ({
             value: String(t.id),
@@ -180,7 +181,8 @@ export default function LinkedPropertiesPage() {
 
     fetch('/api/properties/list', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((d) => {
+      .then((body) => {
+        const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
         const opts: ComboboxOption[] = (d.properties ?? []).map(
           (p: PropertyOption) => ({
             value: String(p.id),
@@ -218,7 +220,8 @@ export default function LinkedPropertiesPage() {
 
     fetch(`/api/taxpayers/linked?id=${selTaxpayerId}`, { cache: 'no-store' })
       .then((r) => r.json())
-      .then((d) => {
+      .then((body) => {
+        const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
         if (d.error) throw new Error(d.error);
         setTaxpayer(d.taxpayer);
         setTaxpayerDecls(d.declarations ?? []);
@@ -241,7 +244,8 @@ export default function LinkedPropertiesPage() {
 
     fetch(`/api/properties/linked?id=${selPropertyId}`, { cache: 'no-store' })
       .then((r) => r.json())
-      .then((d) => {
+      .then((body) => {
+        const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
         if (d.error) throw new Error(d.error);
         setProperty(d.property);
         setPropertyDecls(d.declarations ?? []);

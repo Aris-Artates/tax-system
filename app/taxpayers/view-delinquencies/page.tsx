@@ -3,11 +3,11 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  ArrowLeft, 
-  Clock, 
-  Download, 
-  Search, 
+import {
+  ArrowLeft,
+  Clock,
+  Download,
+  Search,
   Eye,
   CheckCircle2,
   CalendarDays,
@@ -17,7 +17,7 @@ import {
   ChevronRight,
   FileText,
   MapPin,
-  Building2
+  Building2,
 } from "lucide-react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
@@ -165,9 +165,17 @@ export default function ViewDelinquenciesPage() {
     isFetching,
     error,
   } = useQuery({
-    queryKey: ["delinquents", { search, bucketFilter, pagination: pagination.pageIndex }],
+    queryKey: [
+      "delinquents",
+      { search, bucketFilter, pagination: pagination.pageIndex },
+    ],
     queryFn: () =>
-      fetchDelinquents(search, bucketFilter, pagination.pageIndex, pagination.pageSize),
+      fetchDelinquents(
+        search,
+        bucketFilter,
+        pagination.pageIndex,
+        pagination.pageSize,
+      ),
     gcTime: 0,
     staleTime: 0,
   });
@@ -327,11 +335,21 @@ export default function ViewDelinquenciesPage() {
             className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md"
           >
             <div className="flex items-center gap-4">
-              <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full", panel.bgColor)}>
-                <panel.icon className={cn("h-5 w-5", panel.iconColor)} strokeWidth={2} />
+              <div
+                className={cn(
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+                  panel.bgColor,
+                )}
+              >
+                <panel.icon
+                  className={cn("h-5 w-5", panel.iconColor)}
+                  strokeWidth={2}
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-inter text-xs font-medium text-slate-500">{panel.bucket}</p>
+                <p className="font-inter text-xs font-medium text-slate-500">
+                  {panel.bucket}
+                </p>
                 <div className="flex flex-col">
                   {isLoading ? (
                     <>
@@ -340,7 +358,12 @@ export default function ViewDelinquenciesPage() {
                     </>
                   ) : (
                     <>
-                      <p className={cn("font-lexend mt-0.5 text-xl font-bold truncate", panel.textColor)}>
+                      <p
+                        className={cn(
+                          "font-lexend mt-0.5 text-xl font-bold truncate",
+                          panel.textColor,
+                        )}
+                      >
                         {panel.balance}
                       </p>
                       <p className="font-inter mt-0.5 text-[10px] font-medium text-slate-400">
@@ -359,7 +382,10 @@ export default function ViewDelinquenciesPage() {
       <div className="mb-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm print:hidden">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="relative flex-1 min-w-45 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={13}
+            />
             <input
               type="text"
               placeholder="Search by name, TIN, or barangay..."
@@ -398,9 +424,7 @@ export default function ViewDelinquenciesPage() {
                 <TableHead className="w-[250px] min-w-[250px] sticky left-[50px] z-20 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">
                   Taxpayer Name
                 </TableHead>
-                <TableHead className="w-[120px] min-w-[120px]">
-                  TIN
-                </TableHead>
+                <TableHead className="w-[120px] min-w-[120px]">TIN</TableHead>
                 <TableHead className="w-[200px] min-w-[200px]">
                   Barangay
                 </TableHead>
@@ -413,7 +437,10 @@ export default function ViewDelinquenciesPage() {
                 <TableHead className="w-[150px] min-w-[150px]" align="right">
                   Total Due
                 </TableHead>
-                <TableHead className="w-[80px] min-w-[80px] sticky right-0 z-20 bg-gray-50 shadow-[-1px_0_0_0_#e5e7eb]" align="center">
+                <TableHead
+                  className="w-[80px] min-w-[80px] sticky right-0 z-20 bg-gray-50 shadow-[-1px_0_0_0_#e5e7eb]"
+                  align="center"
+                >
                   Actions
                 </TableHead>
               </TableRow>
@@ -434,16 +461,28 @@ export default function ViewDelinquenciesPage() {
                     <TableCell className="w-[200px] min-w-[200px]">
                       <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
                     </TableCell>
-                    <TableCell className="w-[100px] min-w-[100px]" align="center">
+                    <TableCell
+                      className="w-[100px] min-w-[100px]"
+                      align="center"
+                    >
                       <div className="mx-auto h-4 w-6 animate-pulse rounded bg-slate-200" />
                     </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px]" align="center">
+                    <TableCell
+                      className="w-[150px] min-w-[150px]"
+                      align="center"
+                    >
                       <div className="mx-auto h-5 w-16 animate-pulse rounded-full bg-slate-200" />
                     </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px]" align="right">
+                    <TableCell
+                      className="w-[150px] min-w-[150px]"
+                      align="right"
+                    >
                       <div className="ml-auto h-4 w-20 animate-pulse rounded bg-slate-200" />
                     </TableCell>
-                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#e5e7eb]" align="center">
+                    <TableCell
+                      className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 shadow-[-1px_0_0_0_#e5e7eb]"
+                      align="center"
+                    >
                       <div className="mx-auto h-8 w-8 animate-pulse rounded-lg bg-slate-200" />
                     </TableCell>
                   </TableRow>
@@ -478,21 +517,35 @@ export default function ViewDelinquenciesPage() {
                         <span className="truncate">{t.barangay_name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="w-[100px] min-w-[100px] font-medium text-slate-500" align="center">
+                    <TableCell
+                      className="w-[100px] min-w-[100px] font-medium text-slate-500"
+                      align="center"
+                    >
                       <div className="flex items-center justify-center gap-1.5">
                         <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                         <span>{t.property_count}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px]" align="center">
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[t.bucket]}`}>
+                    <TableCell
+                      className="w-[150px] min-w-[150px]"
+                      align="center"
+                    >
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${bucketColors[t.bucket]}`}
+                      >
                         {t.bucket}
                       </span>
                     </TableCell>
-                    <TableCell className="w-[150px] min-w-[150px] font-semibold text-slate-900" align="right">
+                    <TableCell
+                      className="w-[150px] min-w-[150px] font-semibold text-slate-900"
+                      align="right"
+                    >
                       {t.total_due}
                     </TableCell>
-                    <TableCell className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]" align="center">
+                    <TableCell
+                      className="w-[80px] min-w-[80px] sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-gray-50! shadow-[-1px_0_0_0_#e5e7eb]"
+                      align="center"
+                    >
                       <button
                         onClick={() => {
                           setSelectedDelinquent(t);
@@ -513,11 +566,17 @@ export default function ViewDelinquenciesPage() {
 
         <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 bg-white w-full shrink-0">
           <p className="font-inter text-xs text-slate-400">
-            Showing Page {pagination.pageIndex + 1} of {totalPages} ({totalCount} total)
+            Showing Page {pagination.pageIndex + 1} of {totalPages} (
+            {totalCount} total)
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPagination(prev => ({ ...prev, pageIndex: Math.max(0, prev.pageIndex - 1) }))}
+              onClick={() =>
+                setPagination((prev) => ({
+                  ...prev,
+                  pageIndex: Math.max(0, prev.pageIndex - 1),
+                }))
+              }
               disabled={pagination.pageIndex === 0}
               className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -527,7 +586,12 @@ export default function ViewDelinquenciesPage() {
               Page {pagination.pageIndex + 1} of {totalPages}
             </span>
             <button
-              onClick={() => setPagination(prev => ({ ...prev, pageIndex: Math.min(totalPages - 1, prev.pageIndex + 1) }))}
+              onClick={() =>
+                setPagination((prev) => ({
+                  ...prev,
+                  pageIndex: Math.min(totalPages - 1, prev.pageIndex + 1),
+                }))
+              }
               disabled={pagination.pageIndex >= totalPages - 1}
               className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
