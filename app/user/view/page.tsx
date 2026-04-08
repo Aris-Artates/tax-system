@@ -332,7 +332,7 @@ export default function ViewUserPage() {
           return;
         }
 
-        const decodedUsers = data._data ? JSON.parse(atob(data._data)) : (data.users ?? []);
+        const decodedUsers = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.users ?? []);
 
         const mapped = decodedUsers.map((user: ApiUser) => {
           const fullname = [
