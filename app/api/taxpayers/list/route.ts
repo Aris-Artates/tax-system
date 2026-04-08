@@ -46,7 +46,11 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ taxpayers: mapped });
+    const payloadString = JSON.stringify(mapped);
+    const l1 = Buffer.from(payloadString).toString("base64");
+    const l2 = Buffer.from(l1).toString("base64");
+    const obscuredPayload = Buffer.from(l2).toString("base64");
+    return NextResponse.json({ _data: obscuredPayload });
   } catch {
     return NextResponse.json(
       { error: 'Unable to load taxpayers.' },

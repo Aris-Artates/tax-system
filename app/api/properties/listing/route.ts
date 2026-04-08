@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
-      .from('tax_declarations')
-      .select(`
+      .from("tax_declarations")
+      .select(
+        `
         id,
         property_id,
         td_number,
@@ -17,18 +18,23 @@ export async function GET() {
         status,
         taxpayers ( owner_name ),
         properties ( pin, barangays ( name ) )
-      `)
-      .order('id', { ascending: false })
+      `,
+      )
+      .order("id", { ascending: false })
       .limit(5000);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ rows: data ?? [] });
+    const payloadString = JSON.stringify(data ?? []);
+    const l1 = Buffer.from(payloadString).toString("base64");
+    const l2 = Buffer.from(l1).toString("base64");
+    const obscuredPayload = Buffer.from(l2).toString("base64");
+    return NextResponse.json({ _data: obscuredPayload });
   } catch {
     return NextResponse.json(
-      { error: 'Unable to load property listing.' },
+      { error: "Unable to load property listing." },
       { status: 500 },
     );
   }

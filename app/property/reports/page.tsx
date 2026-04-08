@@ -134,7 +134,8 @@ export default function ReportsCertificationsPage() {
       try {
         const res = await fetch('/api/properties/listing');
         if (!res.ok) throw new Error('Failed to load properties');
-        const { rows } = await res.json();
+        const json = await res.json();
+        const rows = json._data ? JSON.parse(atob(atob(atob(json._data)))) : (json.rows ?? []);
         const options: ComboboxOption[] = (rows || []).map((row: any) => ({
           value: row.td_number || '',
           label: row.td_number || '',
@@ -157,10 +158,12 @@ export default function ReportsCertificationsPage() {
       try {
         const res = await fetch('/api/barangays/list');
         if (!res.ok) throw new Error('Failed to load barangays');
-        const { barangays } = await res.json();
+        const data = await res.json();
+        const decodedBarangays = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.barangays ?? []);
+        
         const options: ComboboxOption[] = [
           { value: 'All Barangays', label: 'All Barangays' },
-          ...(barangays || []).map((b: any) => ({
+          ...(decodedBarangays || []).map((b: any) => ({
             value: b.name,
             label: b.name,
           })),

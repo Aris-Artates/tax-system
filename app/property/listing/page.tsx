@@ -297,8 +297,9 @@ export default function PropertyListingPage() {
           return;
         }
 
-        const rows: ListingApiRow[] = Array.isArray(body?.rows)
-          ? body.rows
+        const decodedRows = body?._data ? JSON.parse(atob(atob(atob(body._data)))) : (body?.rows ?? []);
+        const rows: ListingApiRow[] = Array.isArray(decodedRows)
+          ? decodedRows
           : [];
         const mapped: Property[] = rows.map((row) => {
           const taxpayer = Array.isArray(row.taxpayers)
@@ -356,9 +357,11 @@ export default function PropertyListingPage() {
       try {
         const res = await fetch("/api/barangays/list");
         const data = await res.json();
-        if (res.ok && Array.isArray(data?.barangays)) {
+        const decodedBarangays = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.barangays ?? []);
+        
+        if (res.ok && Array.isArray(decodedBarangays)) {
           setRemoteBarangays(
-            data.barangays.map((b: any) => ({
+            decodedBarangays.map((b: any) => ({
               value: b.name,
               label: b.name,
             })),

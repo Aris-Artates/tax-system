@@ -80,8 +80,10 @@ export default function RegisterTaxpayerPage() {
           cache: "no-store",
         });
         const data = await response.json();
+        const decodedBarangays = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.barangays ?? []);
+        
         if (isMounted) {
-          setBarangays(data.barangays ?? []);
+          setBarangays(decodedBarangays);
         }
       } catch {
         if (isMounted) {

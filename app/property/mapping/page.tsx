@@ -142,10 +142,12 @@ export default function TaxMappingPage() {
       try {
         const res = await fetch("/api/barangays/list");
         const data = await res.json();
-        if (res.ok && data.barangays) {
-          setBarangayList(data.barangays);
+        const decodedBarangays = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.barangays ?? []);
+        
+        if (res.ok && Array.isArray(decodedBarangays)) {
+          setBarangayList(decodedBarangays);
           // Try to find the initial selected barangay ID
-          const initial = data.barangays.find(
+          const initial = decodedBarangays.find(
             (b: Barangay) => b.name === selectedBarangay,
           );
           if (initial) setSelectedBarangayId(initial.id);
@@ -171,9 +173,10 @@ export default function TaxMappingPage() {
           `/api/property/mapping?barangay_id=${selectedBarangayId}`,
         );
         const data = await res.json();
+        const decodedProperties = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.properties ?? []);
 
-        if (res.ok && data.properties) {
-          const raw = data.properties;
+        if (res.ok && Array.isArray(decodedProperties)) {
+          const raw = decodedProperties;
 
           // Map to PropertyEntry
           const mapped: PropertyEntry[] = raw.map((p: any) => ({

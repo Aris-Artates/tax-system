@@ -150,8 +150,9 @@ export default function TaxpayerListPage() {
       try {
         await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulated network delay
         const res = await fetch("/api/taxpayers/list", { cache: "no-store" });
-        const data = (await res.json()) as { taxpayers?: Taxpayer[] };
-        setTaxpayers(data.taxpayers ?? []);
+        const data = await res.json();
+        const decodedTaxpayers = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.taxpayers ?? []);
+        setTaxpayers(decodedTaxpayers);
       } catch {
         setTaxpayers([]);
       } finally {
@@ -169,7 +170,8 @@ export default function TaxpayerListPage() {
       setIsLoadingBarangays(true);
       try {
         const res = await fetch("/api/barangays/list", { cache: "no-store" });
-        const data = (await res.json()) as { barangays?: BarangayOption[] };
+        const data = await res.json();
+        const decodedBarangays = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.barangays ?? []);
 
         if (!res.ok) {
           if (isMounted) setBarangays([]);
@@ -177,7 +179,7 @@ export default function TaxpayerListPage() {
         }
 
         if (isMounted) {
-          setBarangays(data.barangays ?? []);
+          setBarangays(decodedBarangays);
         }
       } catch {
         if (isMounted) setBarangays([]);
