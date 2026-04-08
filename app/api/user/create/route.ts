@@ -13,8 +13,8 @@ type CreateUserPayload = {
 	sex: boolean;
 	temp_pass: string;
 	password: string;
-	email: string;
-	phone: string;
+	emails: string[];
+	phones: string[];
 	role_id: number;
 	department: string;
 	position: string;
@@ -33,6 +33,8 @@ export async function POST(request: Request) {
 	try {
 		const body = (await request.json()) as Partial<CreateUserPayload>;
 		const roleId = Number(body.role_id);
+		const primaryEmail = body.emails?.[0];
+		const primaryPhone = body.phones?.[0];
 
 		const requiredTextFields: Array<keyof CreateUserPayload> = [
 			'empID',
@@ -43,8 +45,6 @@ export async function POST(request: Request) {
 			'age',
 			'temp_pass',
 			'password',
-			'email',
-			'phone',
 			'department',
 			'position',
 		];
@@ -57,6 +57,9 @@ export async function POST(request: Request) {
 				);
 			}
 		}
+
+		if (!primaryEmail) return NextResponse.json({ error: 'Primary email is required.' }, { status: 400 });
+		if (!primaryPhone) return NextResponse.json({ error: 'Primary phone is required.' }, { status: 400 });
 
 		if (typeof body.sex !== 'boolean') {
 			return NextResponse.json({ error: 'sex is required.' }, { status: 400 });
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
 
 		// Backend duplicate check for empID and email
 		const empID = body.empID!.trim();
-		const email = body.email!.trim();
+		const email = primaryEmail.trim();
 
 		const { data: existingEmpID } = await supabaseAdmin
 			.from('users')
@@ -104,7 +107,7 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const { data: existingEmailUser, error: emailError } = await supabaseAdmin
+		const { data: existingEmailUser } = await supabaseAdmin
 			.from('users')
 			.select('email')
 			.eq('email', email)
@@ -112,7 +115,7 @@ export async function POST(request: Request) {
 
 		if (existingEmailUser) {
 			return NextResponse.json(
-				{ error: 'Email already registered.' },
+				{ error: 'Primary email already registered.' },
 				{ status: 409 }
 			);
 		}
@@ -124,12 +127,12 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const { data, error } = await supabaseAdmin.auth.admin.createUser({
-			email: body.email!.trim(),
+		const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+			email: email,
 			password: body.temp_pass!,
 			email_confirm: true,
 			user_metadata: {
-				empID: body.empID!.trim(),
+				empID: empID,
 				username: body.username!.trim(),
 				firstname: body.firstname!.trim(),
 				middlename: body.middlename?.trim() || '',
@@ -138,7 +141,7 @@ export async function POST(request: Request) {
 				birthdate: body.birthdate!.trim(),
 				age: body.age!.trim(),
 				sex: body.sex,
-				phone: body.phone!.trim(),
+				mobile_number: primaryPhone.trim(),
 				role_id: roleId,
 				role: roleData.name,
 				department: body.department!.trim(),
@@ -147,11 +150,11 @@ export async function POST(request: Request) {
 			},
 		});
 
-		if (error) {
-			return NextResponse.json({ error: error.message }, { status: 400 });
+		if (authError) {
+			return NextResponse.json({ error: authError.message }, { status: 400 });
 		}
 
-		const authUserId = data.user?.id;
+		const authUserId = authData.user?.id;
 
 		if (!authUserId) {
 			return NextResponse.json(
@@ -160,8 +163,8 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const { error: insertError } = await supabaseAdmin.from('users').insert({
-			empID: body.empID!.trim(),
+		const { data: userData, error: insertError } = await supabaseAdmin.from('users').insert({
+			empID: empID,
 			username: body.username!.trim(),
 			firstname: body.firstname!.trim(),
 			middlename: body.middlename?.trim() || '',
@@ -172,24 +175,53 @@ export async function POST(request: Request) {
 			sex: body.sex,
 			temp_pass: body.temp_pass!,
 			password: body.password!,
-			email: body.email!.trim(),
-			phone: body.phone!.trim(),
+			email: email,
+			mobile_number: primaryPhone.trim(),
 			role_id: roleId,
 			department: body.department!.trim(),
 			position: body.position!.trim(),
 			status: body.status,
-		});
+		}).select('id').single();
 
 		if (insertError) {
 			await supabaseAdmin.auth.admin.deleteUser(authUserId);
 			return NextResponse.json({ error: insertError.message }, { status: 400 });
 		}
 
+		const internalUserId = userData.id;
+
+		// Store extra emails
+		if (body.emails && body.emails.length > 0) {
+			const extraEmails = body.emails.map((e, idx) => ({
+				user_id: internalUserId,
+				email: e.trim(),
+				is_primary: idx === 0,
+			})).filter(e => e.email.length > 0);
+
+			if (extraEmails.length > 0) {
+				await supabaseAdmin.from('user_emails').insert(extraEmails);
+			}
+		}
+
+		// Store extra phone numbers
+		if (body.phones && body.phones.length > 0) {
+			const subPhones = body.phones.map((p, idx) => ({
+				user_id: internalUserId,
+				mobile_number: p.trim(),
+				is_primary: idx === 0,
+			})).filter(p => p.mobile_number.length > 0);
+
+			if (subPhones.length > 0) {
+				await supabaseAdmin.from('user_mobile_numbers').insert(subPhones);
+			}
+		}
+
 		return NextResponse.json({
 			message: 'User created successfully.',
 			userId: authUserId,
 		});
-	} catch {
+	} catch (error: any) {
+		console.error('Create User Error:', error);
 		return NextResponse.json(
 			{ error: 'Unable to process request.' },
 			{ status: 500 },
