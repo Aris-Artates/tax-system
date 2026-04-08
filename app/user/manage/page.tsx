@@ -518,7 +518,7 @@ export default function ManageRolePage() {
                 onClick={() => openMasterModal(role)}
                 className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 cursor-pointer active:scale-95"
               >
-                <Settings2 className="h-3.5 w-3.5 shrink-0 text-blue-500" />{" "}
+                <Settings2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />{" "}
                 Configure
               </button>
             </div>
