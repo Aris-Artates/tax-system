@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Calendar,
   CalendarClock,
   ChevronDown,
+  FileText,
+  Calculator,
   PercentCircle,
   Plus,
   Save,
   ShieldAlert,
   Trash2,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,14 +29,12 @@ import {
   SelectViewport,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/table";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type RuleEntry = {
@@ -50,6 +52,7 @@ export default function DiscountsPenaltiesPage() {
   const [rules, setRules] = useState<RuleEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<Omit<RuleEntry, "id" | "status">>({
@@ -131,6 +134,7 @@ export default function DiscountsPenaltiesPage() {
           period: "",
         });
         fetchRules();
+        setIsDialogOpen(false); // Close dialog on success
       } else {
         toast.error(data.error || "Failed to add rule.");
       }
@@ -214,65 +218,93 @@ export default function DiscountsPenaltiesPage() {
           </p>
         </div>
 
-        <Button
-          type="button"
-          disabled={isSaving || isLoading}
-          onClick={() => fetchRules()}
-          className="font-inter h-9 cursor-pointer rounded bg-[#0F172A] px-4 text-xs font-medium text-[#8A9098] hover:bg-slate-800"
-        >
-          <Save className="h-4 w-4" />
-          Refresh Configuration
-        </Button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={isSaving || isLoading}
+            onClick={() => fetchRules()}
+            className="font-inter inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsDialogOpen(true)}
+            className="font-inter inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Rule
+          </button>
+        </div>
       </header>
 
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 inline-flex rounded-md bg-slate-100 p-2">
-            <PercentCircle className="h-4 w-4 text-[#00154A]" />
+        {[
+          {
+            label: "Active Discount Rules",
+            value: isLoading ? "..." : activeDiscounts,
+            textColor: "text-emerald-700",
+            bgColor: "bg-emerald-50",
+            iconColor: "text-emerald-500",
+            icon: PercentCircle,
+          },
+          {
+            label: "Active Penalty Rules",
+            value: isLoading ? "..." : activePenalties,
+            textColor: "text-rose-700",
+            bgColor: "bg-rose-50",
+            iconColor: "text-rose-500",
+            icon: ShieldAlert,
+          },
+          {
+            label: "Draft Rules Pending Review",
+            value: isLoading ? "..." : draftRules,
+            textColor: "text-amber-700",
+            bgColor: "bg-amber-50",
+            iconColor: "text-amber-500",
+            icon: CalendarClock,
+          },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md"
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${s.bgColor}`}
+              >
+                <s.icon className={`h-5 w-5 ${s.iconColor}`} strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-inter text-xs font-medium text-slate-500">
+                  {s.label}
+                </p>
+                <div className="flex flex-col">
+                  <p
+                    className={`font-lexend mt-0.5 text-xl font-bold truncate ${s.textColor}`}
+                  >
+                    {s.value}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="font-inter text-xs text-slate-500">
-            Active Discount Rules
-          </p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
-            {isLoading ? "..." : activeDiscounts}
-          </p>
-        </div>
-
-        <div className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 inline-flex rounded-md bg-slate-100 p-2">
-            <ShieldAlert className="h-4 w-4 text-[#00154A]" />
-          </div>
-          <p className="font-inter text-xs text-slate-500">
-            Active Penalty Rules
-          </p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
-            {isLoading ? "..." : activePenalties}
-          </p>
-        </div>
-
-        <div className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 inline-flex rounded-md bg-slate-100 p-2">
-            <CalendarClock className="h-4 w-4 text-[#00154A]" />
-          </div>
-          <p className="font-inter text-xs text-slate-500">
-            Draft Rules Pending Review
-          </p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
-            {isLoading ? "..." : draftRules}
-          </p>
-        </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <section className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm lg:col-span-1">
-          <h2 className="font-inter text-sm font-semibold text-[#848794]">
-            Rule Setup
-          </h2>
-          <p className="font-inter mt-1 text-xs text-slate-400">
-            Set the discount or penalty rule details.
-          </p>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="font-lexend text-xl font-bold text-[#595a5d]">
+              New Assessment Rule
+            </DialogTitle>
+            <DialogDescription className="font-inter text-xs text-slate-400">
+              Configure a new discount or penalty rule for assessment calculation.
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-4 space-y-4">
             <div>
               <label className="font-inter text-xs font-medium text-slate-600">
                 Rule Type
@@ -284,14 +316,14 @@ export default function DiscountsPenaltiesPage() {
                   setFormData((prev) => ({ ...prev, type: val }))
                 }
               >
-                <SelectTrigger className="cursor-pointer font-inter mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-xs text-slate-700 flex items-center justify-between">
+                <SelectTrigger className="cursor-pointer font-inter mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-xs text-slate-700 flex items-center justify-between shadow-sm">
                   <SelectValue placeholder="Select rule type" />
                   <SelectIcon>
                     <ChevronDown className="h-4 w-4 opacity-60" />
                   </SelectIcon>
                 </SelectTrigger>
 
-                <SelectContent className="z-50 min-w-(--radix-select-trigger-width) rounded-md border border-gray-200 bg-white shadow-sm">
+                <SelectContent className="z-50 min-w-(--radix-select-trigger-width) rounded-md border border-gray-200 bg-white shadow-md">
                   <SelectViewport className="p-1">
                     <SelectItem
                       value="Discount"
@@ -322,23 +354,39 @@ export default function DiscountsPenaltiesPage() {
                   setFormData((prev) => ({ ...prev, ruleName: e.target.value }))
                 }
                 placeholder="e.g. Prompt Payment Incentive"
-                className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
+                className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400 shadow-sm"
               />
             </div>
 
-            <div>
-              <label className="font-inter text-xs font-medium text-slate-600">
-                Rate / Formula
-              </label>
-              <Input
-                type="text"
-                value={formData.rate}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, rate: e.target.value }))
-                }
-                placeholder="e.g. 10% or 2% / month"
-                className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="font-inter text-xs font-medium text-slate-600">
+                  Rate / Formula
+                </label>
+                <Input
+                  type="text"
+                  value={formData.rate}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, rate: e.target.value }))
+                  }
+                  placeholder="e.g. 10% or 2%"
+                  className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400 shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="font-inter text-xs font-medium text-slate-600">
+                  Basis
+                </label>
+                <Input
+                  type="text"
+                  value={formData.basis}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, basis: e.target.value }))
+                  }
+                  placeholder="e.g. Basic Tax"
+                  className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400 shadow-sm"
+                />
+              </div>
             </div>
 
             <div>
@@ -351,120 +399,116 @@ export default function DiscountsPenaltiesPage() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, period: e.target.value }))
                 }
-                placeholder="e.g. Jan 1 - Jan 31"
-                className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
+                placeholder="e.g. Jan 1 - Mar 31"
+                className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400 shadow-sm"
               />
             </div>
 
-            <div>
-              <label className="font-inter text-xs font-medium text-slate-600">
-                Basis
-              </label>
-              <Input
-                type="text"
-                value={formData.basis}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, basis: e.target.value }))
-                }
-                placeholder="e.g. Annual RPT Due"
-                className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
-              />
+            <div className="mt-6 flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDialogOpen(false)}
+                className="font-inter rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddRule}
+                disabled={isSaving}
+                className="font-inter rounded-lg bg-[#0f172a] px-6 py-2 text-xs font-medium text-white hover:bg-slate-800 cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? "Adding..." : "Save Rule"}
+              </button>
             </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleAddRule}
-              disabled={isSaving}
-              className="font-inter h-9 w-full cursor-pointer text-xs font-medium text-slate-600"
-            >
-              <Plus className="h-4 w-4" />
-              {isSaving ? "Adding..." : "Add Rule"}
-            </Button>
           </div>
-        </section>
+        </DialogContent>
+      </Dialog>
 
-        <section className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm lg:col-span-2">
-          <div className="border-b border-gray-200 px-4 py-3">
-            <h2 className="font-inter text-xs font-semibold uppercase tracking-wide text-[#848794]">
-              Current Rules
+      <div className="w-full">
+        <section className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-200 bg-slate-50/50 px-4 py-3">
+            <h2 className="font-lexend text-xs font-semibold uppercase tracking-wide text-[#595a5d]">
+              Current Configuration Rules
             </h2>
           </div>
 
-          <TableContainer>
-            <Table className="w-full font-inter text-xs">
-              <TableHeader className="bg-gray-50">
-                <TableRow className="border-b border-gray-200">
-                  <TableHead className="px-4 py-3 font-semibold uppercase tracking-wide text-[#595a5d]">
-                    Type
-                  </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold uppercase tracking-wide text-[#595a5d]">
-                    Rule Name
-                  </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold uppercase tracking-wide text-[#595a5d]">
-                    Basis
-                  </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold uppercase tracking-wide text-[#595a5d]">
-                    Rate
-                  </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold uppercase tracking-wide text-[#595a5d]">
-                    Applicable Period
-                  </TableHead>
-                  <TableHead
-                    align="center"
-                    className="px-4 py-3 font-semibold uppercase tracking-wide text-[#595a5d]"
-                  >
-                    Status
-                  </TableHead>
-                  <TableHead className="px-4 py-3"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left font-inter text-[#595a5d] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide">
+              <thead className="bg-slate-50 text-[10px] border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Rule Name</th>
+                  <th className="px-4 py-3">Basis</th>
+                  <th className="px-4 py-3">Rate</th>
+                  <th className="px-4 py-3">Applicable Period</th>
+                  <th className="px-4 py-3 text-center">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="text-xs">
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                  <tr>
+                    <td colSpan={7} className="text-center py-10 text-slate-400">
                       Loading rules...
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : rules.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                  <tr>
+                    <td colSpan={7} className="text-center py-10 text-slate-400">
                       No rules configured yet.
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : (
                   rules.map((rule) => (
-                    <TableRow
+                    <tr
                       key={rule.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      className="border-b border-gray-100 hover:bg-slate-50 transition-colors"
                     >
-                      <TableCell className="px-4 py-3">
+                      <td className="px-4 py-3">
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                             rule.type === "Discount"
                               ? "bg-emerald-50 text-emerald-700"
                               : "bg-rose-50 text-rose-700"
                           }`}
                         >
+                          {rule.type === "Discount" ? (
+                            <PercentCircle className="h-3 w-3" />
+                          ) : (
+                            <ShieldAlert className="h-3 w-3" />
+                          )}
                           {rule.type}
                         </span>
-                      </TableCell>
-                      <TableCell className="px-4 py-3 font-medium text-[#595a5d]">
-                        {rule.ruleName}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-slate-600">
-                        {rule.basis}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-slate-600">
-                        {rule.rate}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-slate-500">
-                        {rule.period}
-                      </TableCell>
-                      <TableCell align="center" className="px-4 py-3">
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 font-medium text-[#595a5d]">
+                          <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          {rule.ruleName}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <Calculator className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          {rule.basis}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <TrendingUp className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          {rule.rate}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          {rule.period}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => handleToggleStatus(rule)}
-                          className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                          className={`cursor-pointer rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
                             rule.status === "Active"
                               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
                               : "bg-amber-50 text-amber-700 hover:bg-amber-100"
@@ -472,21 +516,21 @@ export default function DiscountsPenaltiesPage() {
                         >
                           {rule.status}
                         </button>
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
+                      </td>
+                      <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => rule.id && handleDeleteRule(rule.id)}
                           className="text-slate-400 hover:text-rose-600 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </div>
