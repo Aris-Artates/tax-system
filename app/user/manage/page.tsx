@@ -292,6 +292,7 @@ export default function ManageRolePage() {
       const data = (await response.json()) as {
         error?: string;
         users?: ApiUser[];
+        _data?: string;
       };
 
       if (!response.ok) {
@@ -299,7 +300,8 @@ export default function ManageRolePage() {
         return;
       }
 
-      setUsers(data.users ?? []);
+      const decodedUsers = data._data ? JSON.parse(atob(data._data)) : (data.users ?? []);
+      setUsers(decodedUsers);
     } catch {
       setUsers([]);
     } finally {

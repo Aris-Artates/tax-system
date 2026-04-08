@@ -323,6 +323,7 @@ export default function ViewUserPage() {
         const data = (await response.json()) as {
           error?: string;
           users?: ApiUser[];
+          _data?: string;
         };
 
         if (!response.ok) {
@@ -331,7 +332,9 @@ export default function ViewUserPage() {
           return;
         }
 
-        const mapped = (data.users ?? []).map((user) => {
+        const decodedUsers = data._data ? JSON.parse(atob(data._data)) : (data.users ?? []);
+
+        const mapped = decodedUsers.map((user: ApiUser) => {
           const fullname = [
             user.firstname?.trim() || "",
             user.middlename?.trim() || "",

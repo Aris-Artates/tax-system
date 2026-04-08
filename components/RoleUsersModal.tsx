@@ -105,10 +105,10 @@ export function RoleUsersModal({
     setIsProcessing(user.empID);
     
     try {
-      // 1. Fetch full user to satisfy strict API requirements
       const listResp = await fetch("/api/user/list", { cache: "no-store" });
       const listData = await listResp.json();
-      const fullUser = (listData.users as any[]).find(u => u.empID === user.empID);
+      const decodedUsers = listData._data ? JSON.parse(atob(listData._data)) : (listData.users ?? []);
+      const fullUser = (decodedUsers as any[]).find((u: any) => u.empID === user.empID);
 
       if (!fullUser) throw new Error("User record not found for update.");
 
