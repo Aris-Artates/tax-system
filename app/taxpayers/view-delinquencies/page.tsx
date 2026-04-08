@@ -138,11 +138,12 @@ async function fetchDelinquents(
 
   await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulated network delay
 
-  return fetch(`/api/taxpayers/delinquents?${params}`).then((res) => {
+  return fetch(`/api/taxpayers/delinquents?${params}`).then(async (res) => {
     if (!res.ok) {
       throw new Error("Failed to fetch");
     }
-    return res.json();
+    const data = await res.json();
+    return data._data ? JSON.parse(atob(atob(atob(data._data)))) : data;
   });
 }
 
