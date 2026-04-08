@@ -86,7 +86,7 @@ export async function GET(request: Request) {
     const offset = (page - 1) * limit;
     const paginatedData = allDelinquents.slice(offset, offset + limit);
 
-    return NextResponse.json({
+    const payloadString = JSON.stringify({
       data: paginatedData,
       meta: {
         totalItems,
@@ -94,6 +94,12 @@ export async function GET(request: Request) {
         currentPage: page,
       },
     });
+
+    const l1 = Buffer.from(payloadString).toString("base64");
+    const l2 = Buffer.from(l1).toString("base64");
+    const obscuredPayload = Buffer.from(l2).toString("base64");
+
+    return NextResponse.json({ _data: obscuredPayload });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || 'Unable to load delinquents.' },
