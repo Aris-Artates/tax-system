@@ -242,6 +242,8 @@ export default function ManageRolePage() {
     setIsLoadingRoles(true);
 
     try {
+      // Simulated dataset load
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       const response = await fetch("/api/roles/list", { cache: "no-store" });
       const data = (await response.json()) as {
         error?: string;
@@ -626,14 +628,37 @@ export default function ManageRolePage() {
             </TableHeader>
             <TableBody>
               {isLoadingRoles ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-10 text-center text-slate-400"
-                  >
-                    Loading roles...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell>
+                      <div className="h-4 w-8 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
+                        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-5 w-20 animate-pulse rounded-full bg-slate-200" />
+                        <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                        <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-[22px] w-[65px] animate-pulse rounded-full bg-slate-200" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <div className="h-[30px] w-[95px] animate-pulse rounded-md bg-slate-200" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
