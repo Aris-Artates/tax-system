@@ -1,27 +1,44 @@
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { NextResponse } from 'next/server';
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     // Fetch all schedule tables in parallel
     const [smvRes, levelRes, depRes] = await Promise.all([
-      supabaseAdmin.from('smv_schedules').select('*').order('created_at', { ascending: false }),
-      supabaseAdmin.from('assessment_level_schedules').select('*').order('created_at', { ascending: false }),
-      supabaseAdmin.from('depreciation_schedules').select('*').order('created_at', { ascending: false }),
+      supabaseAdmin
+        .from("smv_schedules")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("assessment_level_schedules")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("depreciation_schedules")
+        .select("*")
+        .order("created_at", { ascending: false }),
     ]);
 
     if (smvRes.error || levelRes.error || depRes.error) {
-      throw new Error('Failed to fetch some schedules');
+      throw new Error("Failed to fetch some schedules");
     }
 
-    return NextResponse.json({
+    const payloadString = JSON.stringify({
       smv: smvRes.data || [],
       levels: levelRes.data || [],
       depreciation: depRes.data || [],
     });
+    const l1 = Buffer.from(payloadString).toString("base64");
+    const l2 = Buffer.from(l1).toString("base64");
+    const obscuredPayload = Buffer.from(l2).toString("base64");
+
+    return NextResponse.json({ _data: obscuredPayload });
   } catch (error) {
-    console.error('Schedules GET Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error("Schedules GET Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -30,11 +47,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, data } = body;
 
-    let tableName = '';
-    if (type === 'smv') tableName = 'smv_schedules';
-    else if (type === 'level') tableName = 'assessment_level_schedules';
-    else if (type === 'depreciation') tableName = 'depreciation_schedules';
-    else throw new Error('Invalid schedule type');
+    let tableName = "";
+    if (type === "smv") tableName = "smv_schedules";
+    else if (type === "level") tableName = "assessment_level_schedules";
+    else if (type === "depreciation") tableName = "depreciation_schedules";
+    else throw new Error("Invalid schedule type");
 
     const { error } = await supabaseAdmin.from(tableName).insert([data]);
 
@@ -45,8 +62,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Schedules POST Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    console.error("Schedules POST Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -55,13 +75,13 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { type, id, data } = body;
 
-    let tableName = '';
-    if (type === 'smv') tableName = 'smv_schedules';
-    else if (type === 'level') tableName = 'assessment_level_schedules';
-    else if (type === 'depreciation') tableName = 'depreciation_schedules';
-    else throw new Error('Invalid schedule type');
+    let tableName = "";
+    if (type === "smv") tableName = "smv_schedules";
+    else if (type === "level") tableName = "assessment_level_schedules";
+    else if (type === "depreciation") tableName = "depreciation_schedules";
+    else throw new Error("Invalid schedule type");
 
-    if (!id) throw new Error('ID is required for update');
+    if (!id) throw new Error("ID is required for update");
 
     // Remove ID from data to avoid primary key update errors
     const { id: _, ...updateData } = data;
@@ -69,7 +89,7 @@ export async function PUT(request: Request) {
     const { error } = await supabaseAdmin
       .from(tableName)
       .update(updateData)
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) {
       console.error(`Schedules PUT error (${tableName}):`, error);
@@ -78,29 +98,29 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Schedules PUT Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    console.error("Schedules PUT Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
-    const id = searchParams.get('id');
+    const type = searchParams.get("type");
+    const id = searchParams.get("id");
 
-    let tableName = '';
-    if (type === 'smv') tableName = 'smv_schedules';
-    else if (type === 'level') tableName = 'assessment_level_schedules';
-    else if (type === 'depreciation') tableName = 'depreciation_schedules';
-    else throw new Error('Invalid schedule type');
+    let tableName = "";
+    if (type === "smv") tableName = "smv_schedules";
+    else if (type === "level") tableName = "assessment_level_schedules";
+    else if (type === "depreciation") tableName = "depreciation_schedules";
+    else throw new Error("Invalid schedule type");
 
-    if (!id) throw new Error('ID is required for deletion');
+    if (!id) throw new Error("ID is required for deletion");
 
-    const { error } = await supabaseAdmin
-      .from(tableName)
-      .delete()
-      .eq('id', id);
+    const { error } = await supabaseAdmin.from(tableName).delete().eq("id", id);
 
     if (error) {
       console.error(`Schedules DELETE error (${tableName}):`, error);
@@ -109,7 +129,10 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Schedules DELETE Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    console.error("Schedules DELETE Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

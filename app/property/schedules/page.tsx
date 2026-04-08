@@ -259,7 +259,10 @@ export default function AssessmentSchedulesPage() {
     try {
       setIsLoading(true);
       const res = await fetch("/api/property/schedules");
-      const data = await res.json();
+      const body = await res.json();
+      
+      const data = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
+
       if (data.error) throw new Error(data.error);
 
       setSmvData(data.smv || []);
