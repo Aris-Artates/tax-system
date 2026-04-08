@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -9,6 +10,7 @@ import {
   Plus,
   Save,
   ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +33,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
+import { toast } from "sonner";
 
 type RuleEntry = {
+  id?: string;
   type: "Discount" | "Penalty";
   ruleName: string;
   basis: string;
@@ -41,35 +45,150 @@ type RuleEntry = {
   status: "Active" | "Draft";
 };
 
-const currentRules: RuleEntry[] = [
-  {
-    type: "Discount",
-    ruleName: "Prompt Payment Incentive",
-    basis: "Annual RPT Due",
-    rate: "10%",
-    period: "Paid on or before Jan 31",
-    status: "Active",
-  },
-  {
-    type: "Penalty",
-    ruleName: "Late Payment Surcharge",
-    basis: "Unpaid RPT Balance",
-    rate: "2% / month",
-    period: "After due date until fully paid",
-    status: "Active",
-  },
-  {
-    type: "Penalty",
-    ruleName: "Delinquency Interest",
-    basis: "Overdue Quarterly Installment",
-    rate: "2% / month",
-    period: "Applied per quarter in arrears",
-    status: "Draft",
-  },
-];
-
 export default function DiscountsPenaltiesPage() {
   const router = useRouter();
+  const [rules, setRules] = useState<RuleEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState<Omit<RuleEntry, "id" | "status">>({
+    type: "Discount",
+    ruleName: "",
+    basis: "",
+    rate: "",
+    period: "",
+  });
+
+  // Fetch rules from API
+  const fetchRules = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/assessment/rules");
+      const body = await res.json();
+
+      if (body._data) {
+        // Triple atob decoding
+        const decoded = JSON.parse(
+          atob(atob(atob(body._data)))
+        );
+        
+        // Map table fields to RuleEntry type if needed
+        const mappedRules = decoded.rules.map((r: any) => ({
+          id: r.id,
+          type: r.type,
+          ruleName: r.name,
+          basis: r.basis,
+          rate: r.rate,
+          period: r.period,
+          status: r.status,
+        }));
+        setRules(mappedRules);
+      } else if (body.error) {
+        toast.error(body.error);
+      }
+    } catch (err) {
+      console.error("Failed to fetch rules:", err);
+      toast.error("Failed to load rules.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRules();
+  }, []);
+
+  const handleAddRule = async () => {
+    if (!formData.ruleName || !formData.rate) {
+      toast.error("Please fill in the rule name and rate.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/assessment/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: formData.type,
+          name: formData.ruleName,
+          basis: formData.basis,
+          rate: formData.rate,
+          period: formData.period,
+          status: "Draft", // New rules start as Draft
+        }),
+      });
+
+      const data = await res.json();
+      if (data.rule) {
+        toast.success("Rule added successfully.");
+        setFormData({
+          type: "Discount",
+          ruleName: "",
+          basis: "",
+          rate: "",
+          period: "",
+        });
+        fetchRules();
+      } else {
+        toast.error(data.error || "Failed to add rule.");
+      }
+    } catch (err) {
+      toast.error("Connection error.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteRule = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this rule?")) return;
+
+    try {
+      const res = await fetch(`/api/assessment/rules?id=${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Rule deleted.");
+        fetchRules();
+      } else {
+        toast.error(data.error || "Failed to delete.");
+      }
+    } catch (err) {
+      toast.error("Connection error.");
+    }
+  };
+
+  const handleToggleStatus = async (rule: RuleEntry) => {
+    const newStatus = rule.status === "Active" ? "Draft" : "Active";
+    try {
+      const res = await fetch("/api/assessment/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: rule.id,
+          status: newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.rule) {
+        toast.success(`Rule set to ${newStatus}.`);
+        fetchRules();
+      }
+    } catch (err) {
+      toast.error("Failed to update status.");
+    }
+  };
+
+  // Stats
+  const activeDiscounts = rules.filter(
+    (r) => r.type === "Discount" && r.status === "Active"
+  ).length;
+  const activePenalties = rules.filter(
+    (r) => r.type === "Penalty" && r.status === "Active"
+  ).length;
+  const draftRules = rules.filter((r) => r.status === "Draft").length;
 
   return (
     <div className="w-full">
@@ -97,10 +216,12 @@ export default function DiscountsPenaltiesPage() {
 
         <Button
           type="button"
+          disabled={isSaving || isLoading}
+          onClick={() => fetchRules()}
           className="font-inter h-9 cursor-pointer rounded bg-[#0F172A] px-4 text-xs font-medium text-[#8A9098] hover:bg-slate-800"
         >
           <Save className="h-4 w-4" />
-          Save Configuration
+          Refresh Configuration
         </Button>
       </header>
 
@@ -112,7 +233,9 @@ export default function DiscountsPenaltiesPage() {
           <p className="font-inter text-xs text-slate-500">
             Active Discount Rules
           </p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">1</p>
+          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
+            {isLoading ? "..." : activeDiscounts}
+          </p>
         </div>
 
         <div className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
@@ -122,7 +245,9 @@ export default function DiscountsPenaltiesPage() {
           <p className="font-inter text-xs text-slate-500">
             Active Penalty Rules
           </p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">1</p>
+          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
+            {isLoading ? "..." : activePenalties}
+          </p>
         </div>
 
         <div className="rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
@@ -132,7 +257,9 @@ export default function DiscountsPenaltiesPage() {
           <p className="font-inter text-xs text-slate-500">
             Draft Rules Pending Review
           </p>
-          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">1</p>
+          <p className="font-lexend mt-1 text-xl font-bold text-[#595a5d]">
+            {isLoading ? "..." : draftRules}
+          </p>
         </div>
       </div>
 
@@ -151,7 +278,12 @@ export default function DiscountsPenaltiesPage() {
                 Rule Type
               </label>
 
-              <Select defaultValue="Discount">
+              <Select
+                value={formData.type}
+                onValueChange={(val: "Discount" | "Penalty") =>
+                  setFormData((prev) => ({ ...prev, type: val }))
+                }
+              >
                 <SelectTrigger className="cursor-pointer font-inter mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-xs text-slate-700 flex items-center justify-between">
                   <SelectValue placeholder="Select rule type" />
                   <SelectIcon>
@@ -185,6 +317,10 @@ export default function DiscountsPenaltiesPage() {
               </label>
               <Input
                 type="text"
+                value={formData.ruleName}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, ruleName: e.target.value }))
+                }
                 placeholder="e.g. Prompt Payment Incentive"
                 className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
               />
@@ -192,11 +328,15 @@ export default function DiscountsPenaltiesPage() {
 
             <div>
               <label className="font-inter text-xs font-medium text-slate-600">
-                Rate (%)
+                Rate / Formula
               </label>
               <Input
-                type="number"
-                placeholder="0.00"
+                type="text"
+                value={formData.rate}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, rate: e.target.value }))
+                }
+                placeholder="e.g. 10% or 2% / month"
                 className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
               />
             </div>
@@ -207,6 +347,10 @@ export default function DiscountsPenaltiesPage() {
               </label>
               <Input
                 type="text"
+                value={formData.period}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, period: e.target.value }))
+                }
                 placeholder="e.g. Jan 1 - Jan 31"
                 className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
               />
@@ -218,6 +362,10 @@ export default function DiscountsPenaltiesPage() {
               </label>
               <Input
                 type="text"
+                value={formData.basis}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, basis: e.target.value }))
+                }
                 placeholder="e.g. Annual RPT Due"
                 className="font-inter mt-1 h-10 border-gray-200 text-xs text-slate-700 placeholder:text-slate-400"
               />
@@ -226,10 +374,12 @@ export default function DiscountsPenaltiesPage() {
             <Button
               type="button"
               variant="outline"
+              onClick={handleAddRule}
+              disabled={isSaving}
               className="font-inter h-9 w-full cursor-pointer text-xs font-medium text-slate-600"
             >
               <Plus className="h-4 w-4" />
-              Add Rule
+              {isSaving ? "Adding..." : "Add Rule"}
             </Button>
           </div>
         </section>
@@ -266,50 +416,74 @@ export default function DiscountsPenaltiesPage() {
                   >
                     Status
                   </TableHead>
+                  <TableHead className="px-4 py-3"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentRules.map((rule) => (
-                  <TableRow
-                    key={rule.ruleName}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <TableCell className="px-4 py-3">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          rule.type === "Discount"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-rose-50 text-rose-700"
-                        }`}
-                      >
-                        {rule.type}
-                      </span>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 font-medium text-[#595a5d]">
-                      {rule.ruleName}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-slate-600">
-                      {rule.basis}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-slate-600">
-                      {rule.rate}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-slate-500">
-                      {rule.period}
-                    </TableCell>
-                    <TableCell align="center" className="px-4 py-3">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          rule.status === "Active"
-                            ? "bg-blue-50 text-blue-700"
-                            : "bg-amber-50 text-amber-700"
-                        }`}
-                      >
-                        {rule.status}
-                      </span>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                      Loading rules...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : rules.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                      No rules configured yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rules.map((rule) => (
+                    <TableRow
+                      key={rule.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <TableCell className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            rule.type === "Discount"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-rose-50 text-rose-700"
+                          }`}
+                        >
+                          {rule.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 font-medium text-[#595a5d]">
+                        {rule.ruleName}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">
+                        {rule.basis}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-600">
+                        {rule.rate}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-slate-500">
+                        {rule.period}
+                      </TableCell>
+                      <TableCell align="center" className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggleStatus(rule)}
+                          className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                            rule.status === "Active"
+                              ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                              : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          }`}
+                        >
+                          {rule.status}
+                        </button>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => rule.id && handleDeleteRule(rule.id)}
+                          className="text-slate-400 hover:text-rose-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>
