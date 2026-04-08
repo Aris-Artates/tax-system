@@ -18,13 +18,10 @@ import {
   ChevronRight,
   ChevronLeft,
   CheckCircle2,
-  Info,
   Fingerprint,
-  Contact2,
-  Briefcase,
-  Undo2,
   Trash2,
   Table as TableIcon,
+  Undo2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,7 +36,6 @@ import {
 import {
   Stepper,
   StepperContent,
-  StepperIndicator,
   StepperItem,
   StepperNav,
   StepperPanel,
@@ -370,8 +366,8 @@ function CreateUserForm() {
               : null,
             age: form.age,
             sex: form.sex,
-            email: form.emails[0], // Using primary email
-            phone: form.phones[0], // Using primary phone
+            emails: form.emails,
+            phones: form.phones,
             role_id: Number(form.role_id),
             department: form.department,
             position: form.position,
@@ -382,8 +378,8 @@ function CreateUserForm() {
           }
         : {
             ...form,
-            email: form.emails[0],
-            phone: form.phones[0],
+            emails: form.emails,
+            phones: form.phones,
             birthdate: form.birthdate
               ? format(form.birthdate, "yyyy-MM-dd")
               : null,
@@ -456,20 +452,19 @@ function CreateUserForm() {
 
       <Stepper
         value={activeStep}
-        onValueChange={setActiveStep}
+        onValueChange={(val) => setActiveStep(Number(val))}
         orientation="horizontal"
-        className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col"
+        className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden flex flex-col"
       >
         {/* Top Stepper Navigation */}
-        <header className="bg-slate-50/50 border-b border-gray-100 px-6 py-4">
-          <StepperNav className="flex items-center justify-between w-full max-w-5xl mx-auto">
+        <header className="bg-slate-50/20 border-b border-gray-100 py-3 px-2.5">
+          <StepperNav className="flex items-center w-full">
             {steps.map((s, idx) => {
               const StepIcon = s.icon;
               const stepNum = idx + 1;
               const isCompleted = stepNum < activeStep;
               const isActive = stepNum === activeStep;
 
-              // Check if all previous steps are valid to allow skipping ahead
               let isLocked = false;
               if (stepNum > activeStep) {
                 for (let i = activeStep; i < stepNum; i++) {
@@ -481,7 +476,11 @@ function CreateUserForm() {
               }
 
               return (
-                <StepperItem key={stepNum} step={stepNum} className="flex-1">
+                <StepperItem
+                  key={stepNum}
+                  step={stepNum}
+                  className={cn("flex items-center", stepNum < steps.length ? "flex-1" : "flex-none")}
+                >
                   <StepperTrigger
                     onClick={(e) => {
                       if (isLocked) {
@@ -495,13 +494,13 @@ function CreateUserForm() {
                       }
                     }}
                     className={cn(
-                      "group flex flex-col items-center gap-2 p-1.5 rounded-xl transition-all data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:ring-1 data-[state=active]:ring-slate-200",
+                      "group flex flex-col items-center gap-1.5 w-[70px] p-1 rounded-xl transition-all data-[state=active]:bg-white flex-none",
                       isLocked && "opacity-40 cursor-not-allowed",
                     )}
                   >
                     <div
                       className={cn(
-                        "size-8 rounded-full flex items-center justify-center transition-all duration-500 ring-2 ring-white border border-slate-100 shadow-sm",
+                        "size-7 rounded-full flex items-center justify-center transition-all duration-500 ring-2 ring-white border border-slate-100 shadow-sm",
                         isCompleted
                           ? "bg-emerald-500 text-white animate-step-pop"
                           : isActive
@@ -510,24 +509,22 @@ function CreateUserForm() {
                       )}
                     >
                       {isCompleted ? (
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={14} />
                       ) : (
-                        <StepIcon size={16} />
+                        <StepIcon size={14} />
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 whitespace-nowrap">
-                      <span
-                        className={cn(
-                          "font-inter text-[10px] font-bold uppercase tracking-wider",
-                          isActive ? "text-[#0F172A]" : "text-slate-400",
-                        )}
-                      >
-                        {s.title}
-                      </span>
-                    </div>
+                    <span
+                      className={cn(
+                        "font-inter text-[9px] font-bold uppercase tracking-wider whitespace-nowrap",
+                        isActive ? "text-[#0F172A]" : "text-slate-400",
+                      )}
+                    >
+                      {s.title}
+                    </span>
                   </StepperTrigger>
                   {stepNum < steps.length && (
-                    <StepperSeparator className="flex-1 mx-3 bg-slate-200/50 h-[1.5px]" />
+                    <StepperSeparator className="flex-1 bg-slate-200/50 h-[1.5px] mx-1 self-center -mt-4" />
                   )}
                 </StepperItem>
               );
@@ -541,159 +538,57 @@ function CreateUserForm() {
             {/* STEP 1: Personal Details */}
             <StepperContent
               value={1}
-              className="animate-in fade-in slide-in-from-right-4 duration-300"
+              className="animate-in fade-in slide-in-from-right-4 duration-300 outline-none"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Left Column: Name Field */}
-                <div className="space-y-5">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     <UserRound className="size-4 text-slate-400" />
-                    <h3 className="font-bold text-slate-700 font-lexend">
-                      Legal Identity
-                    </h3>
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Legal Identity</h3>
                   </div>
-                  <ValidatedInput
-                    label="First Name"
-                    required
-                    value={form.firstname}
-                    validator="name"
-                    type="name"
-                    onChange={(v, isValid) =>
-                      updateField("firstname", v, isValid)
-                    }
-                  />
-                  <ValidatedInput
-                    label="Middle Name"
-                    value={form.middlename}
-                    validator="name"
-                    type="name"
-                    onChange={(v, isValid) =>
-                      updateField("middlename", v, isValid)
-                    }
-                  />
-                  <ValidatedInput
-                    label="Last Name"
-                    required
-                    value={form.lastname}
-                    validator="name"
-                    type="name"
-                    onChange={(v, isValid) =>
-                      updateField("lastname", v, isValid)
-                    }
-                  />
+                  <ValidatedInput label="First Name" required value={form.firstname} validator="name" type="name" onChange={(v, isValid) => updateField("firstname", v, isValid)} />
+                  <ValidatedInput label="Middle Name" value={form.middlename} validator="name" type="name" onChange={(v, isValid) => updateField("middlename", v, isValid)} />
+                  <ValidatedInput label="Last Name" required value={form.lastname} validator="name" type="name" onChange={(v, isValid) => updateField("lastname", v, isValid)} />
                   <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
-                      Suffix
-                    </label>
-                    <Combobox
-                      options={Suffix.map((s) => ({ value: s, label: s }))}
-                      value={form.suffix}
-                      onChange={(val) => updateField("suffix", val)}
-                      placeholder="Select suffix"
-                      className="mt-1 h-9 rounded-md"
-                    />
+                    <label className="font-inter text-xs font-medium text-slate-600">Suffix</label>
+                    <Combobox options={Suffix.map((s) => ({ value: s, label: s }))} value={form.suffix} onChange={(val) => updateField("suffix", val)} placeholder="Select suffix" className="mt-1 h-9 rounded-md border-gray-200" />
                   </div>
                 </div>
-
-                {/* Right Column: Bday Field */}
-                <div className="space-y-5">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     <CalendarIcon className="size-4 text-slate-400" />
-                    <h3 className="font-bold text-slate-700 font-lexend">
-                      Demographics
-                    </h3>
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Demographics</h3>
                   </div>
-
                   <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
-                      Birthdate <span className="text-rose-500">*</span>
-                    </label>
+                    <label className="font-inter text-xs font-medium text-slate-600">Birthdate <span className="text-rose-500">*</span></label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="flex h-9 w-full justify-start rounded-md border-slate-200 bg-white px-3 font-medium text-slate-700 hover:border-slate-300 transition-all cursor-pointer"
-                        >
+                        <Button variant="outline" className="flex h-9 w-full justify-start rounded-md border-slate-200 bg-white px-3 font-medium text-slate-700 hover:border-slate-300 transition-all cursor-pointer mt-1">
                           <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                          {form.birthdate ? (
-                            format(form.birthdate, "yyyy-MM-dd")
-                          ) : (
-                            <span className="text-slate-400 text-xs">
-                              Select Date
-                            </span>
-                          )}
+                          {form.birthdate ? format(form.birthdate, "yyyy-MM-dd") : <span className="text-slate-400 text-xs">Select Date</span>}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0 border border-gray-100 shadow-xl"
-                        align="start"
-                      >
-                        <Calendar
-                          disabled={(date) => date > new Date()}
-                          mode="single"
-                          selected={form.birthdate}
-                          onSelect={(date) => updateField("birthdate", date)}
-                          captionLayout="dropdown"
-                          fromYear={1950}
-                          toYear={new Date().getFullYear()}
-                          initialFocus
-                          className="bg-white"
-                        />
+                      <PopoverContent className="w-auto p-0 border border-gray-100 shadow-xl" align="start">
+                        <Calendar disabled={(date) => date > new Date()} mode="single" selected={form.birthdate} onSelect={(date) => updateField("birthdate", date)} captionLayout="dropdown" fromYear={1950} toYear={new Date().getFullYear()} initialFocus className="bg-white" />
                       </PopoverContent>
                     </Popover>
                   </div>
-
                   <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-400 ml-1">
-                      Calculated Age
-                    </label>
-                    <input
-                      type="text"
-                      value={form.age ? `${form.age} Years Old` : ""}
-                      readOnly
-                      className="h-9 w-full rounded-md border border-gray-100 bg-slate-50 px-3 text-sm text-slate-400 cursor-not-allowed outline-none font-medium"
-                      placeholder="Automatic"
-                    />
+                    <label className="font-inter text-xs font-medium text-slate-400">Calculated Age</label>
+                    <input type="text" value={form.age ? `${form.age} Years Old` : ""} readOnly className="mt-1 h-9 w-full rounded-md border border-gray-100 bg-slate-50 px-3 text-sm text-slate-400 cursor-not-allowed outline-none font-medium" placeholder="Automatic" />
                   </div>
-
-                  <div className="pt-2 space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
-                      Sex <span className="text-rose-500">*</span>
-                    </label>
+                  <div className="pt-1 space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-600">Sex <span className="text-rose-500">*</span></label>
                     <div className="flex h-9 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
-                      <button
-                        onClick={() => updateField("sex", true)}
-                        className={cn(
-                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
-                          form.sex
-                            ? "bg-white text-[#0F172A] shadow-sm border border-gray-100"
-                            : "text-slate-400",
-                        )}
-                      >
-                        Male
-                      </button>
-                      <button
-                        onClick={() => updateField("sex", false)}
-                        className={cn(
-                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
-                          !form.sex
-                            ? "bg-white text-[#0F172A] shadow-sm border border-gray-100"
-                            : "text-slate-400",
-                        )}
-                      >
-                        Female
-                      </button>
+                      <button onClick={() => updateField("sex", true)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", form.sex ? "bg-white text-[#0F172A] shadow-sm border border-gray-100" : "text-slate-400")}>Male</button>
+                      <button onClick={() => updateField("sex", false)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", !form.sex ? "bg-white text-[#0F172A] shadow-sm border border-gray-100" : "text-slate-400")}>Female</button>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <footer className="pt-10 flex justify-end">
-                <Button
-                  onClick={nextStep}
-                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100"
-                >
-                  Email Details <ChevronRight className="ml-2 h-4 w-4" />
+              <footer className="pt-8 flex justify-end">
+                <Button onClick={nextStep} className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer">
+                  Contact Details <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </footer>
             </StepperContent>
@@ -701,441 +596,146 @@ function CreateUserForm() {
             {/* STEP 2: Contact Details */}
             <StepperContent
               value={2}
-              className="animate-in fade-in slide-in-from-right-4 duration-300"
+              className="animate-in fade-in slide-in-from-right-4 duration-300 outline-none"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Mail className="size-4 text-slate-400" />
-                      <h3 className="font-bold text-slate-700 font-lexend">
-                        Email Addresses
-                      </h3>
+                      <h3 className="font-bold text-slate-700 font-lexend text-sm">Email Addresses</h3>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          emails: [...prev.emails, ""],
-                        }))
-                      }
-                      className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A]"
-                    >
-                      + Add Email
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setForm((prev) => ({ ...prev, emails: [...prev.emails, ""] }))} className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A] cursor-pointer">+ Add Email</Button>
                   </div>
                   <div className="space-y-4">
                     {form.emails.map((email, idx) => (
                       <div key={idx} className="flex gap-2 items-start">
                         <div className="flex-1">
-                          <ValidatedInput
-                            label={
-                              idx === 0 ? "Primary Email" : `Email ${idx + 1}`
-                            }
-                            type="email"
-                            required={idx === 0}
-                            value={email}
-                            onChange={(v, isValid) => {
-                              const newEmails = [...form.emails];
-                              newEmails[idx] = v;
-                              updateField("emails", newEmails);
-                            }}
-                          />
+                          <ValidatedInput label={idx === 0 ? "Primary Email" : `Email ${idx + 1}`} type="email" required={idx === 0} value={email} onChange={(v, isValid) => { const newEmails = [...form.emails]; newEmails[idx] = v; updateField("emails", newEmails); }} />
                         </div>
-                        {idx > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const newEmails = form.emails.filter(
-                                (_, i) => i !== idx,
-                              );
-                              updateField("emails", newEmails);
-                            }}
-                            className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        )}
+                        {idx > 0 && (<Button variant="ghost" size="icon" onClick={() => { updateField("emails", form.emails.filter((_, i) => i !== idx)); }} className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"><Trash2 size={14} /></Button>)}
                       </div>
                     ))}
                   </div>
                 </div>
-
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Phone className="size-4 text-slate-400" />
-                      <h3 className="font-bold text-slate-700 font-lexend">
-                        Phone Channels
-                      </h3>
+                      <h3 className="font-bold text-slate-700 font-lexend text-sm">Phone Channels</h3>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          phones: [...prev.phones, ""],
-                        }))
-                      }
-                      className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A]"
-                    >
-                      + Add Number
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setForm((prev) => ({ ...prev, phones: [...prev.phones, ""] }))} className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A] cursor-pointer">+ Add Number</Button>
                   </div>
                   <div className="space-y-4">
                     {form.phones.map((phone, idx) => (
                       <div key={idx} className="flex gap-2 items-start">
                         <div className="flex-1">
-                          <ValidatedInput
-                            label={
-                              idx === 0 ? "Primary Phone" : `Mobile ${idx + 1}`
-                            }
-                            type="phone"
-                            required={idx === 0}
-                            value={phone}
-                            onChange={(v, isValid) => {
-                              const newPhones = [...form.phones];
-                              newPhones[idx] = v;
-                              updateField("phones", newPhones);
-                            }}
-                          />
+                          <ValidatedInput label={idx === 0 ? "Primary Phone" : `Mobile ${idx + 1}`} type="phone" required={idx === 0} value={phone} onChange={(v, isValid) => { const newPhones = [...form.phones]; newPhones[idx] = v; updateField("phones", newPhones); }} />
                         </div>
-                        {idx > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const newPhones = form.phones.filter(
-                                (_, i) => i !== idx,
-                              );
-                              updateField("phones", newPhones);
-                            }}
-                            className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        )}
+                        {idx > 0 && (<Button variant="ghost" size="icon" onClick={() => { updateField("phones", form.phones.filter((_, i) => i !== idx)); }} className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"><Trash2 size={14} /></Button>)}
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-
-              <footer className="pt-10 flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  onClick={prevStep}
-                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50"
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Profile
-                </Button>
-                <Button
-                  onClick={nextStep}
-                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100"
-                >
-                  Placement Details <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+              <footer className="pt-8 flex items-center justify-between">
+                <Button variant="ghost" onClick={prevStep} className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Profile</Button>
+                <Button onClick={nextStep} className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer">Placement Details <ChevronRight className="ml-2 h-4 w-4" /></Button>
               </footer>
             </StepperContent>
 
             {/* STEP 3: Organizational Placement */}
             <StepperContent
               value={3}
-              className="animate-in fade-in slide-in-from-right-4 duration-300"
+              className="animate-in fade-in slide-in-from-right-4 duration-300 outline-none"
             >
-              <div className="max-w-2xl mx-auto space-y-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <Building2 className="size-5 text-slate-400" />
-                  <h3 className="font-bold text-lg text-slate-700 font-lexend">
-                    Organizational Placement
-                  </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="font-inter text-xs font-medium text-slate-600 ml-1">Assigned Role <span className="text-rose-500">*</span></label>
+                  <Combobox options={roles.map((role) => ({ value: String(role.id), label: role.name }))} value={form.role_id} onChange={(val) => updateField("role_id", val)} placeholder={isLoadingRoles ? "Loading..." : "Select Position"} className="mt-1 h-10 rounded-md" />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
-                      Assigned Role <span className="text-rose-500">*</span>
-                    </label>
-                    <Combobox
-                      options={roles.map((role) => ({
-                        value: String(role.id),
-                        label: role.name,
-                      }))}
-                      value={form.role_id}
-                      onChange={(val) => updateField("role_id", val)}
-                      placeholder={
-                        isLoadingRoles ? "Loading..." : "Select Position"
-                      }
-                      className="mt-1 h-10 rounded-md"
-                    />
-                  </div>
-                  <ValidatedInput
-                    label="Department"
-                    required
-                    type="text"
-                    value={form.department}
-                    onChange={(v) => updateField("department", v)}
-                  />
-                  <ValidatedInput
-                    label="Position Title"
-                    required
-                    type="text"
-                    value={form.position}
-                    onChange={(v) => updateField("position", v)}
-                  />
-
-                  <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
-                      Account Eligibility{" "}
-                      <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="flex h-10 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
-                      <button
-                        onClick={() => updateField("status", true)}
-                        className={cn(
-                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
-                          form.status
-                            ? "bg-white text-emerald-600 shadow-sm border border-emerald-100 font-black"
-                            : "text-slate-400",
-                        )}
-                      >
-                        Active Access
-                      </button>
-                      <button
-                        onClick={() => updateField("status", false)}
-                        className={cn(
-                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
-                          !form.status
-                            ? "bg-white text-rose-600 shadow-sm border border-rose-100 font-black"
-                            : "text-slate-400",
-                        )}
-                      >
-                        Suspended
-                      </button>
-                    </div>
+                <ValidatedInput label="Department" required type="text" value={form.department} onChange={(v) => updateField("department", v)} />
+                <ValidatedInput label="Position Title" required type="text" value={form.position} onChange={(v) => updateField("position", v)} />
+                <div className="space-y-2">
+                  <label className="font-inter text-xs font-medium text-slate-600 ml-1">Account Eligibility <span className="text-rose-500">*</span></label>
+                  <div className="flex h-10 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
+                    <button onClick={() => updateField("status", true)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", form.status ? "bg-white text-emerald-600 shadow-sm border border-emerald-100 font-black" : "text-slate-400")}>Active Access</button>
+                    <button onClick={() => updateField("status", false)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", !form.status ? "bg-white text-rose-600 shadow-sm border border-rose-100 font-black" : "text-slate-400")}>Suspended</button>
                   </div>
                 </div>
               </div>
-
-              <footer className="pt-10 flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  onClick={prevStep}
-                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50"
-                  type="button"
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Contact
-                </Button>
-                <Button
-                  onClick={nextStep}
-                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100"
-                  type="button"
-                >
-                  Account Setup <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+              <footer className="pt-8 flex items-center justify-between">
+                <Button variant="ghost" onClick={prevStep} className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer" type="button"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Contact</Button>
+                <Button onClick={nextStep} className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer" type="button">Account Setup <ChevronRight className="ml-2 h-4 w-4" /></Button>
               </footer>
             </StepperContent>
 
             {/* STEP 4: Account Setup */}
             <StepperContent
               value={4}
-              className="animate-in fade-in slide-in-from-right-4 duration-300"
+              className="animate-in fade-in slide-in-from-right-4 duration-300 outline-none"
             >
-              <div>
-                <h3 className="font-lexend text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">
-                  Account Authentication
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <ValidatedInput
-                    label="Employee ID"
-                    required
-                    type="employee-Id"
-                    maxLength={9}
-                    value={form.empID}
-                    onChange={(v) => updateField("empID", v)}
-                    readOnly={isEditMode}
-                    errorMessage={empIDError}
-                    inputClassName={isEditMode ? "bg-slate-50" : ""}
-                  />
-                  <ValidatedInput
-                    label="System Username"
-                    required
-                    type="text"
-                    value={form.username}
-                    onChange={(v) => updateField("username", v)}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Fingerprint className="size-4 text-slate-400" />
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Account Authentication</h3>
+                  </div>
+                  <ValidatedInput label="Employee ID" required type="employee-Id" maxLength={9} value={form.empID} onChange={(v) => updateField("empID", v)} readOnly={isEditMode} errorMessage={empIDError} inputClassName={isEditMode ? "bg-slate-50" : ""} />
+                  <ValidatedInput label="System Username" required type="text" value={form.username} onChange={(v) => updateField("username", v)} />
                 </div>
-              </div>
-
-              <div className="pt-8 border-t border-gray-100">
-                <h3 className="font-lexend text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">
-                  Security Setup
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="relative">
-                    <ValidatedInput
-                      label="Temporary Password"
-                      required={!isEditMode}
-                      type="text"
-                      value={form.temp_pass}
-                      onChange={(v) => updateField("temp_pass", v)}
-                      placeholder={
-                        isEditMode ? "Leave blank to keep current" : ""
-                      }
-                      inputClassName={!showTempPassword ? "password-disc" : ""}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowTempPassword(!showTempPassword)}
-                      className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer"
-                    >
-                      {showTempPassword ? (
-                        <EyeOff size={14} />
-                      ) : (
-                        <Eye size={14} />
-                      )}
-                    </button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="size-4 text-slate-400" />
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Security Setup</h3>
                   </div>
                   <div className="relative">
-                    <ValidatedInput
-                      label="Confirm Password"
-                      required={!isEditMode}
-                      type="text"
-                      value={form.password}
-                      onChange={(v) => updateField("password", v)}
-                      errorMessage={
-                        form.password && form.password !== form.temp_pass
-                          ? "Passwords do not match"
-                          : null
-                      }
-                      inputClassName={!showPassword ? "password-disc" : ""}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
+                    <ValidatedInput label="Temporary Password" required={!isEditMode} type="text" value={form.temp_pass} onChange={(v) => updateField("temp_pass", v)} placeholder={isEditMode ? "Leave blank to keep current" : ""} inputClassName={!showTempPassword ? "password-disc" : ""} />
+                    <button type="button" onClick={() => setShowTempPassword(!showTempPassword)} className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer">{showTempPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                  </div>
+                  <div className="relative">
+                    <ValidatedInput label="Confirm Password" required={!isEditMode} type="text" value={form.password} onChange={(v) => updateField("password", v)} errorMessage={form.password && form.password !== form.temp_pass ? "Passwords do not match" : null} inputClassName={!showPassword ? "password-disc" : ""} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
                   </div>
                 </div>
               </div>
-
-              <footer className="pt-10 flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  onClick={prevStep}
-                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50"
-                  type="button"
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Placement
-                </Button>
-                <Button
-                  onClick={nextStep}
-                  className="h-10 px-8 rounded-md bg-[#0F172A] font-bold text-xs shadow-md shadow-slate-200 transition-all hover:bg-slate-800"
-                  type="button"
-                >
-                  Proceed to Review <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
+              <footer className="pt-8 flex items-center justify-between">
+                <Button variant="ghost" onClick={prevStep} className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer" type="button"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Placement</Button>
+                <Button onClick={nextStep} className="h-10 px-8 rounded-md bg-[#0F172A] font-bold text-xs shadow-md shadow-slate-200 transition-all hover:bg-slate-800 cursor-pointer" type="button">Proceed to Review <ChevronRight className="ml-2 h-4 w-4" /></Button>
               </footer>
             </StepperContent>
 
             {/* STEP 5: Review */}
             <StepperContent
               value={5}
-              className="animate-in zoom-in-95 duration-500"
+              className="animate-in zoom-in-95 duration-500 outline-none"
             >
               <div className="flex flex-col gap-6">
-                <div className="p-6 border border-emerald-100 bg-emerald-50/20 rounded-xl flex items-center gap-4">
-                  <div className="size-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
-                    <CheckCircle2 size={24} />
+                <div className="p-4 border border-emerald-100 bg-emerald-50/20 rounded-xl flex items-center gap-4">
+                  <div className="size-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center flex-none">
+                    <CheckCircle2 size={18} />
                   </div>
                   <div>
-                    <h4 className="font-lexend text-sm font-bold text-emerald-900">
-                      Application Ready
-                    </h4>
-                    <p className="text-[11px] text-emerald-700/70 font-medium">
-                      Please verify the enrollment summary below before system
-                      commit.
-                    </p>
+                    <h4 className="font-lexend text-xs font-bold text-emerald-900">Application Ready</h4>
+                    <p className="text-[10px] text-emerald-700/70 font-medium">Please verify the enrollment summary below before system commit.</p>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <SummaryCard
-                    title="Identity"
-                    items={[
-                      { label: "Emp ID", value: form.empID, icon: Fingerprint },
-                      {
-                        label: "Full Name",
-                        value: `${form.firstname} ${form.lastname} ${form.suffix}`,
-                        icon: UserRound,
-                      },
-                    ]}
-                  />
-                  <SummaryCard
-                    title="Operational"
-                    items={[
-                      {
-                        label: "Role",
-                        value:
-                          roles.find((r) => String(r.id) === form.role_id)
-                            ?.name || "Unselected",
-                        icon: Shield,
-                      },
-                      {
-                        label: "Placement",
-                        value: `${form.department} (${form.position})`,
-                        icon: Building2,
-                      },
-                    ]}
-                  />
+                  <SummaryCard title="Identity" items={[{ label: "Emp ID", value: form.empID, icon: Fingerprint }, { label: "Full Name", value: `${form.firstname} ${form.lastname} ${form.suffix}`, icon: UserRound }]} />
+                  <SummaryCard title="Operational" items={[{ label: "Role", value: roles.find((r) => String(r.id) === form.role_id)?.name || "Unselected", icon: Shield }, { label: "Placement", value: `${form.department} (${form.position})`, icon: Building2 }]} />
                 </div>
-
                 <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">
-                    Access Channel
-                  </h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Access Channel</h5>
                   <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <Mail className="size-3 text-slate-400" />
-                      <span className="text-xs font-medium text-slate-600">
-                        {form.emails[0] || "No Email Provided"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="size-3 text-slate-400" />
-                      <span className="text-xs font-medium text-slate-600">
-                        {form.phones[0] || "No Phone Provided"}
-                      </span>
-                    </div>
+                    <div className="flex items-center gap-2 text-slate-600"><Mail size={14} className="text-slate-400" /><span className="text-[10px] uppercase font-bold tracking-tighter">{form.emails[0]}</span></div>
+                    <div className="flex items-center gap-2 text-slate-600"><Phone size={14} className="text-slate-400" /><span className="text-[10px] uppercase font-bold tracking-tighter">{form.phones[0]}</span></div>
                   </div>
                 </div>
               </div>
-
-              <footer className="pt-10 flex gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={prevStep}
-                  disabled={isSubmitting}
-                  className="h-10 flex-1 rounded-md font-bold text-xs text-slate-500 border border-slate-200 bg-white hover:bg-slate-50"
-                >
-                  Back to Edit
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={isSubmitting}
-                  className="h-10 flex-[2] rounded-md bg-[#0F172A] font-bold text-xs shadow-lg shadow-slate-100 transition-all hover:bg-slate-800"
-                >
-                  {isSubmitting
-                    ? "Committing Enrollment..."
-                    : isEditMode
-                      ? "Save Changes"
-                      : "Confirm & Enroll Personnel"}
+              <footer className="pt-8 flex gap-3">
+                <Button variant="ghost" onClick={prevStep} disabled={isSubmitting} className="h-10 flex-1 rounded-md font-bold text-xs text-slate-500 border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">Back to Edit</Button>
+                <Button onClick={handleSave} disabled={isSubmitting} className="h-10 flex-2 rounded-md bg-[#0F172A] font-bold text-xs shadow-lg shadow-slate-100 transition-all hover:bg-slate-800 cursor-pointer">
+                  {isSubmitting ? "Committing Enrollment..." : isEditMode ? "Save Changes" : "Confirm & Enroll Personnel"}
                 </Button>
               </footer>
             </StepperContent>

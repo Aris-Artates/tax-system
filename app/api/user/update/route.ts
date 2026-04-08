@@ -14,8 +14,8 @@ type UpdateUserPayload = {
 	sex: boolean;
 	temp_pass?: string;
 	password?: string;
-	email: string;
-	phone: string;
+	emails: string[];
+	phones: string[];
 	role_id: number;
 	department: string;
 	position: string;
@@ -35,6 +35,9 @@ export async function PUT(request: Request) {
 	try {
 		const body = (await request.json()) as Partial<UpdateUserPayload>;
 		const roleId = Number(body.role_id);
+		const primaryEmail = body.emails?.[0];
+		const primaryPhone = body.phones?.[0];
+
 		const normalizedUsername =
 			body.username?.trim() || body.empID?.trim() || '';
 		const normalizedTempPass = body.temp_pass?.trim() || '';
@@ -48,8 +51,6 @@ export async function PUT(request: Request) {
 			'firstname',
 			'lastname',
 			'birthdate',
-			'email',
-			'phone',
 			'department',
 			'position',
 		];
@@ -62,6 +63,9 @@ export async function PUT(request: Request) {
 				);
 			}
 		}
+
+		if (!primaryEmail) return NextResponse.json({ error: 'Primary email is required.' }, { status: 400 });
+		if (!primaryPhone) return NextResponse.json({ error: 'Primary phone is required.' }, { status: 400 });
 
 		if (typeof body.sex !== 'boolean') {
 			return NextResponse.json({ error: 'sex is required.' }, { status: 400 });
@@ -108,13 +112,15 @@ export async function PUT(request: Request) {
 
 		const { data: existingUser, error: existingError } = await supabaseAdmin
 			.from('users')
-			.select('empID')
+			.select('id')
 			.eq('empID', body.originalEmpID!.trim())
 			.single();
 
 		if (existingError || !existingUser) {
 			return NextResponse.json({ error: 'User not found.' }, { status: 404 });
 		}
+
+		const internalUserId = existingUser.id;
 
 		const { error: updateError } = await supabaseAdmin
 			.from('users')
@@ -130,18 +136,46 @@ export async function PUT(request: Request) {
 				sex: body.sex,
 				...(hasTempPass ? { temp_pass: normalizedTempPass } : {}),
 				...(hasPassword ? { password: normalizedPassword } : {}),
-				email: String(body.email ?? '').trim(),
-				phone: String(body.phone ?? '').trim(),
+				email: primaryEmail.trim(),
+				mobile_number: primaryPhone.trim(),
 				role_id: roleId,
 				department: String(body.department ?? '').trim(),
 				position: String(body.position ?? '').trim(),
 				status: body.status,
 				image_path: body.image_path,
 			})
-			.eq('empID', body.originalEmpID!.trim());
+			.eq('id', internalUserId);
 
 		if (updateError) {
 			return NextResponse.json({ error: updateError.message }, { status: 400 });
+		}
+
+		// Sync extra emails
+		await supabaseAdmin.from('user_emails').delete().eq('user_id', internalUserId);
+		if (body.emails && body.emails.length > 0) {
+			const extraEmails = body.emails.map((e, idx) => ({
+				user_id: internalUserId,
+				email: e.trim(),
+				is_primary: idx === 0,
+			})).filter(e => e.email.length > 0);
+
+			if (extraEmails.length > 0) {
+				await supabaseAdmin.from('user_emails').insert(extraEmails);
+			}
+		}
+
+		// Sync extra phones
+		await supabaseAdmin.from('user_mobile_numbers').delete().eq('user_id', internalUserId);
+		if (body.phones && body.phones.length > 0) {
+			const extraPhones = body.phones.map((p, idx) => ({
+				user_id: internalUserId,
+				mobile_number: p.trim(),
+				is_primary: idx === 0,
+			})).filter(p => p.mobile_number.length > 0);
+
+			if (extraPhones.length > 0) {
+				await supabaseAdmin.from('user_mobile_numbers').insert(extraPhones);
+			}
 		}
 
 		return NextResponse.json({
