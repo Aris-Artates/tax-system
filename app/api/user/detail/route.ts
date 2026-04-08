@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 		const { data, error } = await supabaseAdmin
 			.from('users')
 			.select(
-				'empID, username, firstname, middlename, lastname, suffix, birthdate, age, sex, email, phone, role_id, department, position, status, image_path, roles(name)',
+				'empID, username, firstname, middlename, lastname, suffix, birthdate, age, sex, email, mobile_number, role_id, department, position, status, image_path, roles(name)',
 			)
 			.eq('empID', empID)
 			.single();
