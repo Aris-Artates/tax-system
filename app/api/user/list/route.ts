@@ -12,7 +12,9 @@ export async function GET() {
 			return NextResponse.json({ error: error.message }, { status: 400 });
 		}
 
-		return NextResponse.json({ users: data ?? [] });
+		const payloadString = JSON.stringify(data ?? []);
+		const obscuredPayload = Buffer.from(payloadString).toString("base64");
+		return NextResponse.json({ _data: obscuredPayload });
 	} catch {
 		return NextResponse.json(
 			{ error: 'Unable to load users.' },

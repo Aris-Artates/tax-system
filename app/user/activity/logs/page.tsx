@@ -75,8 +75,10 @@ function UserLogsPage() {
         const response = await fetch("/api/user/list", { cache: "no-store" });
         const data = await response.json();
 
-        if (response.ok && data.users) {
-          const fetchedUsers = data.users.map((u: any) => {
+        const decodedUsers = data._data ? JSON.parse(atob(data._data)) : (data.users ?? []);
+
+        if (response.ok && decodedUsers) {
+          const fetchedUsers = decodedUsers.map((u: any) => {
             return (
               [
                 u.firstname?.trim() || "",
