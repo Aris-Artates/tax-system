@@ -100,7 +100,7 @@ type ApiUserDetails = {
   age?: string | number;
   sex?: boolean;
   email?: string;
-  phone?: string;
+  mobile_number?: string;
   role_id?: number;
   roles?: {
     name?: string;
@@ -317,13 +317,10 @@ export default function ViewUserPage() {
       setLoadError(null);
 
       try {
-        // Simulated dataset load
-        await new Promise((resolve) => setTimeout(resolve, 3000));
         const response = await fetch("/api/user/list", { cache: "no-store" });
         const data = (await response.json()) as {
           error?: string;
           users?: ApiUser[];
-          _data?: string;
         };
 
         if (!response.ok) {
@@ -332,9 +329,9 @@ export default function ViewUserPage() {
           return;
         }
 
-        const decodedUsers = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.users ?? []);
+        const rawUsers = data.users ?? [];
 
-        const mapped = decodedUsers.map((user: ApiUser) => {
+        const mapped = rawUsers.map((user: ApiUser) => {
           const fullname = [
             user.firstname?.trim() || "",
             user.middlename?.trim() || "",
@@ -486,7 +483,7 @@ export default function ViewUserPage() {
         temp_pass: "",
         password: "",
         email: user.email?.trim() ?? "",
-        phone: user.phone?.trim() ?? "",
+        phone: user.mobile_number?.trim() ?? "",
         role_id: typeof user.role_id === "number" ? String(user.role_id) : "",
         department: user.department?.trim() ?? "",
         position: user.position?.trim() ?? "",
@@ -570,8 +567,8 @@ export default function ViewUserPage() {
         birthdate: form.birthdate ? format(form.birthdate, "yyyy-MM-dd") : null,
         age: form.age,
         sex: form.sex,
-        email: form.email,
-        phone: form.phone,
+        emails: [form.email],
+        phones: [form.phone],
         role_id: Number(form.role_id),
         department: form.department,
         position: form.position,
