@@ -317,6 +317,8 @@ export default function ViewUserPage() {
       setLoadError(null);
 
       try {
+        // Simulated dataset load
+        await new Promise((resolve) => setTimeout(resolve, 3000));
         const response = await fetch("/api/user/list", { cache: "no-store" });
         const data = (await response.json()) as {
           error?: string;
@@ -887,14 +889,37 @@ export default function ViewUserPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="py-10 text-center text-slate-400"
-                  >
-                    Loading users...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell>
+                      <div className="flex justify-center">
+                        <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-6 w-16 animate-pulse rounded bg-slate-200" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <div className="h-[26px] w-[88px] animate-pulse rounded bg-slate-200" />
+                        <div className="h-[26px] w-[62px] animate-pulse rounded bg-slate-200" />
+                        <div className="h-[26px] w-[75px] animate-pulse rounded bg-slate-200" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell
