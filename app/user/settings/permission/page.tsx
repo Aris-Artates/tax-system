@@ -78,7 +78,18 @@ export default function PermissionSettingsPage() {
         return;
       }
 
-      setPermissions(data.permissions ?? []);
+      // Intercept and decode obscured payload
+      try {
+        if (data._data) {
+          const decoded = JSON.parse(atob(data._data));
+          setPermissions(decoded);
+        } else {
+          setPermissions([]);
+        }
+      } catch (decodeError) {
+        setPermissions([]);
+        setLoadError("Received malformed or corrupted data.");
+      }
     } catch {
       setLoadError("Unable to connect to server.");
       setPermissions([]);
