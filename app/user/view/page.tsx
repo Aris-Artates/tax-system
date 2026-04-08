@@ -25,6 +25,8 @@ import {
   Eye,
   EyeOff,
   Plus,
+  Mars,
+  Venus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -45,6 +47,7 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useReactTable,
   getCoreRowModel,
@@ -52,6 +55,8 @@ import {
   getFilteredRowModel, // <-- 2. Imported the filter logic
   flexRender,
 } from "@tanstack/react-table";
+
+import { cn } from "@/lib/utils";
 
 import {
   Table,
@@ -299,6 +304,7 @@ export default function ViewUserPage() {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [showTempPassword, setShowTempPassword] = useState(false);
+  const [activeEditTab, setActiveEditTab] = useState("personal");
   const [empIDError, setEmpIDError] = useState<string | null>(null);
   const [checkingEmpID, setCheckingEmpID] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
@@ -494,6 +500,7 @@ export default function ViewUserPage() {
       setInitialLoadedForm(mapped);
       setEmpIDError(null);
       setValidationErrors({});
+      setActiveEditTab("personal");
     } catch {
       toast.error("Connection error. Failed to load user details.");
       setIsEditModalOpen(false);
@@ -507,6 +514,7 @@ export default function ViewUserPage() {
     setIsEditModalOpen(false);
     setForm(initialFormState);
     setValidationErrors({});
+    setActiveEditTab("personal");
   };
 
   const hasFormChanges = useMemo(() => {
@@ -678,14 +686,22 @@ export default function ViewUserPage() {
         cell: ({ row }: any) => {
           const user = row.original;
           const isMale = user.sex !== false;
-          const defaultAvatar = isMale ? "/avatars/men.png" : "/avatars/female.png";
-          
+          const defaultAvatar = isMale
+            ? "/avatars/men.png"
+            : "/avatars/female.png";
+
           let imageSrc = defaultAvatar;
           const rawPath = user.image_path;
-          
-          if (rawPath && typeof rawPath === 'string' && rawPath.length > 5 && rawPath !== "null" && rawPath !== "undefined") {
+
+          if (
+            rawPath &&
+            typeof rawPath === "string" &&
+            rawPath.length > 5 &&
+            rawPath !== "null" &&
+            rawPath !== "undefined"
+          ) {
             // Check if it's already a full URL or needs construction
-            if (rawPath.startsWith('http')) {
+            if (rawPath.startsWith("http")) {
               imageSrc = rawPath;
             } else {
               // Construct the Supabase URL manually just in case it is stored as a path
@@ -997,33 +1013,86 @@ export default function ViewUserPage() {
 
       {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-xl">
-          <div className="flex flex-col max-h-[85vh] bg-white">
+        <DialogContent className="max-w-[620px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+          <Tabs
+            value={activeEditTab}
+            onValueChange={setActiveEditTab}
+            className="flex flex-col max-h-[85vh] bg-white"
+          >
             {/* Fixed Header */}
-            <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="font-lexend text-xl font-bold text-[#0F172A]">
-                Edit User
-              </DialogTitle>
-              <DialogDescription className="font-inter text-sm text-slate-500">
-                Update user information and account settings. Click save to
-                apply changes.
-              </DialogDescription>
-            </DialogHeader>
+            <div className="bg-slate-50/50 border-b border-slate-100 px-6 py-5">
+              <DialogHeader>
+                <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Pencil className="w-5 h-5 text-slate-400" />
+                  {activeEditTab === "personal"
+                    ? "Personal Information"
+                    : activeEditTab === "contact"
+                      ? "Contact & Professional"
+                      : "Security Credentials"}
+                </DialogTitle>
+                <DialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
+                  {activeEditTab === "personal" &&
+                    "Update user's legal identity and demographic details."}
+                  {activeEditTab === "contact" &&
+                    "Manage employment details and communication channels."}
+                  {activeEditTab === "security" &&
+                    "Securely reset user credentials and password settings."}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Sticky Tab Bar */}
+            <div className="border-b border-slate-100 bg-white px-6">
+              <TabsList className="h-12 w-full bg-transparent p-0 rounded-none border-none flex gap-8">
+                <TabsTrigger
+                  value="personal"
+                  className={cn(
+                    "h-12 rounded-none border-b-2 bg-transparent px-1 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none -mb-px",
+                    activeEditTab === "personal"
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700",
+                  )}
+                >
+                  Personal Information
+                </TabsTrigger>
+                <TabsTrigger
+                  value="contact"
+                  className={cn(
+                    "h-12 rounded-none border-b-2 bg-transparent px-1 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none -mb-px",
+                    activeEditTab === "contact"
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700",
+                  )}
+                >
+                  Contact & Job
+                </TabsTrigger>
+                <TabsTrigger
+                  value="security"
+                  className={cn(
+                    "h-12 rounded-none border-b-2 bg-transparent px-1 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none -mb-px",
+                    activeEditTab === "security"
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700",
+                  )}
+                >
+                  Security
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               {isLoadingUser ? (
-                <div className="py-12 text-center text-slate-400 font-inter text-sm">
-                  Loading user data...
+                <div className="py-20 text-center text-slate-400 font-inter text-sm animate-pulse">
+                  Retrieving user profile...
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Personal Information */}
-                  <div>
-                    <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                      Personal Information
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="py-6 min-h-[300px]">
+                  <TabsContent
+                    value="personal"
+                    className="px-6 space-y-6 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0"
+                  >
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-left">
                       <ValidatedInput
                         label="Emp ID"
                         required
@@ -1135,27 +1204,58 @@ export default function ViewUserPage() {
                         <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
                           Sex <span className="text-rose-500">*</span>
                         </label>
-                        <div className="flex gap-2">
-                          <BooleanChip
-                            label="Male"
-                            checked={form.sex}
+                        <div className="flex bg-slate-50/50 rounded-lg p-1 border border-slate-100 gap-1.5 h-10">
+                          <button
+                            type="button"
                             onClick={() => updateField("sex", true)}
-                          />
-                          <BooleanChip
-                            label="Female"
-                            checked={!form.sex}
+                            className={cn(
+                              "flex-1 flex items-center justify-center gap-2 rounded-md transition-all duration-300 px-3",
+                              form.sex
+                                ? "bg-white text-blue-600 border border-blue-100 scale-[1.02] shadow-sm"
+                                : "text-slate-400 hover:text-slate-500",
+                            )}
+                          >
+                            <Mars
+                              size={14}
+                              className={cn(
+                                "transition-transform duration-300",
+                                form.sex && "scale-110",
+                              )}
+                            />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                              Male
+                            </span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => updateField("sex", false)}
-                          />
+                            className={cn(
+                              "flex-1 flex items-center justify-center gap-2 rounded-md transition-all duration-300 px-3",
+                              !form.sex
+                                ? "bg-white text-pink-600 border border-pink-100 scale-[1.02] shadow-sm"
+                                : "text-slate-400 hover:text-slate-500",
+                            )}
+                          >
+                            <Venus
+                              size={14}
+                              className={cn(
+                                "transition-transform duration-300",
+                                !form.sex && "scale-110",
+                              )}
+                            />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">
+                              Female
+                            </span>
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </TabsContent>
 
-                  {/* Contact & Professional Details */}
-                  <div>
-                    <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                      Contact & Professional Details
-                    </h3>
+                  <TabsContent
+                    value="contact"
+                    className="px-6 space-y-6 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0 text-left"
+                  >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <ValidatedInput
                         label="Email"
@@ -1226,16 +1326,12 @@ export default function ViewUserPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </TabsContent>
 
-                  {/* Security (Credentials) */}
-                  <div>
-                    <h3 className="font-inter text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                      Security Credentials (Optional)
-                    </h3>
-                    <p className="font-inter text-[10px] text-slate-400 mb-3">
-                      Only fill if you want to reset the user's password.
-                    </p>
+                  <TabsContent
+                    value="security"
+                    className="px-6 space-y-6 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0 text-left"
+                  >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <PasswordField
                         label="Temp Pass"
@@ -1252,7 +1348,15 @@ export default function ViewUserPage() {
                         onChange={(v) => updateField("password", v)}
                       />
                     </div>
-                  </div>
+
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-lg mb-2">
+                      <p className="font-inter text-[11px] text-amber-700 leading-relaxed font-medium">
+                        Enter a new password below only if you wish to reset
+                        this user's account credentials. Leave these fields
+                        blank to keep current security settings.
+                      </p>
+                    </div>
+                  </TabsContent>
                 </div>
               )}
             </div>
@@ -1289,7 +1393,7 @@ export default function ViewUserPage() {
                 )}
               </button>
             </div>
-          </div>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
