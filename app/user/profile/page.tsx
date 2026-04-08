@@ -140,7 +140,11 @@ export default function UserProfilePage() {
             lastName: u.lastname || "",
             suffix: u.suffix || "",
             birthdate: u.birthdate || "",
-            age: u.age ? String(u.age) : (u.birthdate ? calculateAge(u.birthdate) : ""),
+            age: u.age
+              ? String(u.age)
+              : u.birthdate
+                ? calculateAge(u.birthdate)
+                : "",
             sex: u.sex ?? true,
             email: u.email || "",
             role: u.roles?.name || "User",

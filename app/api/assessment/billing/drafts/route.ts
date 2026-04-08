@@ -17,7 +17,12 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ drafts: data || [] });
+    const payloadString = JSON.stringify({ drafts: data || [] });
+    const l1 = Buffer.from(payloadString).toString("base64");
+    const l2 = Buffer.from(l1).toString("base64");
+    const obscuredPayload = Buffer.from(l2).toString("base64");
+
+    return NextResponse.json({ _data: obscuredPayload });
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch drafts.' }, { status: 500 });
   }
