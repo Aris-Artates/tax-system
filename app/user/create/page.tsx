@@ -1,19 +1,9 @@
 "use client";
 
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { toast } from "sonner";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-
 import { useMemo, useState, useEffect, Suspense } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   UserRound,
@@ -24,12 +14,39 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  Save,
-  FilePenLine,
+  CalendarIcon,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2,
+  Info,
+  Fingerprint,
+  Contact2,
+  Briefcase,
+  Undo2,
+  Trash2,
+  Table as TableIcon,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Combobox } from "@/components/ui/combobox";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Stepper,
+  StepperContent,
+  StepperIndicator,
+  StepperItem,
+  StepperNav,
+  StepperPanel,
+  StepperSeparator,
+  StepperTrigger,
+} from "@/components/reui/stepper";
+import { cn } from "@/lib/utils";
 
 const Suffix = ["Jr.", "Sr.", "II", "III", "IV", "V", "VI"] as const;
 
@@ -45,8 +62,8 @@ type FormState = {
   sex: boolean;
   temp_pass: string;
   password: string;
-  email: string;
-  phone: string;
+  emails: string[];
+  phones: string[];
   role_id: string;
   department: string;
   position: string;
@@ -56,7 +73,6 @@ type FormState = {
 type RoleOption = {
   id: number;
   name: string;
-  created_at?: string;
 };
 
 type ApiUserDetails = {
@@ -93,8 +109,8 @@ const initialFormState: FormState = {
   sex: true,
   temp_pass: "",
   password: "",
-  email: "",
-  phone: "",
+  emails: [""],
+  phones: [""],
   role_id: "",
   department: "",
   position: "",
@@ -107,16 +123,14 @@ function CreateUserForm() {
   const editingEmpID = searchParams.get("empID")?.trim() ?? "";
   const isEditMode = editingEmpID.length > 0;
 
+  const [activeStep, setActiveStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showTempPassword, setShowTempPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(initialFormState);
-
-  // FIX 1: Added missing initialLoadedForm state
   const [initialLoadedForm, setInitialLoadedForm] = useState<FormState | null>(
     null,
   );
@@ -126,22 +140,17 @@ function CreateUserForm() {
     Record<string, boolean>
   >({});
 
+  // Age calculation
   useEffect(() => {
     if (!form.birthdate) {
       updateField("age", "");
       return;
     }
-
     const today = new Date();
     let age = today.getFullYear() - form.birthdate.getFullYear();
-
     const monthDiff = today.getMonth() - form.birthdate.getMonth();
     const dayDiff = today.getDate() - form.birthdate.getDate();
-
-    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-      age--;
-    }
-
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
     updateField("age", age.toString());
   }, [form.birthdate]);
 
@@ -160,50 +169,32 @@ function CreateUserForm() {
     }
   };
 
-  // Live duplicate check for empID
+  // Duplicate check
   useEffect(() => {
     const checkEmpID = async () => {
       if (form.empID.length !== 9 || isEditMode || checkingEmpID) return;
-
       setCheckingEmpID(true);
-      setEmpIDError(null);
-
       try {
         const response = await fetch(
-          `/api/user/check?field=empID&value=${encodeURIComponent(form.empID)}`
+          `/api/user/check?field=empID&value=${encodeURIComponent(form.empID)}`,
         );
         const data = await response.json();
-
-        if (data.exists) {
-          setEmpIDError('Employee ID already exists');
-        }
+        if (data.exists) setEmpIDError("Employee ID already exists");
       } catch {
-        // Silent fail on network error
       } finally {
         setCheckingEmpID(false);
       }
     };
-
     const timeout = setTimeout(checkEmpID, 500);
     return () => clearTimeout(timeout);
   }, [form.empID, isEditMode]);
 
+  // Fetch Roles
   useEffect(() => {
     const fetchRoles = async () => {
-      setIsLoadingRoles(true);
-
       try {
         const response = await fetch("/api/roles/list", { cache: "no-store" });
-        const data = (await response.json()) as {
-          error?: string;
-          roles?: RoleOption[];
-        };
-
-        if (!response.ok) {
-          setRoles([]);
-          return;
-        }
-
+        const data = await response.json();
         setRoles(data.roles ?? []);
       } catch {
         setRoles([]);
@@ -211,217 +202,159 @@ function CreateUserForm() {
         setIsLoadingRoles(false);
       }
     };
-
     fetchRoles();
   }, []);
 
+  // Fetch User Details (Edit Mode)
   useEffect(() => {
-    if (!isEditMode) {
-      setInitialLoadedForm(null);
-      setForm(initialFormState);
-      setEmpIDError(null);
-      return;
-    }
-
-    let isMounted = true;
-
+    if (!isEditMode) return;
     const fetchUserDetails = async () => {
       setIsLoadingUser(true);
-      setSuccessMessage(null);
-
       try {
         const response = await fetch(
           `/api/user/detail?empID=${encodeURIComponent(editingEmpID)}`,
-          {
-            cache: "no-store",
-          },
+          { cache: "no-store" },
         );
-
-        const data = (await response.json()) as {
-          error?: string;
-          user?: ApiUserDetails;
-        };
-
-        if (!response.ok) {
-          if (isMounted) {
-            toast.error("Unable to load user details", {
-              description:
-                data.error || "An error occurred while loading user details.",
-            });
-          }
-          return;
-        }
-
-        const user = data.user;
-        const resolvedEmpID = user?.empID?.trim() ?? "";
-        const resolvedUsername = user?.username?.trim() || resolvedEmpID;
-        const mapped: FormState = {
-          empID: resolvedEmpID,
-          username: resolvedUsername,
-          firstname: user?.firstname?.trim() ?? "",
-          middlename: user?.middlename?.trim() ?? "",
-          lastname: user?.lastname?.trim() ?? "",
-          suffix: user?.suffix?.trim() ?? "",
-          // FIX 2: Safely parse birthdate string back into a Date object
-          birthdate: user?.birthdate ? new Date(user.birthdate) : undefined,
-          age: user?.age != null ? String(user.age) : "",
-          sex: typeof user?.sex === "boolean" ? user.sex : true,
-          temp_pass: "",
-          password: "",
-          email: user?.email?.trim() ?? "",
-          phone: user?.phone?.trim() ?? "",
-          role_id:
-            typeof user?.role_id === "number" ? String(user.role_id) : "",
-          department: user?.department?.trim() ?? "",
-          position: user?.position?.trim() ?? "",
-          status: typeof user?.status === "boolean" ? user.status : true,
-        };
-
-        if (isMounted) {
+        const data = await response.json();
+        if (response.ok && data.user) {
+          const user = data.user;
+          const mapped: FormState = {
+            empID: user.empID?.trim() ?? "",
+            username: user.username?.trim() ?? "",
+            firstname: user.firstname?.trim() ?? "",
+            middlename: user.middlename?.trim() ?? "",
+            lastname: user.lastname?.trim() ?? "",
+            suffix: user.suffix?.trim() ?? "",
+            birthdate: user.birthdate ? new Date(user.birthdate) : undefined,
+            age: user.age != null ? String(user.age) : "",
+            sex: typeof user.sex === "boolean" ? user.sex : true,
+            temp_pass: "",
+            password: "",
+            emails: user.email?.trim() ? [user.email.trim()] : [""],
+            phones: user.phone?.trim() ? [user.phone.trim()] : [""],
+            role_id:
+              typeof user.role_id === "number" ? String(user.role_id) : "",
+            department: user.department?.trim() ?? "",
+            position: user.position?.trim() ?? "",
+            status: typeof user.status === "boolean" ? user.status : true,
+          };
           setForm(mapped);
           setInitialLoadedForm(mapped);
         }
       } catch {
-        if (isMounted) {
-          toast.error("Connection Error", {
-            description: "Unable to connect to server.",
-          });
-        }
+        toast.error("Failed to load user details");
       } finally {
-        if (isMounted) {
-          setIsLoadingUser(false);
-        }
+        setIsLoadingUser(false);
       }
     };
-
     fetchUserDetails();
-
-    return () => {
-      isMounted = false;
-    };
   }, [editingEmpID, isEditMode]);
 
-  const missingRequiredFields = useMemo(() => {
-    const baseRequired =
-      !form.empID.trim() ||
-      !form.username.trim() ||
-      !form.firstname.trim() ||
-      !form.lastname.trim() ||
-      !form.birthdate ||
-      !form.age.trim() ||
-      !form.email.trim() ||
-      !form.phone.trim() ||
-      !form.role_id.trim() ||
-      !form.department.trim() ||
-      !form.position.trim();
+  const checkStepValidity = (step: number) => {
+    if (step === 1) {
+      return !!(
+        form.firstname?.trim() &&
+        form.lastname?.trim() &&
+        form.birthdate
+      );
+    } else if (step === 2) {
+      return !!(
+        form.emails[0]?.trim() &&
+        form.phones[0]?.trim() &&
+        !validationErrors.emails &&
+        !validationErrors.phones
+      );
+    } else if (step === 3) {
+      return !!(
+        form.role_id &&
+        form.department?.trim() &&
+        form.position?.trim()
+      );
+    } else if (step === 4) {
+      const basic = !!(
+        form.empID?.trim() &&
+        form.username?.trim() &&
+        !empIDError
+      );
+      if (isEditMode) return basic;
+      return (
+        basic &&
+        !!(
+          form.temp_pass?.trim() &&
+          form.password?.trim() &&
+          form.temp_pass === form.password
+        )
+      );
+    }
+    return true;
+  };
 
-    if (isEditMode) return baseRequired;
+  const validateStep = (step: number) => {
+    if (step === 1) {
+      if (
+        !form.firstname?.trim() ||
+        !form.lastname?.trim() ||
+        !form.birthdate
+      ) {
+        toast.error("Personal information missing", {
+          description: "First Name, Last Name and Birthdate are required.",
+        });
+        return false;
+      }
+    } else if (step === 2) {
+      if (!form.emails[0]?.trim()) {
+        toast.error("Primary email required");
+        return false;
+      }
+      if (!form.phones[0]?.trim()) {
+        toast.error("Primary phone required");
+        return false;
+      }
+    } else if (step === 3) {
+      if (!form.role_id || !form.department?.trim() || !form.position?.trim()) {
+        toast.error("Work details missing", {
+          description: "Please fill in all organizational placement fields.",
+        });
+        return false;
+      }
+    } else if (step === 4) {
+      if (!form.empID?.trim() || !form.username?.trim()) {
+        toast.error("Required fields missing", {
+          description: "Employee ID and Username are required.",
+        });
+        return false;
+      }
+      if (empIDError) {
+        toast.error(empIDError);
+        return false;
+      }
+      if (!isEditMode && (!form.temp_pass?.trim() || !form.password?.trim())) {
+        toast.error("Security setup required", {
+          description: "Please provide a temporary password.",
+        });
+        return false;
+      }
+    }
+    return true;
+  };
 
-    return baseRequired || !form.temp_pass.trim() || !form.password.trim();
-  }, [form, isEditMode]);
+  const nextStep = () => {
+    if (validateStep(activeStep)) {
+      setActiveStep((prev) => Math.min(prev + 1, 5));
+    }
+  };
 
-  const isBirthdateValid = useMemo(() => {
-    if (!form.birthdate) return true;
-    return !isNaN(form.birthdate.getTime());
-  }, [form.birthdate]);
-
-  const passwordsMatch = useMemo(() => {
-    if (!form.temp_pass && !form.password) return true;
-    return form.temp_pass === form.password;
-  }, [form.temp_pass, form.password]);
-
-  const passwordTouched = useMemo(() => {
-    return form.temp_pass.length > 0 || form.password.length > 0;
-  }, [form.temp_pass, form.password]);
-
-  const hasFormChanges = useMemo(() => {
-    if (!isEditMode || !initialLoadedForm) return true;
-
-    // FIX 4: Prevent calling .trim() on Date object which causes crashes
-    const normalize = (value: FormState) => ({
-      empID: value.empID.trim(),
-      username: value.username.trim(),
-      firstname: value.firstname.trim(),
-      middlename: value.middlename.trim(),
-      lastname: value.lastname.trim(),
-      suffix: value.suffix.trim(),
-      birthdate: value.birthdate ? format(value.birthdate, "yyyy-MM-dd") : "",
-      age: value.age.trim(),
-      sex: value.sex,
-      email: value.email.trim(),
-      phone: value.phone.trim(),
-      role_id: value.role_id.trim(),
-      department: value.department.trim(),
-      position: value.position.trim(),
-      status: value.status,
-    });
-
-    return (
-      JSON.stringify(normalize(form)) !==
-      JSON.stringify(normalize(initialLoadedForm))
-    );
-  }, [form, initialLoadedForm, isEditMode]);
+  const prevStep = () => {
+    setActiveStep((prev) => Math.max(prev - 1, 1));
+  };
 
   const handleSave = async () => {
-    setSuccessMessage(null);
-
-    if (isEditMode && isLoadingUser) {
-      toast("User data is still loading.");
-      return;
-    }
-
-    if (missingRequiredFields) {
-      toast.error("Required Field Error", {
-        description: "Please fill out all required fields.",
-      });
-      return;
-    }
-
-    if (empIDError) {
-      toast.error(empIDError);
-      return;
-    }
-
     if (Object.values(validationErrors).some((v) => v)) {
-      toast.error("Please fix validation errors before saving.");
-      return;
-    }
-
-    // REMOVED: Length, Uppercase, and Number restrictions.
-    // KEPT: Match check to ensure the user didn't make a typo.
-    if (!isEditMode && form.temp_pass !== form.password) {
-      toast.error("Password Error", {
-        description: "Temporary password and password must match.",
-      });
-      return;
-    }
-
-    if (isEditMode && passwordTouched) {
-      if (!form.temp_pass.trim() || !form.password.trim()) {
-        toast.error("Password Error", {
-          description:
-            "Enter both Temp Pass and Password to update credentials.",
-        });
-        return;
-      }
-
-      if (!passwordsMatch) {
-        toast.error("Password Error", {
-          description: "Temporary password and password must match.",
-        });
-        return;
-      }
-    }
-
-    if (isEditMode && !hasFormChanges) {
-      toast.error("No Changes Detected", {
-        description: "Update at least one field before saving.",
-      });
+      toast.error("Please fix all validation errors.");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const payload = isEditMode
         ? {
@@ -437,22 +370,20 @@ function CreateUserForm() {
               : null,
             age: form.age,
             sex: form.sex,
-            email: form.email,
-            phone: form.phone,
+            email: form.emails[0], // Using primary email
+            phone: form.phones[0], // Using primary phone
             role_id: Number(form.role_id),
             department: form.department,
             position: form.position,
             status: form.status,
-            // Only send credentials if user typed both fields (useful for edits)
-            ...(passwordTouched
-              ? {
-                  temp_pass: form.temp_pass,
-                  password: form.password,
-                }
+            ...(form.temp_pass
+              ? { temp_pass: form.temp_pass, password: form.password }
               : {}),
           }
         : {
             ...form,
+            email: form.emails[0],
+            phone: form.phones[0],
             birthdate: form.birthdate
               ? format(form.birthdate, "yyyy-MM-dd")
               : null,
@@ -468,599 +399,822 @@ function CreateUserForm() {
         },
       );
 
-      const data = (await response.json()) as {
-        error?: string;
-        message?: string;
-      };
-
-      if (!response.ok) {
-        toast.error("Failed to Save User", {
-          description:
-            data.error ?? `Failed to ${isEditMode ? "update" : "create"} user.`,
-        });
-        return;
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
 
       toast.success(
-        data.message ??
-          `User ${isEditMode ? "updated" : "created"} successfully.`,
+        isEditMode ? "User updated successfully" : "User created successfully",
       );
-
-      if (!isEditMode) setForm(initialFormState);
-
-      setTimeout(() => {
-        router.push("/user/view");
-      }, 1200);
-    } catch {
-      toast.error("Connection Error", {
-        description: "Unable to connect to server.",
-      });
+      router.push("/user/view");
+    } catch (error: any) {
+      toast.error("Save failed", { description: error.message });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const steps = [
+    { title: "Profile", icon: UserRound },
+    { title: "Contact", icon: Mail },
+    { title: "Placement", icon: Building2 },
+    { title: "Account", icon: Fingerprint },
+    { title: "Review", icon: CheckCircle2 },
+  ];
+
   return (
-    <div className="w-full">
-      <header>
-        <button
-          type="button"
-          onClick={() => router.push("/user")}
-          className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to User Management
-        </button>
+    <div className="mx-auto w-full animate-in fade-in duration-500">
+      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+            {isEditMode ? "Edit User Account" : "Enroll New Personnel"}
+          </h1>
+          <p className="font-inter mt-1 text-xs text-slate-400">
+            {isEditMode
+              ? "Update user credentials and operational placement."
+              : "Complete the phased enrollment to onboard a new team member."}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={() => router.push("/user")}
+            className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 cursor-pointer"
+          >
+            <Undo2 className="h-4 w-4" />
+            Back to User Management
+          </Button>
+          <Button
+            type="button"
+            onClick={() => router.push("/user/view")}
+            className="h-9 rounded-md border border-slate-200 bg-white px-4 text-xs font-semibold text-[#0F172A] shadow-sm transition-all hover:bg-slate-50 cursor-pointer"
+          >
+            <TableIcon className="h-4 w-4" />
+            View User Directory
+          </Button>
+        </div>
       </header>
 
-      {/* Sticky Action Buttons */}
+      <Stepper
+        value={activeStep}
+        onValueChange={setActiveStep}
+        orientation="horizontal"
+        className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col"
+      >
+        {/* Top Stepper Navigation */}
+        <header className="bg-slate-50/50 border-b border-gray-100 px-6 py-4">
+          <StepperNav className="flex items-center justify-between w-full max-w-5xl mx-auto">
+            {steps.map((s, idx) => {
+              const StepIcon = s.icon;
+              const stepNum = idx + 1;
+              const isCompleted = stepNum < activeStep;
+              const isActive = stepNum === activeStep;
 
-      {isEditMode && isLoadingUser && (
-        <div className="mb4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-          Loading selected user details...
-        </div>
-      )}
+              // Check if all previous steps are valid to allow skipping ahead
+              let isLocked = false;
+              if (stepNum > activeStep) {
+                for (let i = activeStep; i < stepNum; i++) {
+                  if (!checkStepValidity(i)) {
+                    isLocked = true;
+                    break;
+                  }
+                }
+              }
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <div className="flex mb-8 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-                {isEditMode ? "Edit User" : "Create New User"}
-              </h1>
-              <p className="font-inter mt-1 text-xs text-slate-400">
-                {isEditMode
-                  ? "Update user information, role access details, and account status."
-                  : "Add required user information and role access details."}
-              </p>
-            </div>
-          </div>
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-md bg-slate-100 p-2">
-                <UserRound className="h-5 w-5 text-[#00154A]" />
-              </div>
-              <h2 className="font-inter text-sm font-semibold text-[#848794]">
-                Personal Information
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <ValidatedInput
-                label="Emp ID"
-                required
-                value={form.empID}
-                maxLength={9}
-                validator="employee-Id"
-                type="employee-Id"
-                onChange={(v, isValid) => updateField("empID", v, isValid)}
-                errorMessage={empIDError}
-              />
-              <Field
-                label="Username"
-                required
-                value={form.username}
-                onChange={(v) => updateField("username", v)}
-              />
-              <ValidatedInput
-                label="First Name"
-                required
-                value={form.firstname}
-                validator="name"
-                type="name"
-                onChange={(v, isValid) => updateField("firstname", v, isValid)}
-              />
-              <ValidatedInput
-                label="Middle Name"
-                value={form.middlename}
-                validator="name"
-                type="name"
-                onChange={(v, isValid) => updateField("middlename", v, isValid)}
-              />
-              <ValidatedInput
-                label="Last Name"
-                required
-                value={form.lastname}
-                validator="name"
-                type="name"
-                onChange={(v, isValid) => updateField("lastname", v, isValid)}
-              />
-              <div>
-                <label className="font-inter text-xs font-medium text-slate-600">
-                  Suffix
-                </label>
-                <Combobox
-                  options={Suffix.map((s) => ({ value: s, label: s }))}
-                  value={form.suffix}
-                  onChange={(val) => updateField("suffix", val)}
-                  placeholder="Select suffix"
-                  searchPlaceholder="Search suffix..."
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="font-inter text-xs font-medium text-slate-600">
-                  Birthdate
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-1 w-full justify-start text-left font-normal cursor-pointer"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                      {form.birthdate ? (
-                        format(form.birthdate, "yyyy-MM-dd")
-                      ) : (
-                        <span className="text-slate-400">Pick a date</span>
+              return (
+                <StepperItem key={stepNum} step={stepNum} className="flex-1">
+                  <StepperTrigger
+                    onClick={(e) => {
+                      if (isLocked) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toast.error(`Step ${stepNum} is locked`, {
+                          description: `Please complete the ${steps[activeStep - 1].title} section first.`,
+                        });
+                      } else {
+                        setActiveStep(stepNum);
+                      }
+                    }}
+                    className={cn(
+                      "group flex flex-col items-center gap-2 p-1.5 rounded-xl transition-all data-[state=active]:bg-white data-[state=active]:shadow-xs data-[state=active]:ring-1 data-[state=active]:ring-slate-200",
+                      isLocked && "opacity-40 cursor-not-allowed",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "size-8 rounded-full flex items-center justify-center transition-all duration-500 ring-2 ring-white border border-slate-100 shadow-sm",
+                        isCompleted
+                          ? "bg-emerald-500 text-white animate-step-pop"
+                          : isActive
+                            ? "bg-[#0F172A] text-white"
+                            : "bg-slate-50 text-slate-400 group-hover:bg-slate-100",
                       )}
-                    </Button>
-                  </PopoverTrigger>
+                    >
+                      {isCompleted ? (
+                        <CheckCircle2 size={16} />
+                      ) : (
+                        <StepIcon size={16} />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                      <span
+                        className={cn(
+                          "font-inter text-[10px] font-bold uppercase tracking-wider",
+                          isActive ? "text-[#0F172A]" : "text-slate-400",
+                        )}
+                      >
+                        {s.title}
+                      </span>
+                    </div>
+                  </StepperTrigger>
+                  {stepNum < steps.length && (
+                    <StepperSeparator className="flex-1 mx-3 bg-slate-200/50 h-[1.5px]" />
+                  )}
+                </StepperItem>
+              );
+            })}
+          </StepperNav>
+        </header>
 
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      disabled={(date) => date > new Date()}
-                      mode="single"
-                      selected={form.birthdate}
-                      onSelect={(date) => updateField("birthdate", date)}
-                      captionLayout="dropdown"
-                      fromYear={1950}
-                      toYear={new Date().getFullYear()}
-                      initialFocus
-                      className="rounded-lg border bg-white"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* FIX 6: Removed duplicate age/birthdate field and set Age to readOnly */}
-              <Field
-                label="Age"
-                required
-                readOnly
-                value={form.age}
-                onChange={(v) => updateField("age", v)}
-              />
-
-              <div>
-                <label className="font-inter text-xs font-medium text-slate-600">
-                  Sex
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <div className="mt-1 flex gap-2">
-                  <BooleanChip
-                    label="Male"
-                    checked={form.sex}
-                    onClick={() => updateField("sex", true)}
-                    className="cursor-pointer"
-                  />
-                  <BooleanChip
-                    label="Female"
-                    checked={!form.sex}
-                    onClick={() => updateField("sex", false)}
-                    className="cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-md bg-slate-100 p-2">
-                <Mail className="h-5 w-5 text-[#00154A]" />
-              </div>
-              <h2 className="font-inter text-sm font-semibold text-[#848794]">
-                Contact & Work Details
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <ValidatedInput
-                label="Email"
-                type="email"
-                placeholder="name@example.com"
-                required
-                value={form.email}
-                leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
-                onChange={(v, isValid) => updateField("email", v, isValid)}
-              />
-              <ValidatedInput
-                label="Phone"
-                type="phone"
-                placeholder="917 123 4567"
-                required
-                value={form.phone}
-                leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
-                onChange={(v, isValid) => updateField("phone", v, isValid)}
-              />
-              {/* Role Combobox */}
-              <div>
-                <label className="font-inter text-xs font-medium text-slate-600">
-                  <span className="inline-flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-slate-400" />
-                    Role
-                  </span>
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <Combobox
-                    options={roles.map((role) => ({
-                      value: String(role.id),
-                      label: role.name,
-                    }))}
-                    value={form.role_id}
-                    onChange={(val) => updateField("role_id", val)}
-                    placeholder={
-                      isLoadingRoles ? "Loading..." : "Select a role"
+        {/* Main Content Area */}
+        <main className="flex-1 p-5 bg-white">
+          <StepperPanel>
+            {/* STEP 1: Personal Details */}
+            <StepperContent
+              value={1}
+              className="animate-in fade-in slide-in-from-right-4 duration-300"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {/* Left Column: Name Field */}
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <UserRound className="size-4 text-slate-400" />
+                    <h3 className="font-bold text-slate-700 font-lexend">
+                      Legal Identity
+                    </h3>
+                  </div>
+                  <ValidatedInput
+                    label="First Name"
+                    required
+                    value={form.firstname}
+                    validator="name"
+                    type="name"
+                    onChange={(v, isValid) =>
+                      updateField("firstname", v, isValid)
                     }
-                    searchPlaceholder="Search role..."
                   />
+                  <ValidatedInput
+                    label="Middle Name"
+                    value={form.middlename}
+                    validator="name"
+                    type="name"
+                    onChange={(v, isValid) =>
+                      updateField("middlename", v, isValid)
+                    }
+                  />
+                  <ValidatedInput
+                    label="Last Name"
+                    required
+                    value={form.lastname}
+                    validator="name"
+                    type="name"
+                    onChange={(v, isValid) =>
+                      updateField("lastname", v, isValid)
+                    }
+                  />
+                  <div className="space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                      Suffix
+                    </label>
+                    <Combobox
+                      options={Suffix.map((s) => ({ value: s, label: s }))}
+                      value={form.suffix}
+                      onChange={(val) => updateField("suffix", val)}
+                      placeholder="Select suffix"
+                      className="mt-1 h-9 rounded-md"
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column: Bday Field */}
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CalendarIcon className="size-4 text-slate-400" />
+                    <h3 className="font-bold text-slate-700 font-lexend">
+                      Demographics
+                    </h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                      Birthdate <span className="text-rose-500">*</span>
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="flex h-9 w-full justify-start rounded-md border-slate-200 bg-white px-3 font-medium text-slate-700 hover:border-slate-300 transition-all cursor-pointer"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+                          {form.birthdate ? (
+                            format(form.birthdate, "yyyy-MM-dd")
+                          ) : (
+                            <span className="text-slate-400 text-xs">
+                              Select Date
+                            </span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto p-0 border border-gray-100 shadow-xl"
+                        align="start"
+                      >
+                        <Calendar
+                          disabled={(date) => date > new Date()}
+                          mode="single"
+                          selected={form.birthdate}
+                          onSelect={(date) => updateField("birthdate", date)}
+                          captionLayout="dropdown"
+                          fromYear={1950}
+                          toYear={new Date().getFullYear()}
+                          initialFocus
+                          className="bg-white"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-400 ml-1">
+                      Calculated Age
+                    </label>
+                    <input
+                      type="text"
+                      value={form.age ? `${form.age} Years Old` : ""}
+                      readOnly
+                      className="h-9 w-full rounded-md border border-gray-100 bg-slate-50 px-3 text-sm text-slate-400 cursor-not-allowed outline-none font-medium"
+                      placeholder="Automatic"
+                    />
+                  </div>
+
+                  <div className="pt-2 space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                      Sex <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex h-9 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
+                      <button
+                        onClick={() => updateField("sex", true)}
+                        className={cn(
+                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
+                          form.sex
+                            ? "bg-white text-[#0F172A] shadow-sm border border-gray-100"
+                            : "text-slate-400",
+                        )}
+                      >
+                        Male
+                      </button>
+                      <button
+                        onClick={() => updateField("sex", false)}
+                        className={cn(
+                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
+                          !form.sex
+                            ? "bg-white text-[#0F172A] shadow-sm border border-gray-100"
+                            : "text-slate-400",
+                        )}
+                      >
+                        Female
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <Field
-                label="Department"
-                required
-                value={form.department}
-                leftIcon={<Building2 className="h-4 w-4 text-slate-400" />}
-                onChange={(v) => updateField("department", v)}
-              />
-              <Field
-                label="Position"
-                required
-                value={form.position}
-                onChange={(v) => updateField("position", v)}
-              />
 
+              <footer className="pt-10 flex justify-end">
+                <Button
+                  onClick={nextStep}
+                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100"
+                >
+                  Email Details <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </footer>
+            </StepperContent>
+
+            {/* STEP 2: Contact Details */}
+            <StepperContent
+              value={2}
+              className="animate-in fade-in slide-in-from-right-4 duration-300"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Mail className="size-4 text-slate-400" />
+                      <h3 className="font-bold text-slate-700 font-lexend">
+                        Email Addresses
+                      </h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          emails: [...prev.emails, ""],
+                        }))
+                      }
+                      className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A]"
+                    >
+                      + Add Email
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {form.emails.map((email, idx) => (
+                      <div key={idx} className="flex gap-2 items-start">
+                        <div className="flex-1">
+                          <ValidatedInput
+                            label={
+                              idx === 0 ? "Primary Email" : `Email ${idx + 1}`
+                            }
+                            type="email"
+                            required={idx === 0}
+                            value={email}
+                            onChange={(v, isValid) => {
+                              const newEmails = [...form.emails];
+                              newEmails[idx] = v;
+                              updateField("emails", newEmails);
+                            }}
+                          />
+                        </div>
+                        {idx > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newEmails = form.emails.filter(
+                                (_, i) => i !== idx,
+                              );
+                              updateField("emails", newEmails);
+                            }}
+                            className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Phone className="size-4 text-slate-400" />
+                      <h3 className="font-bold text-slate-700 font-lexend">
+                        Phone Channels
+                      </h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          phones: [...prev.phones, ""],
+                        }))
+                      }
+                      className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A]"
+                    >
+                      + Add Number
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {form.phones.map((phone, idx) => (
+                      <div key={idx} className="flex gap-2 items-start">
+                        <div className="flex-1">
+                          <ValidatedInput
+                            label={
+                              idx === 0 ? "Primary Phone" : `Mobile ${idx + 1}`
+                            }
+                            type="phone"
+                            required={idx === 0}
+                            value={phone}
+                            onChange={(v, isValid) => {
+                              const newPhones = [...form.phones];
+                              newPhones[idx] = v;
+                              updateField("phones", newPhones);
+                            }}
+                          />
+                        </div>
+                        {idx > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newPhones = form.phones.filter(
+                                (_, i) => i !== idx,
+                              );
+                              updateField("phones", newPhones);
+                            }}
+                            className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <footer className="pt-10 flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Profile
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100"
+                >
+                  Placement Details <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </footer>
+            </StepperContent>
+
+            {/* STEP 3: Organizational Placement */}
+            <StepperContent
+              value={3}
+              className="animate-in fade-in slide-in-from-right-4 duration-300"
+            >
+              <div className="max-w-2xl mx-auto space-y-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <Building2 className="size-5 text-slate-400" />
+                  <h3 className="font-bold text-lg text-slate-700 font-lexend">
+                    Organizational Placement
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                      Assigned Role <span className="text-rose-500">*</span>
+                    </label>
+                    <Combobox
+                      options={roles.map((role) => ({
+                        value: String(role.id),
+                        label: role.name,
+                      }))}
+                      value={form.role_id}
+                      onChange={(val) => updateField("role_id", val)}
+                      placeholder={
+                        isLoadingRoles ? "Loading..." : "Select Position"
+                      }
+                      className="mt-1 h-10 rounded-md"
+                    />
+                  </div>
+                  <ValidatedInput
+                    label="Department"
+                    required
+                    type="text"
+                    value={form.department}
+                    onChange={(v) => updateField("department", v)}
+                  />
+                  <ValidatedInput
+                    label="Position Title"
+                    required
+                    type="text"
+                    value={form.position}
+                    onChange={(v) => updateField("position", v)}
+                  />
+
+                  <div className="space-y-2">
+                    <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                      Account Eligibility{" "}
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex h-10 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
+                      <button
+                        onClick={() => updateField("status", true)}
+                        className={cn(
+                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
+                          form.status
+                            ? "bg-white text-emerald-600 shadow-sm border border-emerald-100 font-black"
+                            : "text-slate-400",
+                        )}
+                      >
+                        Active Access
+                      </button>
+                      <button
+                        onClick={() => updateField("status", false)}
+                        className={cn(
+                          "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
+                          !form.status
+                            ? "bg-white text-rose-600 shadow-sm border border-rose-100 font-black"
+                            : "text-slate-400",
+                        )}
+                      >
+                        Suspended
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <footer className="pt-10 flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50"
+                  type="button"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Contact
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100"
+                  type="button"
+                >
+                  Account Setup <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </footer>
+            </StepperContent>
+
+            {/* STEP 4: Account Setup */}
+            <StepperContent
+              value={4}
+              className="animate-in fade-in slide-in-from-right-4 duration-300"
+            >
               <div>
-                <label className="font-inter text-xs font-medium text-slate-600">
-                  Status
-                  <span className="ml-1 text-rose-500">*</span>
-                </label>
-                <div className="mt-1 flex gap-2">
-                  <BooleanChip
-                    label="Active"
-                    checked={form.status}
-                    onClick={() => updateField("status", true)}
-                    className="cursor-pointer"
+                <h3 className="font-lexend text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">
+                  Account Authentication
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <ValidatedInput
+                    label="Employee ID"
+                    required
+                    type="employee-Id"
+                    maxLength={9}
+                    value={form.empID}
+                    onChange={(v) => updateField("empID", v)}
+                    readOnly={isEditMode}
+                    errorMessage={empIDError}
+                    inputClassName={isEditMode ? "bg-slate-50" : ""}
                   />
-                  <BooleanChip
-                    label="Inactive"
-                    checked={!form.status}
-                    onClick={() => updateField("status", false)}
-                    className="cursor-pointer"
+                  <ValidatedInput
+                    label="System Username"
+                    required
+                    type="text"
+                    value={form.username}
+                    onChange={(v) => updateField("username", v)}
                   />
                 </div>
               </div>
-            </div>
-          </section>
 
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-md bg-slate-100 p-2">
-                <KeyRound className="h-5 w-5 text-[#00154A]" />
+              <div className="pt-8 border-t border-gray-100">
+                <h3 className="font-lexend text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-6">
+                  Security Setup
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="relative">
+                    <ValidatedInput
+                      label="Temporary Password"
+                      required={!isEditMode}
+                      type="text"
+                      value={form.temp_pass}
+                      onChange={(v) => updateField("temp_pass", v)}
+                      placeholder={
+                        isEditMode ? "Leave blank to keep current" : ""
+                      }
+                      inputClassName={!showTempPassword ? "password-disc" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTempPassword(!showTempPassword)}
+                      className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer"
+                    >
+                      {showTempPassword ? (
+                        <EyeOff size={14} />
+                      ) : (
+                        <Eye size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <ValidatedInput
+                      label="Confirm Password"
+                      required={!isEditMode}
+                      type="text"
+                      value={form.password}
+                      onChange={(v) => updateField("password", v)}
+                      errorMessage={
+                        form.password && form.password !== form.temp_pass
+                          ? "Passwords do not match"
+                          : null
+                      }
+                      inputClassName={!showPassword ? "password-disc" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
               </div>
-              <h2 className="font-inter text-sm font-semibold text-[#848794]">
-                Security
-              </h2>
-            </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <PasswordField
-                label="Temp Pass"
-                required
-                value={form.temp_pass}
-                show={showTempPassword}
-                onToggle={() => setShowTempPassword((v) => !v)}
-                onChange={(v) => updateField("temp_pass", v)}
-              />
-              <PasswordField
-                label="Password"
-                required
-                value={form.password}
-                show={showPassword}
-                onToggle={() => setShowPassword((v) => !v)}
-                onChange={(v) => updateField("password", v)}
-                error={passwordTouched && !passwordsMatch}
-                errorMessage="Passwords do not match"
-              />
-            </div>
-          </section>
-        </div>
+              <footer className="pt-10 flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50"
+                  type="button"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Placement
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  className="h-10 px-8 rounded-md bg-[#0F172A] font-bold text-xs shadow-md shadow-slate-200 transition-all hover:bg-slate-800"
+                  type="button"
+                >
+                  Proceed to Review <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </footer>
+            </StepperContent>
 
-        <div className="space-y-6 lg:sticky lg:top-8 lg:self-start flex flex-col-reverse lg:flex-col">
-          <div className="sticky top-0 z-40 mb-6 flex justify-end py-1.5 w-full px-4 md:px-0">
-            {/* mt-20 is the "Small Screen" version. md:mt-0 is the "Big Screen" fix. */}
-            <div className="flex w-full items-center gap-2 mb-2 mt-4 md:mt-0 md:w-auto">
-              <Link
-                href="/user"
-                className="flex-1 justify-center md:flex-none font-inter inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-gray-50"
-              >
-                Cancel
-              </Link>
+            {/* STEP 5: Review */}
+            <StepperContent
+              value={5}
+              className="animate-in zoom-in-95 duration-500"
+            >
+              <div className="flex flex-col gap-6">
+                <div className="p-6 border border-emerald-100 bg-emerald-50/20 rounded-xl flex items-center gap-4">
+                  <div className="size-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-lexend text-sm font-bold text-emerald-900">
+                      Application Ready
+                    </h4>
+                    <p className="text-[11px] text-emerald-700/70 font-medium">
+                      Please verify the enrollment summary below before system
+                      commit.
+                    </p>
+                  </div>
+                </div>
 
-              <button
-                type="button"
-                disabled={
-                  isSubmitting ||
-                  isLoadingUser ||
-                  !!empIDError ||
-                  checkingEmpID ||
-                  Object.values(validationErrors).some((v) => v)
-                }
-                className="flex-1 justify-center md:flex-none font-inter h-10 inline-flex cursor-pointer items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-[#8A9098] transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={handleSave}
-              >
-                {isEditMode ? (
-                  <FilePenLine className="h-4 w-4" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                <span className="whitespace-nowrap">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <SummaryCard
+                    title="Identity"
+                    items={[
+                      { label: "Emp ID", value: form.empID, icon: Fingerprint },
+                      {
+                        label: "Full Name",
+                        value: `${form.firstname} ${form.lastname} ${form.suffix}`,
+                        icon: UserRound,
+                      },
+                    ]}
+                  />
+                  <SummaryCard
+                    title="Operational"
+                    items={[
+                      {
+                        label: "Role",
+                        value:
+                          roles.find((r) => String(r.id) === form.role_id)
+                            ?.name || "Unselected",
+                        icon: Shield,
+                      },
+                      {
+                        label: "Placement",
+                        value: `${form.department} (${form.position})`,
+                        icon: Building2,
+                      },
+                    ]}
+                  />
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">
+                    Access Channel
+                  </h5>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Mail className="size-3 text-slate-400" />
+                      <span className="text-xs font-medium text-slate-600">
+                        {form.emails[0] || "No Email Provided"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="size-3 text-slate-400" />
+                      <span className="text-xs font-medium text-slate-600">
+                        {form.phones[0] || "No Phone Provided"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <footer className="pt-10 flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  disabled={isSubmitting}
+                  className="h-10 flex-1 rounded-md font-bold text-xs text-slate-500 border border-slate-200 bg-white hover:bg-slate-50"
+                >
+                  Back to Edit
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSubmitting}
+                  className="h-10 flex-[2] rounded-md bg-[#0F172A] font-bold text-xs shadow-lg shadow-slate-100 transition-all hover:bg-slate-800"
+                >
                   {isSubmitting
-                    ? isEditMode
-                      ? "Updating..."
-                      : "Saving..."
+                    ? "Committing Enrollment..."
                     : isEditMode
-                      ? "Update User"
-                      : "Save User"}
+                      ? "Save Changes"
+                      : "Confirm & Enroll Personnel"}
+                </Button>
+              </footer>
+            </StepperContent>
+          </StepperPanel>
+        </main>
+      </Stepper>
+
+      <style jsx global>{`
+        .password-disc {
+          -webkit-text-security: disc !important;
+        }
+        @keyframes stepPop {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.15);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        .animate-step-pop {
+          animation: stepPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; value: string; icon: any }[];
+}) {
+  return (
+    <div className="p-5 border border-slate-100 rounded-xl bg-slate-50/30">
+      <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">
+        {title}
+      </h5>
+      <div className="space-y-4">
+        {items.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <div key={i} className="flex items-center gap-3">
+              <div className="p-1.5 bg-white rounded-md border border-slate-100 text-[#0F172A] shadow-xs">
+                <Icon size={14} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">
+                  {item.label}
                 </span>
-              </button>
+                <span className="text-xs font-bold text-slate-800 truncate max-w-[150px]">
+                  {item.value}
+                </span>
+              </div>
             </div>
-          </div>
-
-          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="font-inter text-sm font-semibold text-[#848794]">
-              Summary
-            </h2>
-            <p className="font-inter mt-1 text-xs text-slate-400">
-              {isEditMode
-                ? "Required fields must be complete. Birthdate format: yyyy-mm-dd."
-                : "All listed fields are required. Birthdate format: yyyy-mm-dd."}
-            </p>
-
-            <div className="mt-4 space-y-3 text-sm">
-              <SummaryRow
-                label="Name"
-                value={
-                  [form.firstname, form.lastname].filter(Boolean).join(" ") ||
-                  "(Required)"
-                }
-              />
-              <SummaryRow label="Emp ID" value={form.empID || "(Required)"} />
-              <SummaryRow
-                label="Username"
-                value={form.username || "(Required)"}
-              />
-
-              {/* FIX 8: Display the dynamic role name instead of the ID */}
-              <SummaryRow
-                label="Role"
-                value={
-                  roles.find((r) => String(r.id) === form.role_id)?.name ||
-                  "(Required)"
-                }
-              />
-
-              <SummaryRow
-                label="Status"
-                value={form.status ? "Active" : "Inactive"}
-              />
-            </div>
-
-            {(missingRequiredFields || !isBirthdateValid) && (
-              <p className="font-inter mt-4 text-xs text-rose-600">
-                {isEditMode && !hasFormChanges
-                  ? "No changes detected yet. Update at least one field before saving."
-                  : "Complete all required fields and use valid birthdate format."}
-              </p>
-            )}
-          </section>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ----------------------------------------------------
-// HELPER COMPONENTS
-// ----------------------------------------------------
-
-function Field({
-  label,
-  type = "text",
-  placeholder,
-  leftIcon,
-  inputType = "text",
-  value,
-  onChange,
-  required = false,
-  readOnly = false,
-}: {
-  label: string;
-  type?: "text" | "email" | "tel";
-  placeholder?: string;
-  leftIcon?: React.ReactNode;
-  inputType?: "text" | "date" | "email" | "tel";
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-  readOnly?: boolean;
-}) {
-  return (
-    <div>
-      <label className="font-inter text-xs font-medium text-slate-600">
-        {label}
-        {required && <span className="ml-1 text-rose-500">*</span>}
-      </label>
-      <div
-        className={`mt-1 flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 ${readOnly ? "bg-gray-50 opacity-80" : "bg-white focus-within:ring-2 focus-within:ring-slate-200"}`}
-      >
-        {leftIcon}
-        <input
-          value={value}
-          readOnly={readOnly}
-          onChange={(event) => onChange(event.target.value)}
-          className={`w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 ${
-            inputType === "date" ? "cursor-pointer" : ""
-          } ${readOnly ? "cursor-not-allowed text-slate-500" : ""}`}
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
-  );
-}
-
-function PasswordField({
-  label,
-  show,
-  onToggle,
-  value,
-  onChange,
-  required = false,
-  error = false,
-  errorMessage = "",
-}: {
-  label: string;
-  show: boolean;
-  onToggle: () => void;
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-  error?: boolean;
-  errorMessage?: string;
-}) {
-  return (
-    <div>
-      <label className="font-inter text-xs font-medium text-slate-600">
-        {label}
-        {required && <span className="ml-1 text-rose-500">*</span>}
-      </label>
-      <div
-        className={`mt-1 flex items-center gap-2 rounded-md border bg-white px-3 py-2 focus-within:ring-2 ${
-          error
-            ? "border-rose-400 focus-within:ring-rose-200"
-            : "border-gray-200 focus-within:ring-slate-200"
-        }`}
-      >
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          type={show ? "text" : "password"}
-          className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="rounded p-1 text-slate-500 hover:bg-gray-50 hover:text-slate-900"
-          aria-label="Toggle password visibility"
-        >
-          {show ? (
-            <EyeOff className="h-4 w-4 cursor-pointer" />
-          ) : (
-            <Eye className="h-4 w-4 cursor-pointer" />
-          )}
-        </button>
-      </div>
-      {error && errorMessage && (
-        <p className="mt-1 font-inter text-xs text-rose-500" role="alert">
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function BooleanChip({
-  label,
-  checked,
-  onClick,
-  className,
-}: {
-  label: string;
-  checked: boolean;
-  onClick: () => void;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`font-inter rounded-md border px-3 py-2 text-xs transition ${
-        checked
-          ? "border-blue-200 bg-blue-50 text-blue-700"
-          : "border-gray-200 bg-white text-slate-600 hover:bg-gray-50"
-      } ${className || ""}`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function RoleRadio({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label className="font-inter inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-xs text-slate-700 hover:bg-gray-50">
-      <input
-        type="radio"
-        name="role"
-        checked={checked}
-        onChange={onChange}
-        className="h-4 w-4"
-      />
-      {label}
-    </label>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="font-inter text-slate-500">{label}</span>
-      <span
-        className="font-inter font-medium text-slate-900 truncate max-w-150px"
-        title={value}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-export default function CreateUserPage() {
+export default function UserCreatePage() {
   return (
     <Suspense
-      fallback={<div className="p-10 text-slate-500">Loading form...</div>}
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-slate-50 font-inter">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#0F172A] border-t-transparent" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Loading Module
+            </span>
+          </div>
+        </div>
+      }
     >
       <CreateUserForm />
     </Suspense>
