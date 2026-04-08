@@ -5,13 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   UserRound,
   Mail,
   Phone,
   Building2,
   Shield,
-  KeyRound,
   Eye,
   EyeOff,
   CalendarIcon,
@@ -22,6 +20,8 @@ import {
   Trash2,
   Table as TableIcon,
   Undo2,
+  Mars,
+  Venus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -479,7 +479,10 @@ function CreateUserForm() {
                 <StepperItem
                   key={stepNum}
                   step={stepNum}
-                  className={cn("flex items-center", stepNum < steps.length ? "flex-1" : "flex-none")}
+                  className={cn(
+                    "flex items-center",
+                    stepNum < steps.length ? "flex-1" : "flex-none",
+                  )}
                 >
                   <StepperTrigger
                     onClick={(e) => {
@@ -544,50 +547,161 @@ function CreateUserForm() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     <UserRound className="size-4 text-slate-400" />
-                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Legal Identity</h3>
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">
+                      Legal Identity
+                    </h3>
                   </div>
-                  <ValidatedInput label="First Name" required value={form.firstname} validator="name" type="name" onChange={(v, isValid) => updateField("firstname", v, isValid)} />
-                  <ValidatedInput label="Middle Name" value={form.middlename} validator="name" type="name" onChange={(v, isValid) => updateField("middlename", v, isValid)} />
-                  <ValidatedInput label="Last Name" required value={form.lastname} validator="name" type="name" onChange={(v, isValid) => updateField("lastname", v, isValid)} />
+                  <ValidatedInput
+                    label="First Name"
+                    required
+                    value={form.firstname}
+                    validator="name"
+                    type="name"
+                    onChange={(v, isValid) =>
+                      updateField("firstname", v, isValid)
+                    }
+                  />
+                  <ValidatedInput
+                    label="Middle Name"
+                    value={form.middlename}
+                    validator="name"
+                    type="name"
+                    onChange={(v, isValid) =>
+                      updateField("middlename", v, isValid)
+                    }
+                  />
+                  <ValidatedInput
+                    label="Last Name"
+                    required
+                    value={form.lastname}
+                    validator="name"
+                    type="name"
+                    onChange={(v, isValid) =>
+                      updateField("lastname", v, isValid)
+                    }
+                  />
                   <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">Suffix</label>
-                    <Combobox options={Suffix.map((s) => ({ value: s, label: s }))} value={form.suffix} onChange={(val) => updateField("suffix", val)} placeholder="Select suffix" className="mt-1 h-9 rounded-md border-gray-200" />
+                    <label className="font-inter text-xs font-medium text-slate-600">
+                      Suffix
+                    </label>
+                    <Combobox
+                      options={Suffix.map((s) => ({ value: s, label: s }))}
+                      value={form.suffix}
+                      onChange={(val) => updateField("suffix", val)}
+                      placeholder="Select suffix"
+                      className="mt-1 h-9 rounded-md border-gray-200"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     <CalendarIcon className="size-4 text-slate-400" />
-                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Demographics</h3>
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">
+                      Demographics
+                    </h3>
                   </div>
                   <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">Birthdate <span className="text-rose-500">*</span></label>
+                    <label className="font-inter text-xs font-medium text-slate-600">
+                      Birthdate <span className="text-rose-500">*</span>
+                    </label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="flex h-9 w-full justify-start rounded-md border-slate-200 bg-white px-3 font-medium text-slate-700 hover:border-slate-300 transition-all cursor-pointer mt-1">
+                        <Button
+                          variant="outline"
+                          className="flex h-9 w-full justify-start rounded-md border-slate-200 bg-white px-3 font-medium text-slate-700 hover:border-slate-300 transition-all cursor-pointer mt-1"
+                        >
                           <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                          {form.birthdate ? format(form.birthdate, "yyyy-MM-dd") : <span className="text-slate-400 text-xs">Select Date</span>}
+                          {form.birthdate ? (
+                            format(form.birthdate, "yyyy-MM-dd")
+                          ) : (
+                            <span className="text-slate-400 text-xs">
+                              Select Date
+                            </span>
+                          )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 border border-gray-100 shadow-xl" align="start">
-                        <Calendar disabled={(date) => date > new Date()} mode="single" selected={form.birthdate} onSelect={(date) => updateField("birthdate", date)} captionLayout="dropdown" fromYear={1950} toYear={new Date().getFullYear()} initialFocus className="bg-white" />
+                      <PopoverContent
+                        className="w-auto p-0 border border-gray-100 shadow-xl"
+                        align="start"
+                      >
+                        <Calendar
+                          disabled={(date) => date > new Date()}
+                          mode="single"
+                          selected={form.birthdate}
+                          onSelect={(date) => updateField("birthdate", date)}
+                          captionLayout="dropdown"
+                          fromYear={1950}
+                          toYear={new Date().getFullYear()}
+                          initialFocus
+                          className="bg-white"
+                        />
                       </PopoverContent>
                     </Popover>
                   </div>
                   <div className="space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-400">Calculated Age</label>
-                    <input type="text" value={form.age ? `${form.age} Years Old` : ""} readOnly className="mt-1 h-9 w-full rounded-md border border-gray-100 bg-slate-50 px-3 text-sm text-slate-400 cursor-not-allowed outline-none font-medium" placeholder="Automatic" />
+                    <label className="font-inter text-xs font-medium text-slate-400">
+                      Calculated Age
+                    </label>
+                    <input
+                      type="text"
+                      value={form.age ? `${form.age} Years Old` : ""}
+                      readOnly
+                      className="mt-1 h-9 w-full rounded-md border border-gray-100 bg-slate-50 px-3 text-sm text-slate-400 cursor-not-allowed outline-none font-medium"
+                      placeholder="Automatic"
+                    />
                   </div>
                   <div className="pt-1 space-y-2">
-                    <label className="font-inter text-xs font-medium text-slate-600">Sex <span className="text-rose-500">*</span></label>
-                    <div className="flex h-9 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
-                      <button onClick={() => updateField("sex", true)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", form.sex ? "bg-white text-[#0F172A] shadow-sm border border-gray-100" : "text-slate-400")}>Male</button>
-                      <button onClick={() => updateField("sex", false)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", !form.sex ? "bg-white text-[#0F172A] shadow-sm border border-gray-100" : "text-slate-400")}>Female</button>
+                    <label className="font-inter text-xs font-medium text-slate-600">
+                      Sex <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex h-10 gap-2 p-1 bg-slate-50/50 rounded-lg border border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => updateField("sex", true)}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 cursor-pointer rounded-md text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
+                          form.sex
+                            ? "bg-white text-blue-600 border border-blue-100 scale-[1.02]"
+                            : "text-slate-400 hover:text-slate-500",
+                        )}
+                      >
+                        <Mars
+                          size={14}
+                          className={cn(
+                            "transition-transform duration-300",
+                            form.sex && "scale-110",
+                          )}
+                        />
+                        Male
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateField("sex", false)}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 cursor-pointer rounded-md text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
+                          !form.sex
+                            ? "bg-white text-pink-600 border border-pink-100 scale-[1.02]"
+                            : "text-slate-400 hover:text-slate-500",
+                        )}
+                      >
+                        <Venus
+                          size={14}
+                          className={cn(
+                            "transition-transform duration-300",
+                            !form.sex && "scale-110",
+                          )}
+                        />
+                        Female
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
               <footer className="pt-8 flex justify-end">
-                <Button onClick={nextStep} className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer">
+                <Button
+                  onClick={nextStep}
+                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer"
+                >
                   Contact Details <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </footer>
@@ -603,17 +717,57 @@ function CreateUserForm() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Mail className="size-4 text-slate-400" />
-                      <h3 className="font-bold text-slate-700 font-lexend text-sm">Email Addresses</h3>
+                      <h3 className="font-bold text-slate-700 font-lexend text-sm">
+                        Email Addresses
+                      </h3>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setForm((prev) => ({ ...prev, emails: [...prev.emails, ""] }))} className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A] cursor-pointer">+ Add Email</Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          emails: [...prev.emails, ""],
+                        }))
+                      }
+                      className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A] cursor-pointer"
+                    >
+                      + Add Email
+                    </Button>
                   </div>
                   <div className="space-y-4">
                     {form.emails.map((email, idx) => (
                       <div key={idx} className="flex gap-2 items-start">
                         <div className="flex-1">
-                          <ValidatedInput label={idx === 0 ? "Primary Email" : `Email ${idx + 1}`} type="email" required={idx === 0} value={email} onChange={(v, isValid) => { const newEmails = [...form.emails]; newEmails[idx] = v; updateField("emails", newEmails); }} />
+                          <ValidatedInput
+                            label={
+                              idx === 0 ? "Primary Email" : `Email ${idx + 1}`
+                            }
+                            type="email"
+                            required={idx === 0}
+                            value={email}
+                            onChange={(v, isValid) => {
+                              const newEmails = [...form.emails];
+                              newEmails[idx] = v;
+                              updateField("emails", newEmails);
+                            }}
+                          />
                         </div>
-                        {idx > 0 && (<Button variant="ghost" size="icon" onClick={() => { updateField("emails", form.emails.filter((_, i) => i !== idx)); }} className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"><Trash2 size={14} /></Button>)}
+                        {idx > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              updateField(
+                                "emails",
+                                form.emails.filter((_, i) => i !== idx),
+                              );
+                            }}
+                            className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -622,25 +776,76 @@ function CreateUserForm() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Phone className="size-4 text-slate-400" />
-                      <h3 className="font-bold text-slate-700 font-lexend text-sm">Phone Channels</h3>
+                      <h3 className="font-bold text-slate-700 font-lexend text-sm">
+                        Phone Channels
+                      </h3>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setForm((prev) => ({ ...prev, phones: [...prev.phones, ""] }))} className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A] cursor-pointer">+ Add Number</Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          phones: [...prev.phones, ""],
+                        }))
+                      }
+                      className="h-8 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-[#0F172A] cursor-pointer"
+                    >
+                      + Add Number
+                    </Button>
                   </div>
                   <div className="space-y-4">
                     {form.phones.map((phone, idx) => (
                       <div key={idx} className="flex gap-2 items-start">
                         <div className="flex-1">
-                          <ValidatedInput label={idx === 0 ? "Primary Phone" : `Mobile ${idx + 1}`} type="phone" required={idx === 0} value={phone} onChange={(v, isValid) => { const newPhones = [...form.phones]; newPhones[idx] = v; updateField("phones", newPhones); }} />
+                          <ValidatedInput
+                            label={
+                              idx === 0 ? "Primary Phone" : `Mobile ${idx + 1}`
+                            }
+                            type="phone"
+                            required={idx === 0}
+                            value={phone}
+                            onChange={(v, isValid) => {
+                              const newPhones = [...form.phones];
+                              newPhones[idx] = v;
+                              updateField("phones", newPhones);
+                            }}
+                          />
                         </div>
-                        {idx > 0 && (<Button variant="ghost" size="icon" onClick={() => { updateField("phones", form.phones.filter((_, i) => i !== idx)); }} className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"><Trash2 size={14} /></Button>)}
+                        {idx > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              updateField(
+                                "phones",
+                                form.phones.filter((_, i) => i !== idx),
+                              );
+                            }}
+                            className="mt-8 size-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
               <footer className="pt-8 flex items-center justify-between">
-                <Button variant="ghost" onClick={prevStep} className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Profile</Button>
-                <Button onClick={nextStep} className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer">Placement Details <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Profile
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer"
+                >
+                  Placement Details <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
               </footer>
             </StepperContent>
 
@@ -651,22 +856,82 @@ function CreateUserForm() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="font-inter text-xs font-medium text-slate-600 ml-1">Assigned Role <span className="text-rose-500">*</span></label>
-                  <Combobox options={roles.map((role) => ({ value: String(role.id), label: role.name }))} value={form.role_id} onChange={(val) => updateField("role_id", val)} placeholder={isLoadingRoles ? "Loading..." : "Select Position"} className="mt-1 h-10 rounded-md" />
+                  <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                    Assigned Role <span className="text-rose-500">*</span>
+                  </label>
+                  <Combobox
+                    options={roles.map((role) => ({
+                      value: String(role.id),
+                      label: role.name,
+                    }))}
+                    value={form.role_id}
+                    onChange={(val) => updateField("role_id", val)}
+                    placeholder={
+                      isLoadingRoles ? "Loading..." : "Select Position"
+                    }
+                    className="mt-1 h-10 rounded-md"
+                  />
                 </div>
-                <ValidatedInput label="Department" required type="text" value={form.department} onChange={(v) => updateField("department", v)} />
-                <ValidatedInput label="Position Title" required type="text" value={form.position} onChange={(v) => updateField("position", v)} />
+                <ValidatedInput
+                  label="Department"
+                  required
+                  type="text"
+                  value={form.department}
+                  onChange={(v) => updateField("department", v)}
+                />
+                <ValidatedInput
+                  label="Position Title"
+                  required
+                  type="text"
+                  value={form.position}
+                  onChange={(v) => updateField("position", v)}
+                />
                 <div className="space-y-2">
-                  <label className="font-inter text-xs font-medium text-slate-600 ml-1">Account Eligibility <span className="text-rose-500">*</span></label>
+                  <label className="font-inter text-xs font-medium text-slate-600 ml-1">
+                    Account Eligibility <span className="text-rose-500">*</span>
+                  </label>
                   <div className="flex h-10 gap-1 p-1 bg-slate-50 rounded-md border border-gray-200">
-                    <button onClick={() => updateField("status", true)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", form.status ? "bg-white text-emerald-600 shadow-sm border border-emerald-100 font-black" : "text-slate-400")}>Active Access</button>
-                    <button onClick={() => updateField("status", false)} className={cn("flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all", !form.status ? "bg-white text-rose-600 shadow-sm border border-rose-100 font-black" : "text-slate-400")}>Suspended</button>
+                    <button
+                      onClick={() => updateField("status", true)}
+                      className={cn(
+                        "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
+                        form.status
+                          ? "bg-white text-emerald-600 shadow-sm border border-emerald-100 font-black"
+                          : "text-slate-400",
+                      )}
+                    >
+                      Active Access
+                    </button>
+                    <button
+                      onClick={() => updateField("status", false)}
+                      className={cn(
+                        "flex-1 cursor-pointer rounded text-[10px] font-bold uppercase tracking-wider transition-all",
+                        !form.status
+                          ? "bg-white text-rose-600 shadow-sm border border-rose-100 font-black"
+                          : "text-slate-400",
+                      )}
+                    >
+                      Suspended
+                    </button>
                   </div>
                 </div>
               </div>
               <footer className="pt-8 flex items-center justify-between">
-                <Button variant="ghost" onClick={prevStep} className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer" type="button"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Contact</Button>
-                <Button onClick={nextStep} className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer" type="button">Account Setup <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer"
+                  type="button"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Contact
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  className="h-9 px-8 rounded-md bg-[#0F172A] font-bold text-xs transition-all hover:bg-slate-800 shadow-md shadow-slate-100 cursor-pointer"
+                  type="button"
+                >
+                  Account Setup <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
               </footer>
             </StepperContent>
 
@@ -679,29 +944,100 @@ function CreateUserForm() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     <Fingerprint className="size-4 text-slate-400" />
-                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Account Authentication</h3>
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">
+                      Account Authentication
+                    </h3>
                   </div>
-                  <ValidatedInput label="Employee ID" required type="employee-Id" maxLength={9} value={form.empID} onChange={(v) => updateField("empID", v)} readOnly={isEditMode} errorMessage={empIDError} inputClassName={isEditMode ? "bg-slate-50" : ""} />
-                  <ValidatedInput label="System Username" required type="text" value={form.username} onChange={(v) => updateField("username", v)} />
+                  <ValidatedInput
+                    label="Employee ID"
+                    required
+                    type="employee-Id"
+                    maxLength={9}
+                    value={form.empID}
+                    onChange={(v) => updateField("empID", v)}
+                    readOnly={isEditMode}
+                    errorMessage={empIDError}
+                    inputClassName={isEditMode ? "bg-slate-50" : ""}
+                  />
+                  <ValidatedInput
+                    label="System Username"
+                    required
+                    type="text"
+                    value={form.username}
+                    onChange={(v) => updateField("username", v)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="size-4 text-slate-400" />
-                    <h3 className="font-bold text-slate-700 font-lexend text-sm">Security Setup</h3>
+                    <h3 className="font-bold text-slate-700 font-lexend text-sm">
+                      Security Setup
+                    </h3>
                   </div>
                   <div className="relative">
-                    <ValidatedInput label="Temporary Password" required={!isEditMode} type="text" value={form.temp_pass} onChange={(v) => updateField("temp_pass", v)} placeholder={isEditMode ? "Leave blank to keep current" : ""} inputClassName={!showTempPassword ? "password-disc" : ""} />
-                    <button type="button" onClick={() => setShowTempPassword(!showTempPassword)} className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer">{showTempPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                    <ValidatedInput
+                      label="Temporary Password"
+                      required={!isEditMode}
+                      type="text"
+                      value={form.temp_pass}
+                      onChange={(v) => updateField("temp_pass", v)}
+                      placeholder={
+                        isEditMode ? "Leave blank to keep current" : ""
+                      }
+                      inputClassName={!showTempPassword ? "password-disc" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTempPassword(!showTempPassword)}
+                      className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer"
+                    >
+                      {showTempPassword ? (
+                        <EyeOff size={14} />
+                      ) : (
+                        <Eye size={14} />
+                      )}
+                    </button>
                   </div>
                   <div className="relative">
-                    <ValidatedInput label="Confirm Password" required={!isEditMode} type="text" value={form.password} onChange={(v) => updateField("password", v)} errorMessage={form.password && form.password !== form.temp_pass ? "Passwords do not match" : null} inputClassName={!showPassword ? "password-disc" : ""} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                    <ValidatedInput
+                      label="Confirm Password"
+                      required={!isEditMode}
+                      type="text"
+                      value={form.password}
+                      onChange={(v) => updateField("password", v)}
+                      errorMessage={
+                        form.password && form.password !== form.temp_pass
+                          ? "Passwords do not match"
+                          : null
+                      }
+                      inputClassName={!showPassword ? "password-disc" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-9 text-slate-300 hover:text-slate-500 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
                   </div>
                 </div>
               </div>
               <footer className="pt-8 flex items-center justify-between">
-                <Button variant="ghost" onClick={prevStep} className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer" type="button"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Placement</Button>
-                <Button onClick={nextStep} className="h-10 px-8 rounded-md bg-[#0F172A] font-bold text-xs shadow-md shadow-slate-200 transition-all hover:bg-slate-800 cursor-pointer" type="button">Proceed to Review <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  className="h-9 px-4 rounded-md font-bold text-xs text-slate-500 hover:text-[#0F172A] hover:bg-slate-50 cursor-pointer"
+                  type="button"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back to Placement
+                </Button>
+                <Button
+                  onClick={nextStep}
+                  className="h-10 px-8 rounded-md bg-[#0F172A] font-bold text-xs shadow-md shadow-slate-200 transition-all hover:bg-slate-800 cursor-pointer"
+                  type="button"
+                >
+                  Proceed to Review <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
               </footer>
             </StepperContent>
 
@@ -716,26 +1052,84 @@ function CreateUserForm() {
                     <CheckCircle2 size={18} />
                   </div>
                   <div>
-                    <h4 className="font-lexend text-xs font-bold text-emerald-900">Application Ready</h4>
-                    <p className="text-[10px] text-emerald-700/70 font-medium">Please verify the enrollment summary below before system commit.</p>
+                    <h4 className="font-lexend text-xs font-bold text-emerald-900">
+                      Application Ready
+                    </h4>
+                    <p className="text-[10px] text-emerald-700/70 font-medium">
+                      Please verify the enrollment summary below before system
+                      commit.
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <SummaryCard title="Identity" items={[{ label: "Emp ID", value: form.empID, icon: Fingerprint }, { label: "Full Name", value: `${form.firstname} ${form.lastname} ${form.suffix}`, icon: UserRound }]} />
-                  <SummaryCard title="Operational" items={[{ label: "Role", value: roles.find((r) => String(r.id) === form.role_id)?.name || "Unselected", icon: Shield }, { label: "Placement", value: `${form.department} (${form.position})`, icon: Building2 }]} />
+                  <SummaryCard
+                    title="Identity"
+                    items={[
+                      { label: "Emp ID", value: form.empID, icon: Fingerprint },
+                      {
+                        label: "Full Name",
+                        value: `${form.firstname} ${form.lastname} ${form.suffix}`,
+                        icon: UserRound,
+                      },
+                    ]}
+                  />
+                  <SummaryCard
+                    title="Operational"
+                    items={[
+                      {
+                        label: "Role",
+                        value:
+                          roles.find((r) => String(r.id) === form.role_id)
+                            ?.name || "Unselected",
+                        icon: Shield,
+                      },
+                      {
+                        label: "Placement",
+                        value: `${form.department} (${form.position})`,
+                        icon: Building2,
+                      },
+                    ]}
+                  />
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Access Channel</h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">
+                    Access Channel
+                  </h5>
                   <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2 text-slate-600"><Mail size={14} className="text-slate-400" /><span className="text-[10px] uppercase font-bold tracking-tighter">{form.emails[0]}</span></div>
-                    <div className="flex items-center gap-2 text-slate-600"><Phone size={14} className="text-slate-400" /><span className="text-[10px] uppercase font-bold tracking-tighter">{form.phones[0]}</span></div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Mail size={14} className="text-slate-400" />
+                      <span className="text-[10px] uppercase font-bold tracking-tighter">
+                        {form.emails[0]}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Phone size={14} className="text-slate-400" />
+                      <span className="text-[10px] uppercase font-bold tracking-tighter">
+                        {form.phones[0]}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
               <footer className="pt-8 flex gap-3">
-                <Button variant="ghost" onClick={prevStep} disabled={isSubmitting} className="h-10 flex-1 rounded-md font-bold text-xs text-slate-500 border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">Back to Edit</Button>
-                <Button onClick={handleSave} disabled={isSubmitting} className="h-10 flex-2 rounded-md bg-[#0F172A] font-bold text-xs shadow-lg shadow-slate-100 transition-all hover:bg-slate-800 cursor-pointer">
-                  {isSubmitting ? "Committing Enrollment..." : isEditMode ? "Save Changes" : "Confirm & Enroll Personnel"}
+                <Button
+                  variant="ghost"
+                  onClick={prevStep}
+                  disabled={isSubmitting}
+                  className="h-10 flex-1 rounded-md font-bold text-xs text-slate-500 border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
+                >
+                  Back to Edit
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSubmitting}
+                  className="h-10 flex-2 rounded-md bg-[#0F172A] font-bold text-xs shadow-lg shadow-slate-100 transition-all hover:bg-slate-800 cursor-pointer"
+                >
+                  {isSubmitting
+                    ? "Committing Enrollment..."
+                    : isEditMode
+                      ? "Save Changes"
+                      : "Confirm & Enroll Personnel"}
                 </Button>
               </footer>
             </StepperContent>
