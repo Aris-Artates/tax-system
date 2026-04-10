@@ -16,6 +16,7 @@ import {
   Trash2,
   TrendingUp,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -67,6 +68,7 @@ export default function DiscountsPenaltiesPage() {
   const fetchRules = async () => {
     setIsLoading(true);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       const res = await fetch("/api/assessment/rules");
       const body = await res.json();
 
@@ -243,7 +245,7 @@ export default function DiscountsPenaltiesPage() {
         {[
           {
             label: "Active Discount Rules",
-            value: isLoading ? "..." : activeDiscounts,
+            value: isLoading ? <Skeleton className="h-6 w-8 mt-0.5" /> : activeDiscounts,
             textColor: "text-emerald-700",
             bgColor: "bg-emerald-50",
             iconColor: "text-emerald-500",
@@ -251,7 +253,7 @@ export default function DiscountsPenaltiesPage() {
           },
           {
             label: "Active Penalty Rules",
-            value: isLoading ? "..." : activePenalties,
+            value: isLoading ? <Skeleton className="h-6 w-8 mt-0.5" /> : activePenalties,
             textColor: "text-rose-700",
             bgColor: "bg-rose-50",
             iconColor: "text-rose-500",
@@ -259,7 +261,7 @@ export default function DiscountsPenaltiesPage() {
           },
           {
             label: "Draft Rules Pending Review",
-            value: isLoading ? "..." : draftRules,
+            value: isLoading ? <Skeleton className="h-6 w-8 mt-0.5" /> : draftRules,
             textColor: "text-amber-700",
             bgColor: "bg-amber-50",
             iconColor: "text-amber-500",
@@ -281,11 +283,11 @@ export default function DiscountsPenaltiesPage() {
                   {s.label}
                 </p>
                 <div className="flex flex-col">
-                  <p
+                  <div
                     className={`font-lexend mt-0.5 text-xl font-bold truncate ${s.textColor}`}
                   >
                     {s.value}
-                  </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -448,11 +450,7 @@ export default function DiscountsPenaltiesPage() {
               </thead>
               <tbody className="text-xs">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-10 text-slate-400">
-                      Loading rules...
-                    </td>
-                  </tr>
+                  <RulesTableSkeleton />
                 ) : rules.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-10 text-slate-400">
@@ -536,3 +534,48 @@ export default function DiscountsPenaltiesPage() {
     </div>
   );
 }
+
+function RulesTableSkeleton() {
+  return (
+    <>
+      {[...Array(6)].map((_, i) => (
+        <tr key={i} className="border-b border-gray-50">
+          <td className="px-4 py-4">
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </td>
+          <td className="px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+          </td>
+          <td className="px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </td>
+          <td className="px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          </td>
+          <td className="px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </td>
+          <td className="px-4 py-4 text-center">
+            <Skeleton className="h-5 w-16 rounded-full mx-auto" />
+          </td>
+          <td className="px-4 py-4 text-right">
+            <Skeleton className="h-4 w-4 rounded ml-auto" />
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
