@@ -9,7 +9,7 @@ export default function AppSplashScreen() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setTaxCollecting(true);
-    }, 5000);
+    }, 800);
 
     return () => {
       window.clearTimeout(timer);
