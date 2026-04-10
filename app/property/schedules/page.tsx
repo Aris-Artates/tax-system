@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
 import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SmvEntry = {
   id?: string;
@@ -258,6 +259,7 @@ export default function AssessmentSchedulesPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       const res = await fetch("/api/property/schedules");
       const body = await res.json();
       
@@ -507,12 +509,7 @@ export default function AssessmentSchedulesPage() {
 
       <div className="space-y-6">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-sm border border-gray-100 shadow-sm">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-            <p className="font-inter mt-2 text-xs text-slate-400">
-              Loading schedules...
-            </p>
-          </div>
+          <AssessmentSchedulesSkeleton />
         ) : (
           <>
             {/* Schedule of Market Values */}
@@ -814,3 +811,117 @@ export default function AssessmentSchedulesPage() {
     </div>
   );
 }
+
+function AssessmentSchedulesSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* SMV Table Skeleton */}
+      <div className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-60" />
+          </div>
+          <Skeleton className="h-7 w-24" />
+        </div>
+        <div className="overflow-x-auto">
+          <div className="w-full border-b border-gray-200 bg-gray-50 px-4 py-3">
+            <Skeleton className="h-4 w-full" />
+          </div>
+          <div className="p-0">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center border-b border-gray-100 px-4 py-4 gap-4"
+              >
+                <Skeleton className="h-4 w-8" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-10" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-3">
+          <Skeleton className="h-3 w-40" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-16" />
+          </div>
+        </div>
+      </div>
+
+      {/* Assessment Level Table Skeleton */}
+      <div className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-7 w-24" />
+        </div>
+        <div className="overflow-x-auto">
+          <div className="w-full border-b border-gray-200 bg-gray-50 px-4 py-3">
+            <Skeleton className="h-4 w-full" />
+          </div>
+          <div className="p-0">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center border-b border-gray-100 px-4 py-4 gap-4"
+              >
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-10" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-3">
+          <Skeleton className="h-3 w-40" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-16" />
+          </div>
+        </div>
+      </div>
+
+      {/* Depreciation Grid Skeleton */}
+      <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-7 w-24" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="rounded-md border border-gray-100 bg-gray-50 p-4 space-y-3"
+            >
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-4">
+          <Skeleton className="h-3 w-40" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-16" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
