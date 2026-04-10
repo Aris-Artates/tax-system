@@ -499,7 +499,7 @@ export default function IncomingDocumentsPage() {
                     table.getRowModel().rows.map((row) => (
                       <tr
                         key={row.id}
-                        className="border-b border-gray-100 hover:bg-slate-50 transition-colors"
+                        className="group border-b border-gray-100 even:bg-slate-50 hover:bg-slate-100/80 transition-colors"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
@@ -507,9 +507,9 @@ export default function IncomingDocumentsPage() {
                             className={cn(
                               "px-4 py-3 whitespace-nowrap",
                               cell.column.id === "referenceNo" &&
-                                "sticky left-0 z-10 bg-white [tr:hover_&]:bg-slate-50 shadow-[1px_0_0_0_#f1f5f9]",
+                                "sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-slate-100/80 shadow-[1px_0_0_0_#f1f5f9]",
                               cell.column.id === "actions" &&
-                                "sticky right-0 z-10 bg-white [tr:hover_&]:bg-slate-50 shadow-[-1px_0_0_0_#f1f5f9] text-right",
+                                "sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50 group-hover:bg-slate-100/80 shadow-[-1px_0_0_0_#f1f5f9] text-right",
                             )}
                           >
                             {flexRender(
@@ -653,8 +653,11 @@ function IncomingDocumentsSkeleton() {
   return (
     <>
       {[...Array(6)].map((_, i) => (
-        <tr key={i} className="animate-pulse border-b border-gray-100">
-          <td className="sticky left-0 z-10 bg-white shadow-[1px_0_0_0_#f1f5f9] px-4 py-4">
+        <tr
+          key={i}
+          className="animate-pulse border-b border-gray-100 even:bg-slate-50/50"
+        >
+          <td className="sticky left-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50/50 shadow-[1px_0_0_0_#f1f5f9] px-4 py-4">
             <Skeleton className="h-4 w-24" />
           </td>
           <td className="px-4 py-4">
@@ -669,7 +672,7 @@ function IncomingDocumentsSkeleton() {
           <td className="px-4 py-4">
             <Skeleton className="h-5 w-20 rounded-full" />
           </td>
-          <td className="sticky right-0 z-10 bg-white shadow-[-1px_0_0_0_#f1f5f9] px-4 py-4">
+          <td className="sticky right-0 z-10 bg-white [tr:nth-child(even)_&]:bg-slate-50/50 shadow-[-1px_0_0_0_#f1f5f9] px-4 py-4">
             <div className="flex justify-end gap-1">
               {[...Array(3)].map((_, j) => (
                 <Skeleton key={j} className="h-8 w-8 rounded" />
