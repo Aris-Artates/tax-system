@@ -271,14 +271,21 @@ export default function ManageRolePage() {
       const response = await fetch("/api/permissions/list", {
         cache: "no-store",
       });
-      const data = (await response.json()) as { permissions?: ApiPermission[] };
+      const data = (await response.json()) as { 
+        permissions?: ApiPermission[];
+        _data?: string; 
+      };
 
       if (!response.ok) {
         setPermissions([]);
         return;
       }
 
-      setPermissions(data.permissions ?? []);
+      const decodedPermissions = data._data 
+        ? JSON.parse(atob(atob(atob(data._data)))) 
+        : (data.permissions ?? []);
+        
+      setPermissions(decodedPermissions);
     } catch {
       setPermissions([]);
     }
