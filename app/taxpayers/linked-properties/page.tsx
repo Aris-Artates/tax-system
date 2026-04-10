@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Linked Properties — app/taxpayers/linked-properties/page.tsx
@@ -9,9 +9,9 @@
  * back out when the focus is cleared.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -25,12 +25,13 @@ import {
   Phone,
   Mail,
   Hash,
-} from 'lucide-react';
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import type { MapProperty } from '@/components/PropertyMap';
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import type { MapProperty } from "@/components/PropertyMap";
 
 // ── Dynamic map (no SSR — Leaflet requires window) ─────────────────────────
-const PropertyMap = dynamic(() => import('@/components/PropertyMap'), {
+const PropertyMap = dynamic(() => import("@/components/PropertyMap"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center bg-slate-50">
@@ -120,20 +121,20 @@ type FullProperty = {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (n: number | null | undefined) =>
-  n == null ? '—' : n.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+  n == null ? "—" : n.toLocaleString("en-PH", { minimumFractionDigits: 2 });
 
 const classColors: Record<string, string> = {
-  Residential: 'bg-blue-50 text-blue-700',
-  Commercial: 'bg-amber-50 text-amber-700',
-  Agricultural: 'bg-green-50 text-green-700',
-  Industrial: 'bg-purple-50 text-purple-700',
-  Special: 'bg-orange-50 text-orange-700',
+  Residential: "bg-blue-50 text-blue-700",
+  Commercial: "bg-amber-50 text-amber-700",
+  Agricultural: "bg-green-50 text-green-700",
+  Industrial: "bg-purple-50 text-purple-700",
+  Special: "bg-orange-50 text-orange-700",
 };
 
 const statusColors: Record<string, string> = {
-  Active: 'bg-emerald-50 text-emerald-700',
-  Cancelled: 'bg-red-50 text-red-600',
-  Revised: 'bg-slate-50 text-slate-600',
+  Active: "bg-emerald-50 text-emerald-700",
+  Cancelled: "bg-red-50 text-red-600",
+  Revised: "bg-slate-50 text-slate-600",
 };
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -145,8 +146,8 @@ export default function LinkedPropertiesPage() {
   const [propertyOpts, setPropertyOpts] = useState<ComboboxOption[]>([]);
 
   // ── Selection state ───────────────────────────────────────────────────────
-  const [selTaxpayerId, setSelTaxpayerId] = useState('');
-  const [selPropertyId, setSelPropertyId] = useState('');
+  const [selTaxpayerId, setSelTaxpayerId] = useState("");
+  const [selPropertyId, setSelPropertyId] = useState("");
 
   // ── Loaded data ───────────────────────────────────────────────────────────
   const [taxpayer, setTaxpayer] = useState<FullTaxpayer | null>(null);
@@ -160,11 +161,11 @@ export default function LinkedPropertiesPage() {
   // ── Loading / error ───────────────────────────────────────────────────────
   const [loadingTaxpayer, setLoadingTaxpayer] = useState(false);
   const [loadingProperty, setLoadingProperty] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   // ── Load combobox options on mount ────────────────────────────────────────
   useEffect(() => {
-    fetch('/api/taxpayers/list', { cache: 'no-store' })
+    fetch("/api/taxpayers/list", { cache: "no-store" })
       .then((r) => r.json())
       .then((body) => {
         const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
@@ -172,14 +173,14 @@ export default function LinkedPropertiesPage() {
           (t: TaxpayerOption) => ({
             value: String(t.id),
             label: t.owner_name,
-            sublabel: t.tin ? `TIN: ${t.tin}` : t.owner_type ?? '',
+            sublabel: t.tin ? `TIN: ${t.tin}` : (t.owner_type ?? ""),
           }),
         );
         setTaxpayerOpts(opts);
       })
       .catch(() => {});
 
-    fetch('/api/properties/list', { cache: 'no-store' })
+    fetch("/api/properties/list", { cache: "no-store" })
       .then((r) => r.json())
       .then((body) => {
         const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
@@ -193,7 +194,7 @@ export default function LinkedPropertiesPage() {
               p.street,
             ]
               .filter(Boolean)
-              .join(' · '),
+              .join(" · "),
           }),
         );
         setPropertyOpts(opts);
@@ -216,9 +217,16 @@ export default function LinkedPropertiesPage() {
     }
 
     setLoadingTaxpayer(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
-    fetch(`/api/taxpayers/linked?id=${selTaxpayerId}`, { cache: 'no-store' })
+    const fetchTask = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return fetch(`/api/taxpayers/linked?id=${selTaxpayerId}`, {
+        cache: "no-store",
+      });
+    };
+
+    fetchTask()
       .then((r) => r.json())
       .then((body) => {
         const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
@@ -226,7 +234,7 @@ export default function LinkedPropertiesPage() {
         setTaxpayer(d.taxpayer);
         setTaxpayerDecls(d.declarations ?? []);
       })
-      .catch((e) => setErrorMsg(e.message ?? 'Failed to load taxpayer data.'))
+      .catch((e) => setErrorMsg(e.message ?? "Failed to load taxpayer data."))
       .finally(() => setLoadingTaxpayer(false));
   }, [selTaxpayerId]);
 
@@ -240,9 +248,16 @@ export default function LinkedPropertiesPage() {
     }
 
     setLoadingProperty(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
-    fetch(`/api/properties/linked?id=${selPropertyId}`, { cache: 'no-store' })
+    const fetchTask = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return fetch(`/api/properties/linked?id=${selPropertyId}`, {
+        cache: "no-store",
+      });
+    };
+
+    fetchTask()
       .then((r) => r.json())
       .then((body) => {
         const d = body._data ? JSON.parse(atob(atob(atob(body._data)))) : body;
@@ -254,7 +269,7 @@ export default function LinkedPropertiesPage() {
           setMapFocusId(d.property.id);
         }
       })
-      .catch((e) => setErrorMsg(e.message ?? 'Failed to load property data.'))
+      .catch((e) => setErrorMsg(e.message ?? "Failed to load property data."))
       .finally(() => setLoadingProperty(false));
   }, [selPropertyId]);
 
@@ -269,14 +284,14 @@ export default function LinkedPropertiesPage() {
   }, []);
 
   const handleClearAll = useCallback(() => {
-    setSelTaxpayerId('');
-    setSelPropertyId('');
+    setSelTaxpayerId("");
+    setSelPropertyId("");
     setTaxpayer(null);
     setTaxpayerDecls([]);
     setProperty(null);
     setPropertyDecls([]);
     setMapFocusId(null);
-    setErrorMsg('');
+    setErrorMsg("");
   }, []);
 
   const handleFocusProperty = useCallback(
@@ -313,7 +328,7 @@ export default function LinkedPropertiesPage() {
         list.push({
           id: property.id,
           pin: property.pin,
-          tdNumber: propertyDecls[0]?.td_number ?? '—',
+          tdNumber: propertyDecls[0]?.td_number ?? "—",
           lat: property.latitude,
           lng: property.longitude,
         });
@@ -332,7 +347,7 @@ export default function LinkedPropertiesPage() {
       {/* Back */}
       <button
         type="button"
-        onClick={() => router.push('/taxpayers')}
+        onClick={() => router.push("/taxpayers")}
         className="font-lexend mb-5 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -345,8 +360,8 @@ export default function LinkedPropertiesPage() {
           Linked Properties
         </h1>
         <p className="font-inter mt-1 text-xs text-slate-400">
-          Search by taxpayer or property — linked records load together with
-          map location
+          Search by taxpayer or property — linked records load together with map
+          location
         </p>
       </header>
 
@@ -409,14 +424,12 @@ export default function LinkedPropertiesPage() {
       {/* Main split layout */}
       <div className="flex gap-6">
         {/* ── Records panel ──────────────────────────────────────────── */}
-        <div className="w-2/5 min-w-0 shrink-0 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 18rem)' }}>
-
-          {/* Loading spinner */}
-          {isLoading && (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
-            </div>
-          )}
+        <div
+          className="w-2/5 min-w-0 shrink-0 space-y-4 overflow-y-auto"
+          style={{ maxHeight: "calc(100vh - 18rem)" }}
+        >
+          {/* Loading state */}
+          {isLoading && <LinkedPropertiesSkeleton />}
 
           {/* Empty state */}
           {!isLoading && !hasContent && (
@@ -454,16 +467,32 @@ export default function LinkedPropertiesPage() {
                     {taxpayer.owner_name}
                   </p>
                   {taxpayer.tin && (
-                    <InfoRow icon={<Hash className="h-3 w-3" />} label="TIN" value={taxpayer.tin} />
+                    <InfoRow
+                      icon={<Hash className="h-3 w-3" />}
+                      label="TIN"
+                      value={taxpayer.tin}
+                    />
                   )}
                   {taxpayer.address && (
-                    <InfoRow icon={<MapPin className="h-3 w-3" />} label="Address" value={taxpayer.address} />
+                    <InfoRow
+                      icon={<MapPin className="h-3 w-3" />}
+                      label="Address"
+                      value={taxpayer.address}
+                    />
                   )}
                   {taxpayer.phone && (
-                    <InfoRow icon={<Phone className="h-3 w-3" />} label="Phone" value={taxpayer.phone} />
+                    <InfoRow
+                      icon={<Phone className="h-3 w-3" />}
+                      label="Phone"
+                      value={taxpayer.phone}
+                    />
                   )}
                   {taxpayer.email && (
-                    <InfoRow icon={<Mail className="h-3 w-3" />} label="Email" value={taxpayer.email} />
+                    <InfoRow
+                      icon={<Mail className="h-3 w-3" />}
+                      label="Email"
+                      value={taxpayer.email}
+                    />
                   )}
                 </div>
               </div>
@@ -476,7 +505,8 @@ export default function LinkedPropertiesPage() {
                     Linked Properties
                   </span>
                   <span className="ml-auto font-inter text-xs text-slate-400">
-                    {taxpayerDecls.length} record{taxpayerDecls.length !== 1 ? 's' : ''}
+                    {taxpayerDecls.length} record
+                    {taxpayerDecls.length !== 1 ? "s" : ""}
                   </span>
                 </div>
 
@@ -495,27 +525,33 @@ export default function LinkedPropertiesPage() {
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="font-inter text-xs font-semibold text-[#595a5d]">
-                                {prop?.pin ?? '—'}
+                                {prop?.pin ?? "—"}
                               </p>
                               <p className="font-inter text-xs text-slate-400">
                                 {[
                                   prop?.barangays?.name,
-                                  prop?.lot_number ? `Lot ${prop.lot_number}` : null,
+                                  prop?.lot_number
+                                    ? `Lot ${prop.lot_number}`
+                                    : null,
                                   prop?.street,
                                 ]
                                   .filter(Boolean)
-                                  .join(' · ') || 'No address'}
+                                  .join(" · ") || "No address"}
                               </p>
                             </div>
                             {hasCoords ? (
                               <button
                                 type="button"
-                                title={isFocused ? 'Remove map focus' : 'Zoom map to this property'}
+                                title={
+                                  isFocused
+                                    ? "Remove map focus"
+                                    : "Zoom map to this property"
+                                }
                                 onClick={() => handleFocusProperty(prop?.id)}
                                 className={`shrink-0 cursor-pointer rounded p-1.5 transition-colors ${
                                   isFocused
-                                    ? 'bg-blue-100 text-blue-600'
-                                    : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                                    ? "bg-blue-100 text-blue-600"
+                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                                 }`}
                               >
                                 <Crosshair className="h-3.5 w-3.5" />
@@ -533,14 +569,14 @@ export default function LinkedPropertiesPage() {
                             <TdBadge label="TD" value={d.td_number} />
                             {d.classification && (
                               <span
-                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${classColors[d.classification] ?? 'bg-gray-100 text-gray-600'}`}
+                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${classColors[d.classification] ?? "bg-gray-100 text-gray-600"}`}
                               >
                                 {d.classification}
                               </span>
                             )}
                             {d.status && (
                               <span
-                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${statusColors[d.status] ?? 'bg-gray-100 text-gray-600'}`}
+                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${statusColors[d.status] ?? "bg-gray-100 text-gray-600"}`}
                               >
                                 {d.status}
                               </span>
@@ -552,10 +588,19 @@ export default function LinkedPropertiesPage() {
                             )}
                           </div>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                            <ValueRow label="Market Value" value={`₱ ${fmt(d.total_market_value)}`} />
-                            <ValueRow label="Assessed Value" value={`₱ ${fmt(d.total_assessed_value)}`} />
+                            <ValueRow
+                              label="Market Value"
+                              value={`₱ ${fmt(d.total_market_value)}`}
+                            />
+                            <ValueRow
+                              label="Assessed Value"
+                              value={`₱ ${fmt(d.total_assessed_value)}`}
+                            />
                             {d.land_area != null && (
-                              <ValueRow label="Land Area" value={`${d.land_area.toLocaleString()} sqm`} />
+                              <ValueRow
+                                label="Land Area"
+                                value={`${d.land_area.toLocaleString()} sqm`}
+                              />
                             )}
                           </div>
                         </div>
@@ -580,12 +625,16 @@ export default function LinkedPropertiesPage() {
                   {property.latitude && property.longitude ? (
                     <button
                       type="button"
-                      title={mapFocusId === property.id ? 'Remove map focus' : 'Zoom map to this property'}
+                      title={
+                        mapFocusId === property.id
+                          ? "Remove map focus"
+                          : "Zoom map to this property"
+                      }
                       onClick={() => handleFocusProperty(property.id)}
                       className={`ml-auto cursor-pointer rounded p-1.5 transition-colors ${
                         mapFocusId === property.id
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                          ? "bg-blue-100 text-blue-600"
+                          : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                       }`}
                     >
                       <Crosshair className="h-3.5 w-3.5" />
@@ -599,16 +648,28 @@ export default function LinkedPropertiesPage() {
                   <InfoRow
                     icon={<MapPin className="h-3 w-3" />}
                     label="Barangay"
-                    value={property.barangays?.name ?? '—'}
+                    value={property.barangays?.name ?? "—"}
                   />
                   {property.lot_number && (
-                    <InfoRow icon={<Hash className="h-3 w-3" />} label="Lot No." value={property.lot_number} />
+                    <InfoRow
+                      icon={<Hash className="h-3 w-3" />}
+                      label="Lot No."
+                      value={property.lot_number}
+                    />
                   )}
                   {property.street && (
-                    <InfoRow icon={<MapPin className="h-3 w-3" />} label="Street" value={property.street} />
+                    <InfoRow
+                      icon={<MapPin className="h-3 w-3" />}
+                      label="Street"
+                      value={property.street}
+                    />
                   )}
                   {property.survey_number && (
-                    <InfoRow icon={<Hash className="h-3 w-3" />} label="Survey No." value={property.survey_number} />
+                    <InfoRow
+                      icon={<Hash className="h-3 w-3" />}
+                      label="Survey No."
+                      value={property.survey_number}
+                    />
                   )}
                   {property.latitude && property.longitude ? (
                     <InfoRow
@@ -632,7 +693,8 @@ export default function LinkedPropertiesPage() {
                     Tax Declarations & Owners
                   </span>
                   <span className="ml-auto font-inter text-xs text-slate-400">
-                    {propertyDecls.length} record{propertyDecls.length !== 1 ? 's' : ''}
+                    {propertyDecls.length} record
+                    {propertyDecls.length !== 1 ? "s" : ""}
                   </span>
                 </div>
 
@@ -650,14 +712,14 @@ export default function LinkedPropertiesPage() {
                             <TdBadge label="TD" value={d.td_number} />
                             {d.classification && (
                               <span
-                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${classColors[d.classification] ?? 'bg-gray-100 text-gray-600'}`}
+                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${classColors[d.classification] ?? "bg-gray-100 text-gray-600"}`}
                               >
                                 {d.classification}
                               </span>
                             )}
                             {d.status && (
                               <span
-                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${statusColors[d.status] ?? 'bg-gray-100 text-gray-600'}`}
+                                className={`rounded-full px-2 py-0.5 font-inter text-xs font-medium ${statusColors[d.status] ?? "bg-gray-100 text-gray-600"}`}
                               >
                                 {d.status}
                               </span>
@@ -686,10 +748,19 @@ export default function LinkedPropertiesPage() {
                             </div>
                           )}
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                            <ValueRow label="Market Value" value={`₱ ${fmt(d.total_market_value)}`} />
-                            <ValueRow label="Assessed Value" value={`₱ ${fmt(d.total_assessed_value)}`} />
+                            <ValueRow
+                              label="Market Value"
+                              value={`₱ ${fmt(d.total_market_value)}`}
+                            />
+                            <ValueRow
+                              label="Assessed Value"
+                              value={`₱ ${fmt(d.total_assessed_value)}`}
+                            />
                             {d.land_area != null && (
-                              <ValueRow label="Land Area" value={`${d.land_area.toLocaleString()} sqm`} />
+                              <ValueRow
+                                label="Land Area"
+                                value={`${d.land_area.toLocaleString()} sqm`}
+                              />
                             )}
                           </div>
                         </div>
@@ -705,7 +776,7 @@ export default function LinkedPropertiesPage() {
         {/* ── Map panel ──────────────────────────────────────────────── */}
         <div
           className="sticky top-4 flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm"
-          style={{ height: 'calc(100vh - 18rem)' }}
+          style={{ height: "calc(100vh - 18rem)" }}
         >
           <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
             <MapPin className="h-4 w-4 text-[#00154A]" />
@@ -714,8 +785,9 @@ export default function LinkedPropertiesPage() {
             </span>
             {mapProperties.length > 0 && (
               <span className="ml-auto font-inter text-xs text-slate-400">
-                {mapProperties.length} marker{mapProperties.length !== 1 ? 's' : ''}
-                {mapFocusId && ' · zoomed in'}
+                {mapProperties.length} marker
+                {mapProperties.length !== 1 ? "s" : ""}
+                {mapFocusId && " · zoomed in"}
               </span>
             )}
             {mapFocusId && (
@@ -751,8 +823,12 @@ function InfoRow({
   return (
     <div className="flex items-start gap-2">
       <span className="mt-0.5 shrink-0 text-slate-400">{icon}</span>
-      <span className="font-inter text-xs text-slate-500 shrink-0">{label}:</span>
-      <span className="font-inter text-xs text-slate-700 break-all">{value}</span>
+      <span className="font-inter text-xs text-slate-500 shrink-0">
+        {label}:
+      </span>
+      <span className="font-inter text-xs text-slate-700 break-all">
+        {value}
+      </span>
     </div>
   );
 }
@@ -760,7 +836,9 @@ function InfoRow({
 function ValueRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-inter text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="font-inter text-[10px] uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
       <p className="font-inter text-xs font-medium text-[#595a5d]">{value}</p>
     </div>
   );
@@ -772,5 +850,64 @@ function TdBadge({ label, value }: { label: string; value: string }) {
       <FileText className="h-3 w-3" />
       {label}: {value}
     </span>
+  );
+}
+
+function LinkedPropertiesSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* Primary Card Skeleton */}
+      <div className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <div className="p-4 space-y-3">
+          <Skeleton className="h-6 w-3/4" />
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-1/2" />
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
+      </div>
+
+      {/* Linked Items Card Skeleton */}
+      <div className="overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="ml-auto h-3 w-16" />
+        </div>
+        <div className="divide-y divide-gray-100">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+                <Skeleton className="h-7 w-7 rounded" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-5 w-24 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 pl-1">
+                <div className="space-y-1">
+                  <Skeleton className="h-2 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-1">
+                  <Skeleton className="h-2 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
