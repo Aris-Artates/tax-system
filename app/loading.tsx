@@ -1,5 +1,6 @@
-import AppSplashScreen from "@/components/AppSplashScreen";
-
 export default function Loading() {
-  return <AppSplashScreen />;
+  // We return null here because the global TopLoader and content transitions 
+  // in MainLayout handle the loading feedback much more smoothly 
+  // without a disruptive full-screen overlay.
+  return null;
 }
