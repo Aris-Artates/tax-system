@@ -150,7 +150,7 @@ export default function UserProfilePage() {
             role: u.roles?.name || "User",
             role_id: u.role_id,
             status: u.status ?? true,
-            contactNumber: u.phone || "",
+            contactNumber: u.mobile_number || "",
             officeAddress: u.department || "",
             position: u.position || "",
             receiveEmailUpdates: true,
@@ -222,6 +222,20 @@ export default function UserProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!form.email.trim()) {
+      toast.error("Email required", {
+        description: "Please provide an email address for your account.",
+      });
+      return;
+    }
+
+    if (!form.contactNumber.trim()) {
+      toast.error("Contact number required", {
+        description: "A primary contact number is necessary for account verification.",
+      });
+      return;
+    }
+
     setSaving(true);
     let currentImagePath = form.profilePicture;
 
@@ -260,8 +274,8 @@ export default function UserProfilePage() {
         birthdate: form.birthdate,
         age: form.age,
         sex: form.sex,
-        email: form.email,
-        phone: form.contactNumber,
+        emails: [form.email.trim()],
+        phones: [form.contactNumber.trim()],
         department: form.officeAddress,
         position: form.position,
         role_id: form.role_id,
