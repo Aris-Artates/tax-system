@@ -176,42 +176,57 @@ export function RoleMasterModal({
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
+  const wasOpen = useRef(false);
+  // Sync safety: preventing "New" badge flashes on open
+  const [isInitializing, setIsInitializing] = useState(true);
+
   const normalizeRoleName = (n?: string) => (n ?? "").trim().toLowerCase();
 
   // Reset and Local Storage Sync
   useEffect(() => {
     if (isOpen) {
-      if (role) {
-        setName(role.name || "");
-        setIconName(role.icon || "KeyRound");
+      if (!wasOpen.current) {
+        // Just opened - reset states
+        setIsInitializing(true);
+        if (role) {
+          setName(role.name || "");
+          setIconName(role.icon || "KeyRound");
 
-        const normalizedNames = (role.permissionNames || []).map((n) =>
-          n.trim().toLowerCase(),
-        );
-        const initialPermissions = allPermissions.filter(
-          (p) =>
-            normalizedNames.includes(p.name.trim().toLowerCase()) ||
-            role.permissionIds.map(String).includes(String(p.id)),
-        );
-        setAssignedPermissions(initialPermissions);
-        setActiveTab("edit");
-      } else {
-        setName("");
-        setIconName("KeyRound");
-        setAssignedPermissions([]);
-        setActiveTab("edit");
+          const normalizedNames = (role.permissionNames || []).map((n) =>
+            n.trim().toLowerCase(),
+          );
+          const initialPermissions = allPermissions.filter(
+            (p) =>
+              normalizedNames.includes(p.name.trim().toLowerCase()) ||
+              role.permissionIds.map(String).includes(String(p.id)),
+          );
+          setAssignedPermissions(initialPermissions);
+          setActiveTab("edit");
+        } else {
+          setName("");
+          setIconName("KeyRound");
+          setAssignedPermissions([]);
+          setActiveTab("edit");
+        }
+        setPermissionsToRemove(new Set());
+        setPickerOpen(false);
+        setPermissionSearch("");
+        setUserSearchTerm("");
+        setDemoteSelectingFor(null);
+        setPendingRemoveConfirm(null);
+        setIsEditMode(false);
+        setSelectedForBulk(new Set());
+        setPickerSelectedIds(new Set());
+        setShowSaveConfirm(false);
+        setShowCloseConfirm(false);
+
+        // Wait for one tick to ensure states are settled before showing dynamic updates
+        setTimeout(() => setIsInitializing(false), 50);
       }
-      setPermissionsToRemove(new Set());
-      setPickerOpen(false);
-      setPermissionSearch("");
-      setUserSearchTerm("");
-      setDemoteSelectingFor(null);
-      setPendingRemoveConfirm(null);
-      setIsEditMode(false);
-      setSelectedForBulk(new Set());
-      setPickerSelectedIds(new Set());
-      setShowSaveConfirm(false);
-      setShowCloseConfirm(false);
+      wasOpen.current = true;
+    } else {
+      // Closing - do NOT reset states yet to allow smooth transition
+      wasOpen.current = false;
     }
   }, [isOpen, role, allPermissions]);
 
@@ -235,17 +250,22 @@ export function RoleMasterModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Derived calculation: Which permissions were originally assigned to the role?
+  // We match against allPermissions using both IDs and names to ensure consistency
   const initialIds = useMemo(() => {
-    if (!role) return new Set<string>();
+    if (!role || !allPermissions.length) return new Set<string>();
+
     const normalizedNames = (role.permissionNames || []).map((n) =>
       n.trim().toLowerCase(),
     );
+    const roleIds = (role.permissionIds || []).map(String);
+
     return new Set(
       allPermissions
         .filter(
           (p) =>
             normalizedNames.includes(p.name.trim().toLowerCase()) ||
-            role.permissionIds.map(String).includes(String(p.id)),
+            roleIds.includes(String(p.id)),
         )
         .map((p) => String(p.id)),
     );
@@ -253,6 +273,7 @@ export function RoleMasterModal({
 
   // Detect unsaved changes (mirrors PermissionSettingsModal hasChanges logic)
   const hasChanges = useMemo(() => {
+    if (isInitializing) return false;
     if (!role) return name.trim().length > 0 || assignedPermissions.length > 0;
 
     const nameChanged = name !== role.name;
@@ -547,9 +568,7 @@ export function RoleMasterModal({
               <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-slate-400" />
                 {activeTab === "edit"
-                  ? role
-                    ? "Edit Role Settings"
-                    : "Create New Role"
+                  ? "Edit Role Settings"
                   : activeTab === "users"
                     ? "Manage Assigned Users"
                     : "Manage Danger Zone"}
@@ -558,7 +577,9 @@ export function RoleMasterModal({
                 {activeTab === "edit" &&
                   (role
                     ? `Modify settings and access permissions for ${role.name}.`
-                    : "Define name, icon, and system-level permissions for a new role.")}
+                    : wasOpen.current
+                      ? "Configuration settings persistent state."
+                      : "Preparing role configuration details...")}
                 {activeTab === "users" &&
                   `Review personnel currently bound to the ${role?.name} role.`}
                 {activeTab === "delete" &&
@@ -878,7 +899,7 @@ export function RoleMasterModal({
                                       >
                                         {p.name}
                                       </span>
-                                      {isNew && !isMarkedForRemoval && (
+                                      {isNew && !isMarkedForRemoval && !isInitializing && role && (
                                         <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm animate-pulse">
                                           New
                                         </span>
@@ -1258,7 +1279,7 @@ export function RoleMasterModal({
 
           <DialogFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-between gap-3 sm:justify-end">
             <div className="flex-1">
-              {hasChanges && activeTab === "edit" && (
+              {isOpen && hasChanges && activeTab === "edit" && (
                 <span className="text-[10px] font-semibold text-amber-600 flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 w-fit">
                   <RotateCcw className="w-3 h-3" />
                   Unsaved Changes
