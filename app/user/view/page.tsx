@@ -1364,12 +1364,13 @@ export default function ViewUserPage() {
             {/* Fixed Footer Actions */}
             <div className="p-6 pt-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
               <DialogClose asChild>
-                <button
-                  type="button"
-                  className="font-inter px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                <Button
+                  variant="ghost"
+                  className="h-10 px-6 rounded-lg font-bold text-slate-500 border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300 text-xs cursor-pointer active:scale-95 flex items-center gap-2 focus-visible:ring-0 focus-visible:outline-none"
                 >
+                  <X className="w-4 h-4" />
                   Cancel
-                </button>
+                </Button>
               </DialogClose>
               <button
                 type="button"

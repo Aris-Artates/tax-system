@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,12 +7,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -157,10 +147,16 @@ export function RoleMasterModal({
   );
   const [permissionSearch, setPermissionSearch] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pendingRemoveConfirm, setPendingRemoveConfirm] = useState<number | null>(null);
+  const [pendingRemoveConfirm, setPendingRemoveConfirm] = useState<
+    number | null
+  >(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(new Set());
-  const [pickerSelectedIds, setPickerSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(
+    new Set(),
+  );
+  const [pickerSelectedIds, setPickerSelectedIds] = useState<Set<number>>(
+    new Set(),
+  );
   const pickerRef = useRef<HTMLDivElement>(null);
 
   // Users Tab State
@@ -271,7 +267,14 @@ export function RoleMasterModal({
       currentIds.some((id) => !initialIds.has(id));
 
     return nameChanged || iconChanged || permsChanged;
-  }, [name, iconName, assignedPermissions, permissionsToRemove, role, initialIds]);
+  }, [
+    name,
+    iconName,
+    assignedPermissions,
+    permissionsToRemove,
+    role,
+    initialIds,
+  ]);
 
   // Handlers for Edit Tab
   const handleMarkForRemoval = (p: Permission) => {
@@ -315,7 +318,9 @@ export function RoleMasterModal({
           selectedForBulk.forEach((id) => next.add(id));
           return next;
         });
-        toast.warning(`${selectedForBulk.size} permission(s) marked for removal.`);
+        toast.warning(
+          `${selectedForBulk.size} permission(s) marked for removal.`,
+        );
       }
       setSelectedForBulk(new Set());
     }
@@ -332,7 +337,9 @@ export function RoleMasterModal({
   const handleBulkAddFromPicker = () => {
     if (pickerSelectedIds.size === 0) return;
     // Restore any previously marked for removal
-    const toRestore = [...pickerSelectedIds].filter((id) => permissionsToRemove.has(id));
+    const toRestore = [...pickerSelectedIds].filter((id) =>
+      permissionsToRemove.has(id),
+    );
     if (toRestore.length > 0) {
       setPermissionsToRemove((prev) => {
         const n = new Set(prev);
@@ -342,14 +349,18 @@ export function RoleMasterModal({
     }
     // Add new ones not already in assigned
     const toAdd = allPermissions.filter(
-      (p) => pickerSelectedIds.has(p.id) && !assignedPermissions.some((ap) => ap.id === p.id),
+      (p) =>
+        pickerSelectedIds.has(p.id) &&
+        !assignedPermissions.some((ap) => ap.id === p.id),
     );
     if (toAdd.length > 0) {
       setAssignedPermissions((prev) =>
         [...prev, ...toAdd].sort((a, b) => a.name.localeCompare(b.name)),
       );
     }
-    toast.info(`${pickerSelectedIds.size} permission(s) added to staging list.`);
+    toast.info(
+      `${pickerSelectedIds.size} permission(s) added to staging list.`,
+    );
     setPickerSelectedIds(new Set());
     setPickerOpen(false);
     setPermissionSearch("");
@@ -432,7 +443,9 @@ export function RoleMasterModal({
     try {
       const listResp = await fetch("/api/user/list", { cache: "no-store" });
       const listData = await listResp.json();
-      const decodedUsers = listData._data ? JSON.parse(atob(atob(atob(listData._data)))) : (listData.users ?? []);
+      const decodedUsers = listData._data
+        ? JSON.parse(atob(atob(atob(listData._data))))
+        : (listData.users ?? []);
       const fullUser = (decodedUsers as any[]).find(
         (u) => u.empID === user.empID,
       );
@@ -455,7 +468,12 @@ export function RoleMasterModal({
         position: fullUser.position || "Staff",
         image_path: fullUser.image_path,
         status: fullUser.status ?? true,
-        role_id: action === "kick" ? 19 : (action === "demote" ? newRoleId : fullUser.role_id),
+        role_id:
+          action === "kick"
+            ? 19
+            : action === "demote"
+              ? newRoleId
+              : fullUser.role_id,
       };
 
       const response = await fetch("/api/user/update", {
@@ -520,7 +538,7 @@ export function RoleMasterModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleRequestClose}>
-        <DialogContent 
+        <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="sm:max-w-[580px] p-0 overflow-hidden rounded-2xl border-none shadow-2xl h-[80vh] flex flex-col bg-white focus:outline-none focus:ring-0"
         >
@@ -528,57 +546,65 @@ export function RoleMasterModal({
             <DialogHeader>
               <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-slate-400" />
-                {activeTab === 'edit' ? (role ? "Edit Role Settings" : "Create New Role") : 
-                 activeTab === 'users' ? "Manage Assigned Users" : "Manage Danger Zone"}
+                {activeTab === "edit"
+                  ? role
+                    ? "Edit Role Settings"
+                    : "Create New Role"
+                  : activeTab === "users"
+                    ? "Manage Assigned Users"
+                    : "Manage Danger Zone"}
               </DialogTitle>
               <DialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
-                {activeTab === 'edit' && (role 
-                  ? `Modify settings and access permissions for ${role.name}.` 
-                  : "Define name, icon, and system-level permissions for a new role.")}
-                {activeTab === 'users' && `Review personnel currently bound to the ${role?.name} role.`}
-                {activeTab === 'delete' && "Sensitive operations requiring administrative authorization."}
+                {activeTab === "edit" &&
+                  (role
+                    ? `Modify settings and access permissions for ${role.name}.`
+                    : "Define name, icon, and system-level permissions for a new role.")}
+                {activeTab === "users" &&
+                  `Review personnel currently bound to the ${role?.name} role.`}
+                {activeTab === "delete" &&
+                  "Sensitive operations requiring administrative authorization."}
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <Tabs 
-            value={activeTab} 
-            onValueChange={(v) => setActiveTab(v as ModalTab)} 
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as ModalTab)}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="border-b border-slate-100 bg-white">
-              <TabsList className="h-12 w-full bg-transparent p-0 rounded-none border-none">
-                <TabsTrigger 
-                  value="edit" 
+            <div className="border-b border-slate-100 bg-white px-6">
+              <TabsList className="h-12 w-full bg-transparent p-0 rounded-none border-none flex gap-8">
+                <TabsTrigger
+                  value="edit"
                   className={cn(
-                    "h-12 rounded-none border-b-2 bg-transparent px-4 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none -mb-px",
+                    "h-12 rounded-none border-b-2 bg-transparent px-1 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none shadow-none data-[state=active]:shadow-none -mb-px",
                     activeTab === "edit"
                       ? "border-blue-600 text-blue-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      : "border-transparent text-slate-500 hover:text-slate-700",
                   )}
                 >
                   Configuration
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="users" 
+                <TabsTrigger
+                  value="users"
                   disabled={!role}
                   className={cn(
-                    "h-12 rounded-none border-b-2 bg-transparent px-4 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none -mb-px",
+                    "h-12 rounded-none border-b-2 bg-transparent px-1 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none -mb-px",
                     activeTab === "users"
                       ? "border-blue-600 text-blue-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      : "border-transparent text-slate-500 hover:text-slate-700",
                   )}
                 >
                   Personnel
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="delete" 
+                <TabsTrigger
+                  value="delete"
                   disabled={!role}
                   className={cn(
-                    "h-12 rounded-none border-b-2 bg-transparent px-4 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none -mb-px",
+                    "h-12 rounded-none border-b-2 bg-transparent px-1 pb-3 pt-3 text-xs font-bold transition-all focus-visible:ring-0 focus-visible:outline-none disabled:opacity-30 shadow-none data-[state=active]:shadow-none -mb-px",
                     activeTab === "delete"
                       ? "border-rose-600 text-rose-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      : "border-transparent text-slate-500 hover:text-slate-700",
                   )}
                 >
                   Danger Zone
@@ -586,9 +612,12 @@ export function RoleMasterModal({
               </TabsList>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-white">
-              <TabsContent value="edit" className="m-0 focus-visible:outline-none">
-                <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
+              <TabsContent
+                value="edit"
+                className="px-6 py-6 space-y-8 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0 focus-visible:outline-none"
+              >
+                <div>
                   <section>
                     <div className="flex items-center gap-1.5 mb-4 border-b border-slate-100">
                       <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
@@ -596,7 +625,7 @@ export function RoleMasterModal({
                         Role Identity
                       </h3>
                     </div>
-                    <div className="space-y-5">
+                    <div className="space-y-5 mb-4">
                       <ValidatedInput
                         label="Role Name"
                         value={name}
@@ -689,7 +718,9 @@ export function RoleMasterModal({
                                     autoFocus
                                     type="text"
                                     value={permissionSearch}
-                                    onChange={(e) => setPermissionSearch(e.target.value)}
+                                    onChange={(e) =>
+                                      setPermissionSearch(e.target.value)
+                                    }
                                     placeholder="Search Permissions..."
                                     className="w-full bg-white border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-blue-100 transition-all font-inter"
                                   />
@@ -698,36 +729,52 @@ export function RoleMasterModal({
                               <div className="max-h-52 overflow-y-auto py-1 custom-scrollbar bg-white">
                                 {availablePermissions.length > 0 ? (
                                   availablePermissions.map((p) => {
-                                    const isChecked = pickerSelectedIds.has(p.id);
+                                    const isChecked = pickerSelectedIds.has(
+                                      p.id,
+                                    );
                                     return (
                                       <button
                                         key={p.id}
-                                        onClick={() => togglePickerSelection(p.id)}
+                                        onClick={() =>
+                                          togglePickerSelection(p.id)
+                                        }
                                         className={cn(
                                           "w-full text-left px-3 py-2.5 text-xs flex items-center gap-3 transition-colors focus-visible:outline-none",
-                                          isChecked ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-blue-50/50 hover:text-blue-600",
+                                          isChecked
+                                            ? "bg-blue-50 text-blue-700"
+                                            : "text-slate-600 hover:bg-blue-50/50 hover:text-blue-600",
                                         )}
                                       >
-                                        <div className={cn(
-                                          "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
-                                          isChecked ? "bg-blue-500 border-blue-600 text-white" : "bg-white border-slate-300",
-                                        )}>
+                                        <div
+                                          className={cn(
+                                            "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                                            isChecked
+                                              ? "bg-blue-500 border-blue-600 text-white"
+                                              : "bg-white border-slate-300",
+                                          )}
+                                        >
                                           {isChecked && <Check size={9} />}
                                         </div>
                                         <div className="w-6 h-6 bg-slate-100 rounded-md flex items-center justify-center text-[10px] uppercase font-bold text-slate-400 shrink-0">
                                           {p.name.substring(0, 2)}
                                         </div>
-                                        <span className="truncate">{p.name}</span>
+                                        <span className="truncate">
+                                          {p.name}
+                                        </span>
                                       </button>
                                     );
                                   })
                                 ) : (
-                                  <p className="p-4 text-[10px] text-slate-400 italic text-center font-inter">No results found</p>
+                                  <p className="p-4 text-[10px] text-slate-400 italic text-center font-inter">
+                                    No results found
+                                  </p>
                                 )}
                               </div>
                               <div className="p-2.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
                                 <span className="text-[10px] text-slate-400 font-medium font-inter">
-                                  {pickerSelectedIds.size > 0 ? `${pickerSelectedIds.size} selected` : "Select permissions"}
+                                  {pickerSelectedIds.size > 0
+                                    ? `${pickerSelectedIds.size} selected`
+                                    : "Select permissions"}
                                 </span>
                                 <button
                                   onClick={handleBulkAddFromPicker}
@@ -735,7 +782,12 @@ export function RoleMasterModal({
                                   className="h-7 px-3 text-[10px] font-bold bg-blue-600 text-white rounded-lg flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-700 shadow-sm cursor-pointer"
                                 >
                                   <Plus className="w-3 h-3" />
-                                  Add{pickerSelectedIds.size > 0 ? ` ${pickerSelectedIds.size}` : ""} Permission{pickerSelectedIds.size !== 1 ? "s" : ""}
+                                  Add
+                                  {pickerSelectedIds.size > 0
+                                    ? ` ${pickerSelectedIds.size}`
+                                    : ""}{" "}
+                                  Permission
+                                  {pickerSelectedIds.size !== 1 ? "s" : ""}
                                 </button>
                               </div>
                             </div>
@@ -743,14 +795,17 @@ export function RoleMasterModal({
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mb-4">
                       {assignedPermissions.length > 0 ? (
                         <div className="divide-y divide-slate-100">
                           {assignedPermissions.map((p) => {
-                            const isMarkedForRemoval = permissionsToRemove.has(p.id);
+                            const isMarkedForRemoval = permissionsToRemove.has(
+                              p.id,
+                            );
                             const isNew = !initialIds.has(String(p.id));
                             const isSelectedForBulk = selectedForBulk.has(p.id);
-                            const isPendingConfirm = pendingRemoveConfirm === p.id;
+                            const isPendingConfirm =
+                              pendingRemoveConfirm === p.id;
 
                             return (
                               <div
@@ -779,7 +834,10 @@ export function RoleMasterModal({
                                             ? "bg-blue-500 border-blue-600 text-white cursor-pointer active:scale-95"
                                             : "bg-white border-slate-300 text-transparent hover:border-blue-400 cursor-pointer active:scale-95",
                                       )}
-                                      onClick={() => !isMarkedForRemoval && toggleBulkSelection(p.id)}
+                                      onClick={() =>
+                                        !isMarkedForRemoval &&
+                                        toggleBulkSelection(p.id)
+                                      }
                                     >
                                       <Check className="w-3.5 h-3.5" />
                                     </div>
@@ -801,7 +859,12 @@ export function RoleMasterModal({
                                   >
                                     {p.name.substring(0, 2).toUpperCase()}
                                   </div>
-                                  <div className={cn("transition-all duration-300", isEditMode && isNew && "opacity-40")}>
+                                  <div
+                                    className={cn(
+                                      "transition-all duration-300",
+                                      isEditMode && isNew && "opacity-40",
+                                    )}
+                                  >
                                     <div className="flex items-center gap-2">
                                       <span
                                         className={cn(
@@ -955,8 +1018,12 @@ export function RoleMasterModal({
                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                             <ShieldAlert className="w-6 h-6 text-slate-300" />
                           </div>
-                          <p className="text-xs text-slate-400 italic font-medium">No permissions assigned to this role.</p>
-                          <p className="text-[10px] text-slate-400 mt-1">Add permissions to define what this role can access.</p>
+                          <p className="text-xs text-slate-400 italic font-medium">
+                            No permissions assigned to this role.
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Add permissions to define what this role can access.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1006,8 +1073,11 @@ export function RoleMasterModal({
                 </div>
               </TabsContent>
 
-              <TabsContent value="users" className="m-0 focus-visible:outline-none">
-                <div className="space-y-4 animate-in fade-in duration-300">
+              <TabsContent
+                value="users"
+                className="px-6 py-6 space-y-4 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0 focus-visible:outline-none"
+              >
+                <div>
                   {totalRoleUsers.length > 0 && (
                     <div className="relative mb-6">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -1043,7 +1113,9 @@ export function RoleMasterModal({
                                     {user.firstname} {user.lastname}
                                   </p>
                                   {user.empID === currentUser?.empID && (
-                                    <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[8px] font-black uppercase ml-1.5 ring-1 ring-blue-200">You</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[8px] font-black uppercase ml-1.5 ring-1 ring-blue-200">
+                                      You
+                                    </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500 font-medium tracking-tight font-inter">
@@ -1069,7 +1141,8 @@ export function RoleMasterModal({
                                     : "bg-amber-50 text-amber-600 hover:bg-amber-100",
                                 )}
                               >
-                                <ArrowDownToLine size={12} className="mr-1.5" /> Demote
+                                <ArrowDownToLine size={12} className="mr-1.5" />{" "}
+                                Demote
                               </Button>
                               <Button
                                 disabled={user.empID === currentUser?.empID}
@@ -1082,7 +1155,9 @@ export function RoleMasterModal({
                           </div>
                           {demoteSelectingFor === user.empID && (
                             <div className="mt-4 p-3 bg-amber-50/50 border border-amber-100 rounded-lg animate-in slide-in-from-top-2 duration-300 shadow-inner">
-                              <p className="font-lexend text-[10px] font-bold text-amber-800 mb-2">Reassign to Role</p>
+                              <p className="font-lexend text-[10px] font-bold text-amber-800 mb-2">
+                                Reassign to Role
+                              </p>
                               <div className="grid grid-cols-2 gap-2">
                                 {allRoles
                                   .filter(
@@ -1116,33 +1191,51 @@ export function RoleMasterModal({
                     ) : (
                       <div className="py-20 text-center opacity-40">
                         <UsersRound size={48} className="mx-auto mb-4" />
-                        <p className="font-lexend text-xs font-bold italic">No Personnel Assigned</p>
+                        <p className="font-lexend text-xs font-bold italic">
+                          No Personnel Assigned
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="delete" className="m-0 focus-visible:outline-none">
-                <div className="space-y-6 pt-2 animate-in fade-in duration-300">
+              <TabsContent
+                value="delete"
+                className="px-6 py-6 space-y-6 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0 focus-visible:outline-none"
+              >
+                <div className="pt-2">
                   <section className="bg-rose-50/50 border border-rose-100/50 rounded-xl p-5 transition-all shadow-sm">
                     <div className="flex items-start gap-4">
                       <div className="shrink-0 w-10 h-10 rounded-xl bg-white border border-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
                         <Trash2 size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-lexend text-sm font-bold text-rose-900 mb-1">Permanently Delete Role</h5>
+                        <h5 className="font-lexend text-sm font-bold text-rose-900 mb-1">
+                          Permanently Delete Role
+                        </h5>
                         <p className="font-inter text-[11px] text-rose-700/70 leading-relaxed overflow-hidden wrap-break-word">
-                          You are about to erase the <span className="font-bold">"{role?.name}"</span> role. 
-                          This will leave <span className="font-bold underline text-rose-800">{roleUsers.length} users</span> without a primary security mapping.
+                          You are about to erase the{" "}
+                          <span className="font-bold">"{role?.name}"</span>{" "}
+                          role. This will leave{" "}
+                          <span className="font-bold underline text-rose-800">
+                            {roleUsers.length} users
+                          </span>{" "}
+                          without a primary security mapping.
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-5 pt-4 border-t border-rose-100/50">
                       <div className="flex items-center gap-2 bg-rose-100/50 p-3 rounded-lg border border-rose-100">
-                        <ShieldAlert size={16} className="text-rose-600 shrink-0" />
-                        <p className="text-[10px] font-semibold text-rose-800 leading-tight">This action is irreversible. Ensure all users are migrated before deletion.</p>
+                        <ShieldAlert
+                          size={16}
+                          className="text-rose-600 shrink-0"
+                        />
+                        <p className="text-[10px] font-semibold text-rose-800 leading-tight">
+                          This action is irreversible. Ensure all users are
+                          migrated before deletion.
+                        </p>
                       </div>
                     </div>
 
@@ -1152,7 +1245,9 @@ export function RoleMasterModal({
                         disabled={isSubmitting}
                         className="w-full h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 rounded-lg focus-visible:ring-0 focus-visible:outline-none border-b-4 border-rose-800"
                       >
-                        {isSubmitting ? "Wiping Data..." : "Confirm Role Deletion"}
+                        {isSubmitting
+                          ? "Wiping Data..."
+                          : "Confirm Role Deletion"}
                       </Button>
                     </div>
                   </section>
@@ -1178,7 +1273,7 @@ export function RoleMasterModal({
               <X className="w-4 h-4" />
               Cancel
             </Button>
-            {(activeTab === 'edit' || activeTab === 'users') && (
+            {(activeTab === "edit" || activeTab === "users") && (
               <Button
                 onClick={() => setShowSaveConfirm(true)}
                 disabled={isSubmitting || !name.trim() || !hasChanges}
