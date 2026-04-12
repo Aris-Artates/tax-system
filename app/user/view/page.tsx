@@ -27,6 +27,21 @@ import {
   Plus,
   Mars,
   Venus,
+  Lock,
+  Unlock,
+  UserRound,
+  Briefcase,
+  GraduationCap,
+  Gavel,
+  BadgeCheck,
+  Database,
+  Globe,
+  Building,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  PiggyBank,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -72,6 +87,7 @@ type ListedUser = {
   empID: string;
   name: string;
   role: string;
+  role_icon?: string;
   status: "Active" | "Inactive";
   email: string;
   sex: boolean; // true = male, false = female
@@ -87,6 +103,7 @@ type ApiUser = {
   role?: string;
   roles?: {
     name?: string;
+    icon?: string;
   } | null;
   status?: boolean;
   email?: string;
@@ -140,6 +157,7 @@ type FormState = {
 type RoleOption = {
   id: number;
   name: string;
+  icon?: string;
 };
 
 const SuffixOptions = ["Jr.", "Sr.", "II", "III", "IV", "V", "VI"] as const;
@@ -283,6 +301,29 @@ function PasswordField({
   );
 }
 
+const ROLE_ICONS: Record<string, React.ElementType> = {
+  KeyRound: KeyRound,
+  ShieldCheck: ShieldCheck,
+  Users: UsersRound,
+  Shield: Shield,
+  Settings2: Settings2,
+  Lock: Lock,
+  Unlock: Unlock,
+  UserRound: UserRound,
+  Briefcase: Briefcase,
+  GraduationCap: GraduationCap,
+  Gavel: Gavel,
+  BadgeCheck: BadgeCheck,
+  Database: Database,
+  Eye: Eye,
+  Globe: Globe,
+  Building: Building,
+  CreditCard: CreditCard,
+  FileText: FileText,
+  LayoutDashboard: LayoutDashboard,
+  PiggyBank: PiggyBank,
+};
+
 export default function ViewUserPage() {
   const router = useRouter();
   const [users, setUsers] = useState<ListedUser[]>([]);
@@ -351,6 +392,7 @@ export default function ViewUserPage() {
             empID: user.empID || user.email || Math.random().toString(36),
             name: fullname || "Unnamed User",
             role: user.roles?.name || user.role || "Unassigned",
+            role_icon: user.roles?.icon || undefined,
             status: user.status ? "Active" : "Inactive",
             email: user.email || "",
             sex: typeof user.sex === "boolean" ? user.sex : true,
@@ -620,6 +662,9 @@ export default function ViewUserPage() {
               role:
                 roles.find((r) => String(r.id) === form.role_id)?.name ??
                 u.role,
+              role_icon:
+                roles.find((r) => String(r.id) === form.role_id)?.icon ??
+                u.role_icon,
               status: form.status ? "Active" : "Inactive",
               email: form.email,
               sex: form.sex,
@@ -745,12 +790,16 @@ export default function ViewUserPage() {
       {
         accessorKey: "role",
         header: "Role",
-        cell: ({ row }: any) => (
-          <div className="inline-flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-slate-400" />
-            {row.original.role}
-          </div>
-        ),
+        cell: ({ row }: any) => {
+          const user = row.original;
+          const RoleIcon = (user.role_icon && ROLE_ICONS[user.role_icon]) || ShieldCheck;
+          return (
+            <div className="inline-flex items-center gap-2">
+              <RoleIcon className="h-4 w-4 text-slate-400" />
+              {user.role}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "status",
