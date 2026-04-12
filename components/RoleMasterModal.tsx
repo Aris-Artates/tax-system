@@ -157,6 +157,9 @@ export function RoleMasterModal({
   const [pickerSelectedIds, setPickerSelectedIds] = useState<Set<number>>(
     new Set(),
   );
+  const [initialPermissionIds, setInitialPermissionIds] = useState<Set<string>>(
+    new Set(),
+  );
   const pickerRef = useRef<HTMLDivElement>(null);
 
   // Users Tab State
@@ -201,11 +204,15 @@ export function RoleMasterModal({
               role.permissionIds.map(String).includes(String(p.id)),
           );
           setAssignedPermissions(initialPermissions);
+          setInitialPermissionIds(
+            new Set(initialPermissions.map((p) => String(p.id))),
+          );
           setActiveTab("edit");
         } else {
           setName("");
           setIconName("KeyRound");
           setAssignedPermissions([]);
+          setInitialPermissionIds(new Set());
           setActiveTab("edit");
         }
         setPermissionsToRemove(new Set());
@@ -252,24 +259,7 @@ export function RoleMasterModal({
 
   // Derived calculation: Which permissions were originally assigned to the role?
   // We match against allPermissions using both IDs and names to ensure consistency
-  const initialIds = useMemo(() => {
-    if (!role || !allPermissions.length) return new Set<string>();
-
-    const normalizedNames = (role.permissionNames || []).map((n) =>
-      n.trim().toLowerCase(),
-    );
-    const roleIds = (role.permissionIds || []).map(String);
-
-    return new Set(
-      allPermissions
-        .filter(
-          (p) =>
-            normalizedNames.includes(p.name.trim().toLowerCase()) ||
-            roleIds.includes(String(p.id)),
-        )
-        .map((p) => String(p.id)),
-    );
-  }, [role, allPermissions]);
+  // (Logic moved to useEffect to maintain stability during modal closure)
 
   // Detect unsaved changes (mirrors PermissionSettingsModal hasChanges logic)
   const hasChanges = useMemo(() => {
@@ -284,8 +274,8 @@ export function RoleMasterModal({
       .map((p) => String(p.id));
 
     const permsChanged =
-      initialIds.size !== currentIds.length ||
-      currentIds.some((id) => !initialIds.has(id));
+      initialPermissionIds.size !== currentIds.length ||
+      currentIds.some((id) => !initialPermissionIds.has(id));
 
     return nameChanged || iconChanged || permsChanged;
   }, [
@@ -294,12 +284,12 @@ export function RoleMasterModal({
     assignedPermissions,
     permissionsToRemove,
     role,
-    initialIds,
+    initialPermissionIds,
   ]);
 
   // Handlers for Edit Tab
   const handleMarkForRemoval = (p: Permission) => {
-    const isNew = !initialIds.has(String(p.id));
+    const isNew = !initialPermissionIds.has(String(p.id));
     if (isNew) {
       setAssignedPermissions((prev) => prev.filter((perm) => perm.id !== p.id));
       toast.warning("Staged assignment removed.");
@@ -575,13 +565,9 @@ export function RoleMasterModal({
               </DialogTitle>
               <DialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
                 {activeTab === "edit" &&
-                  (role
-                    ? `Modify settings and access permissions for ${role.name}.`
-                    : wasOpen.current
-                      ? "Configuration settings persistent state."
-                      : "Preparing role configuration details...")}
+                  `Modify settings and access permissions for ${name || "..."}.`}
                 {activeTab === "users" &&
-                  `Review personnel currently bound to the ${role?.name} role.`}
+                  `Review personnel currently bound to the ${name || "..."} role.`}
                 {activeTab === "delete" &&
                   "Sensitive operations requiring administrative authorization."}
               </DialogDescription>
@@ -823,7 +809,9 @@ export function RoleMasterModal({
                             const isMarkedForRemoval = permissionsToRemove.has(
                               p.id,
                             );
-                            const isNew = !initialIds.has(String(p.id));
+                            const isNew = !initialPermissionIds.has(
+                              String(p.id),
+                            );
                             const isSelectedForBulk = selectedForBulk.has(p.id);
                             const isPendingConfirm =
                               pendingRemoveConfirm === p.id;
@@ -899,11 +887,14 @@ export function RoleMasterModal({
                                       >
                                         {p.name}
                                       </span>
-                                      {isNew && !isMarkedForRemoval && !isInitializing && role && (
-                                        <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm animate-pulse">
-                                          New
-                                        </span>
-                                      )}
+                                      {isNew &&
+                                        !isMarkedForRemoval &&
+                                        !isInitializing &&
+                                        role && (
+                                          <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm animate-pulse">
+                                            New
+                                          </span>
+                                        )}
                                     </div>
                                     <span
                                       className={cn(
