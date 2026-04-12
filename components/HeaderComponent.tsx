@@ -362,6 +362,9 @@ export default function HeaderComponent({ sessionUser }: HeaderComponentProps) {
         method: "POST",
         credentials: "include",
       });
+      const channel = new BroadcastChannel("auth_channel");
+      channel.postMessage("logout");
+      channel.close();
     } finally {
       router.push("/");
       router.refresh();

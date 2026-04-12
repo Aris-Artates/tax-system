@@ -30,6 +30,10 @@ export default function LoginComponent() {
         return;
       }
 
+      const channel = new BroadcastChannel("auth_channel");
+      channel.postMessage("login");
+      channel.close();
+
       router.push("/dashboard");
     } catch {
       const errorMessage = "An unexpected error occurred. Please try again.";

@@ -333,6 +333,8 @@ export default function ViewUserPage() {
   // --- 3. Added state for our Search Bar ---
   const [globalFilter, setGlobalFilter] = useState("");
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   // Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -421,6 +423,17 @@ export default function ViewUserPage() {
       }
     };
 
+    const fetchSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session");
+        const data = await response.json();
+        setCurrentUser(data.user);
+      } catch (err) {
+        console.error("Failed to fetch session", err);
+      }
+    };
+
+    fetchSession();
     fetchUsers();
     fetchRoles();
   }, []);
@@ -847,22 +860,24 @@ export default function ViewUserPage() {
                 <Pencil className="h-3.5 w-3.5" />
                 Edit
               </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteClick(user.empID, user.name)}
-                className={`font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {isDeleting && deleteTarget?.empID === user.empID
-                  ? "Deleting..."
-                  : "Delete"}
-              </button>
+              {Number(currentUser?.role_id) === 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteClick(user.empID, user.name)}
+                  className={`font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {isDeleting && deleteTarget?.empID === user.empID
+                    ? "Deleting..."
+                    : "Delete"}
+                </button>
+              )}
             </div>
           );
         },
       },
     ],
-    [],
+    [currentUser, isDeleting, deleteTarget, router],
   );
 
   // --- 4. Updated Hook to include the Filter logic ---
