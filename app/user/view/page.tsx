@@ -668,6 +668,7 @@ export default function ViewUserPage() {
               status: form.status ? "Active" : "Inactive",
               email: form.email,
               sex: form.sex,
+              image_path: u.image_path,
             } as ListedUser;
           }
           return u;
