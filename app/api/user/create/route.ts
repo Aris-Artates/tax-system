@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 type CreateUserPayload = {
 	empID: string;
@@ -31,6 +32,11 @@ function isValidBirthdate(value: string) {
 
 export async function POST(request: Request) {
 	try {
+		// 1. Authorize the user (Server-side)
+		if (!(await authorize('User & Role Management', 'can_edit'))) {
+			return NextResponse.json({ error: 'Unauthorized: You do not have permission to create users.' }, { status: 403 });
+		}
+
 		const body = (await request.json()) as Partial<CreateUserPayload>;
 		const roleId = Number(body.role_id);
 		const primaryEmail = body.emails?.[0];

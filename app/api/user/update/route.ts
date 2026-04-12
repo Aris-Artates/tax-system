@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 type UpdateUserPayload = {
 	originalEmpID: string;
@@ -33,6 +34,11 @@ function isValidBirthdate(value: string) {
 
 export async function PUT(request: Request) {
 	try {
+		// 1. Authorize the user (Server-side)
+		if (!(await authorize('User & Role Management', 'can_edit'))) {
+			return NextResponse.json({ error: 'Unauthorized: You do not have permission to update users.' }, { status: 403 });
+		}
+
 		const body = (await request.json()) as Partial<UpdateUserPayload>;
 		const roleId = Number(body.role_id);
 		const primaryEmail = body.emails?.[0];

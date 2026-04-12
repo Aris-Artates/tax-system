@@ -57,12 +57,32 @@ const menuItems: MenuItem[] = [
 
 export default function AppSidebar({
   sessionUser,
+  permissions = {},
 }: {
   sessionUser: SessionUser | null;
+  permissions?: Record<string, any>;
 }) {
   const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  const routeToModule: Record<string, string> = {
+    "/property": "Property Registry",
+    "/taxpayers": "Taxpayer Records",
+    "/assessment": "Assessment & Billing",
+    "/payments": "Payments & OR Monitoring",
+    "/barangay": "Barangay Performance",
+    "/delinquencies": "Delinquencies & Notices",
+    "/document": "Document Tracking",
+    "/user": "User & Role Management",
+  };
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (item.path === "/dashboard") return true;
+    if (Number(sessionUser?.role_id) === 1) return true;
+    const moduleName = routeToModule[item.path];
+    return permissions[moduleName]?.can_view;
+  });
 
   return (
     <Sidebar collapsible="icon" className="font-inter border-r border-gray-200 bg-white">
@@ -96,7 +116,7 @@ export default function AppSidebar({
       {/* Navigation */}
       <SidebarContent className="px-3 py-2">
         <SidebarMenu>
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const Icon = item.icon;
             return (
               <SidebarMenuItem key={item.name}>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 type UpdateRolePayload = {
     id: number | string;
@@ -11,6 +12,11 @@ type UpdateRolePayload = {
 
 export async function POST(request: Request) {
     try {
+        // 1. Authorize the user (Server-side)
+        if (!(await authorize('User & Role Management', 'can_edit'))) {
+            return NextResponse.json({ error: 'Unauthorized: You do not have permission to edit roles.' }, { status: 403 });
+        }
+
         const body = (await request.json()) as Partial<UpdateRolePayload>;
         
         const roleId = Number(body.id);

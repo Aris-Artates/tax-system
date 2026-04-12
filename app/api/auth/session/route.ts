@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -11,7 +12,36 @@ export async function GET() {
 
   try {
     const user = JSON.parse(sessionCookie.value);
-    return NextResponse.json({ user }, { status: 200 });
+    const roleId = Number(user.role_id);
+
+    let permissionsMap: Record<string, any> = {};
+
+    if (roleId === 1) {
+      // Super admin bypass - we can return an empty map or a "super" flag
+      // Frontend will check role_id === 1 anyway, but let's be consistent
+    } else {
+      const { data: rolePerms, error } = await supabaseAdmin
+        .from('role_permissions')
+        .select('can_view, can_edit, can_delete, permissions(name)')
+        .eq('role_id', roleId);
+
+      if (!error && rolePerms) {
+        rolePerms.forEach((rp: any) => {
+          const permName = Array.isArray(rp.permissions)
+            ? rp.permissions[0]?.name
+            : rp.permissions?.name;
+          if (permName) {
+            permissionsMap[permName] = {
+              can_view: rp.can_view,
+              can_edit: rp.can_edit,
+              can_delete: rp.can_delete,
+            };
+          }
+        });
+      }
+    }
+
+    return NextResponse.json({ user, permissions: permissionsMap }, { status: 200 });
   } catch {
     cookieStore.delete('tax_session');
     return NextResponse.json({ user: null }, { status: 200 });

@@ -9,6 +9,23 @@ import { GenerateReportModal } from "@/components/GenerateReportModal";
 export default function Dashboard() {
   const router = useRouter();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [permissions, setPermissions] = useState<Record<string, any>>({});
+  const [roleId, setRoleId] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    async function loadSession() {
+      const res = await fetch("/api/auth/session");
+      const data = await res.json();
+      if (data.user) {
+        setRoleId(Number(data.user.role_id));
+        setPermissions(data.permissions || {});
+      }
+    }
+    loadSession();
+  }, []);
+
+  const hasDelinquencyAccess = roleId === 1 || permissions["Taxpayer Records"]?.can_view;
+
   return (
     <main>
       <div className="w-full mb-6">
@@ -54,10 +71,15 @@ export default function Dashboard() {
 
           <div className="mt-10">
             <button
+              disabled={!hasDelinquencyAccess}
               onClick={() => router.push("/taxpayers/view-delinquencies")}
-              className={`font-inter w-full bg-[#0f1729] hover:bg-slate-800 text-[#949ba3] text-xs font-semibold py-2 px-4 rounded-sm transition-colors shadow-sm cursor-pointer `}
+              className={`font-inter w-full text-xs font-semibold py-2 px-4 rounded-sm transition-all shadow-sm ${
+                hasDelinquencyAccess 
+                  ? "bg-[#0f1729] hover:bg-slate-800 text-[#949ba3] cursor-pointer" 
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed grayscale"
+              }`}
             >
-              View Delinquencies
+              {hasDelinquencyAccess ? "View Delinquencies" : "Access Restricted"}
             </button>
           </div>
         </div>
