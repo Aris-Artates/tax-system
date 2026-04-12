@@ -6,6 +6,7 @@ export async function GET() {
 		const { data, error } = await supabaseAdmin
 			.from('users')
 			.select('empID, username, firstname, middlename, lastname, suffix, role_id, status, email, sex, birthdate, age, mobile_number, department, position, image_path, roles(name, icon)')
+			.neq('role_id', 1)
 			.order('firstname', { ascending: true });
 
 		if (error) {

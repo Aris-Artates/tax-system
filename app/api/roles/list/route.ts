@@ -6,6 +6,7 @@ export async function GET() {
 		const { data: roles, error: rolesError } = await supabaseAdmin
 			.from('roles')
 			.select('id, name, icon, created_at')
+			.neq('id', 1)
 			.order('name', { ascending: true });
 
 		if (rolesError) {
