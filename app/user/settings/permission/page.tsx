@@ -55,6 +55,7 @@ export default function PermissionSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -99,6 +100,16 @@ export default function PermissionSettingsPage() {
   };
 
   useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session");
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        }
+      } catch {}
+    };
+    fetchSession();
     fetchPermissions();
   }, []);
 
@@ -119,14 +130,14 @@ export default function PermissionSettingsPage() {
         setGlobalFilter("");
       }
       // Alt + N to add new permission
-      if (e.altKey && e.key.toLowerCase() === "n") {
+      if (e.altKey && e.key.toLowerCase() === "n" && Number(currentUser?.role_id) === 1) {
         e.preventDefault();
         handleAddPermission();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [globalFilter, handleAddPermission]);
+  }, [globalFilter, handleAddPermission, currentUser]);
 
   const handleDialogSuccess = useCallback(async () => {
     await fetchPermissions();
@@ -317,12 +328,14 @@ export default function PermissionSettingsPage() {
               <Undo2 className="h-4 w-4" />
               Back to User Management
             </Button>
-            <Button
-              onClick={handleAddPermission}
-              className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Permission
-            </Button>
+            {Number(currentUser?.role_id) === 1 && (
+              <Button
+                onClick={handleAddPermission}
+                className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Permission
+              </Button>
+            )}
           </div>
         </header>
 
