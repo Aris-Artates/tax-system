@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 export async function POST(request: Request) {
 	try {
+		// 1. Authorize the user (Server-side)
+		if (!(await authorize('User & Role Management', 'can_delete'))) {
+			return NextResponse.json({ error: 'Unauthorized: You do not have permission to delete roles.' }, { status: 403 });
+		}
+
 		const body = (await request.json()) as { name?: string };
 		const name = typeof body.name === 'string' ? body.name.trim() : '';
 

@@ -24,6 +24,7 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [permissions, setPermissions] = useState<Record<string, any>>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -44,10 +45,12 @@ export default function MainLayout({
 
         if (isMounted) {
           setSessionUser(data.user ?? null);
+          setPermissions(data.permissions ?? {});
         }
       } catch {
         if (isMounted) {
           setSessionUser(null);
+          setPermissions({});
         }
       }
     };
@@ -63,7 +66,7 @@ export default function MainLayout({
     <SidebarProvider className="h-screen overflow-hidden print:h-auto print:overflow-visible">
       <TopLoader />
       <div className="print:hidden">
-        <AppSidebar sessionUser={sessionUser} />
+        <AppSidebar sessionUser={sessionUser} permissions={permissions} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden print:h-auto print:overflow-visible relative">
         <div className="print:hidden">
