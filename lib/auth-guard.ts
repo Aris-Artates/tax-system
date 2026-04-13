@@ -44,7 +44,7 @@ export async function authorize(moduleName: string, action: PermissionAction): P
     // 3. Check for specific module permission
     const { data: rolePerms, error: permsError } = await supabaseAdmin
       .from('role_permissions')
-      .select('can_view, can_edit, can_delete, permissions(name)')
+      .select('can_view, can_edit, can_delete, permissions(name, access_module)')
       .eq('role_id', dbUser.role_id);
 
     if (permsError || !rolePerms) {
@@ -54,10 +54,13 @@ export async function authorize(moduleName: string, action: PermissionAction): P
 
     // Find the relevant permission module
     const modulePermission = rolePerms.find((rp: any) => {
-      const permName = Array.isArray(rp.permissions) 
-        ? rp.permissions[0]?.name 
-        : rp.permissions?.name;
-      return permName === moduleName;
+      const permData = Array.isArray(rp.permissions) 
+        ? rp.permissions[0] 
+        : rp.permissions;
+        
+      if (!permData) return false;
+      const permKey = permData.access_module || permData.name;
+      return permKey === moduleName;
     });
 
     if (!modulePermission) {

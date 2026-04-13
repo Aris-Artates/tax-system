@@ -29,6 +29,7 @@ export default function MainLayout({
         {/* Main content scrolls */}
         <main className="flex-1 overflow-y-auto p-4.5 bg-[#f0f4f7] print:bg-white print:p-0 print:overflow-visible relative">
           <div 
+            key={pathname}
             className="h-full w-full animate-in fade-in slide-in-from-bottom-1 duration-300 will-change-transform will-change-opacity"
           >
             {children}

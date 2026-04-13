@@ -66,22 +66,23 @@ export default function AppSidebar({
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
-  const routeToModule: Record<string, string> = {
-    "/property": "Property Registry",
-    "/taxpayers": "Taxpayer Records",
-    "/assessment": "Assessment & Billing",
-    "/payments": "Payments & OR Monitoring",
-    "/barangay": "Barangay Performance",
-    "/delinquencies": "Delinquencies & Notices",
-    "/document": "Document Tracking",
-    "/user": "User & Role Management",
+  const routeToModule: Record<string, { id: string; label: string }> = {
+    "/property": { id: "property", label: "Property Registry" },
+    "/taxpayers": { id: "taxpayers", label: "Taxpayer Records" },
+    "/assessment": { id: "assessment", label: "Assessment & Billing" },
+    "/payments": { id: "payments", label: "Payments & OR Monitoring" },
+    "/barangay": { id: "barangay", label: "Barangay Performance" },
+    "/delinquencies": { id: "delinquencies", label: "Delinquencies & Notices" },
+    "/document": { id: "document", label: "Document Tracking" },
+    "/user": { id: "user", label: "User & Role Management" },
   };
 
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.path === "/dashboard") return true;
     if (Number(sessionUser?.role_id) === 1) return true;
-    const moduleName = routeToModule[item.path];
-    return permissions[moduleName]?.can_view;
+    const mod = routeToModule[item.path];
+    if (!mod) return false;
+    return permissions[mod.id]?.can_view || permissions[mod.label]?.can_view;
   });
 
   return (

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 type DeletePermissionPayload = {
 	id: number;
@@ -7,6 +8,11 @@ type DeletePermissionPayload = {
 
 export async function POST(request: Request) {
 	try {
+		// 1. Authorize the user (Server-side)
+		if (!(await authorize('user', 'can_delete'))) {
+			return NextResponse.json({ error: 'Unauthorized: You do not have permission to delete system settings.' }, { status: 403 });
+		}
+
 		const body = (await request.json()) as Partial<DeletePermissionPayload>;
 		const id = Number(body.id);
 

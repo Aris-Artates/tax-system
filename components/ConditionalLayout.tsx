@@ -39,26 +39,27 @@ export default function ConditionalLayout({
       const roleId = Number(user.role_id);
       if (roleId !== 1) {
         // Super Admin bypass
-        const routeToModule: Record<string, string> = {
-          "/property": "Property Registry",
-          "/taxpayers": "Taxpayer Records",
-          "/assessment": "Assessment & Billing",
-          "/payments": "Payments & OR Monitoring",
-          "/barangay": "Barangay Performance",
-          "/delinquencies": "Delinquencies & Notices",
-          "/document": "Document Tracking",
-          "/user": "User & Role Management",
+        // Maps route paths to the underlying access_module ID stored in the database
+        const routeToModule: Record<string, { id: string; label: string }> = {
+          "/property": { id: "property", label: "Property Registry" },
+          "/taxpayers": { id: "taxpayers", label: "Taxpayer Records" },
+          "/assessment": { id: "assessment", label: "Assessment & Billing" },
+          "/payments": { id: "payments", label: "Payments & OR Monitoring" },
+          "/barangay": { id: "barangay", label: "Barangay Performance" },
+          "/delinquencies": { id: "delinquencies", label: "Delinquencies & Notices" },
+          "/document": { id: "document", label: "Document Tracking" },
+          "/user": { id: "user", label: "User & Role Management" },
         };
 
         const moduleKey = Object.keys(routeToModule).find((route) =>
           pathname.startsWith(route),
         );
         if (moduleKey) {
-          const moduleName = routeToModule[moduleKey];
-          const hasView = permissions[moduleName]?.can_view;
+          const mod = routeToModule[moduleKey];
+          const hasView = permissions[mod.id]?.can_view || permissions[mod.label]?.can_view;
           if (!hasView) {
             toast.error(
-              `Access Denied: You don't have permission for ${moduleName}`,
+              `Access Denied: You don't have permission for ${mod.label}`,
             );
             router.push("/dashboard");
             return;

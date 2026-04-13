@@ -22,19 +22,26 @@ export async function GET() {
     } else {
       const { data: rolePerms, error } = await supabaseAdmin
         .from('role_permissions')
-        .select('can_view, can_edit, can_delete, permissions(name)')
+        .select('can_view, can_edit, can_delete, permissions(name, access_module)')
         .eq('role_id', roleId);
 
       if (!error && rolePerms) {
         rolePerms.forEach((rp: any) => {
-          const permName = Array.isArray(rp.permissions)
-            ? rp.permissions[0]?.name
-            : rp.permissions?.name;
-          if (permName) {
-            permissionsMap[permName] = {
-              can_view: rp.can_view,
-              can_edit: rp.can_edit,
-              can_delete: rp.can_delete,
+          const permData = Array.isArray(rp.permissions)
+            ? rp.permissions[0]
+            : rp.permissions;
+            
+          if (permData) {
+            // We map the key by either access_module (if present) or name
+            const permKey = permData.access_module || permData.name;
+            
+            // In case there are multiple permissions mapping to the same module, 
+            // we should technically merge their capabilities. 
+            // For now, we take an optimistic true assignment.
+            permissionsMap[permKey] = {
+              can_view: permissionsMap[permKey]?.can_view || rp.can_view,
+              can_edit: permissionsMap[permKey]?.can_edit || rp.can_edit,
+              can_delete: permissionsMap[permKey]?.can_delete || rp.can_delete,
             };
           }
         });

@@ -11,8 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ValidatedInput } from "@/components/ui/ValidatedInput";
-import { Plus, KeyRound, X, CirclePlus } from "lucide-react";
+import {
+  Plus,
+  KeyRound,
+  X,
+  CirclePlus,
+  LayoutGrid,
+  ToggleLeft,
+} from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Permission {
   id: number;
@@ -26,6 +34,33 @@ interface PermissionDialogProps {
   onSuccess: () => void;
 }
 
+const MODULE_OPTIONS = [
+  {
+    id: "property",
+    label: "Property Registry",
+    tabs: ["Land", "Building", "Machinery"],
+  },
+  {
+    id: "taxpayers",
+    label: "Taxpayer Records",
+    tabs: ["Individual", "Corporate"],
+  },
+  {
+    id: "assessment",
+    label: "Assessment & Billing",
+    tabs: ["Billing", "Payments"],
+  },
+  { id: "payments", label: "Payments & OR Monitoring", tabs: [] },
+  { id: "barangay", label: "Barangay Performance", tabs: [] },
+  { id: "delinquencies", label: "Delinquencies & Notices", tabs: [] },
+  { id: "document", label: "Document Tracking", tabs: [] },
+  {
+    id: "user",
+    label: "User & Role Management",
+    tabs: ["User Profiles", "Role Assignments", "System Settings"],
+  },
+];
+
 export function PermissionDialog({
   isOpen,
   onClose,
@@ -33,12 +68,25 @@ export function PermissionDialog({
 }: PermissionDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  // New States
+  const [accessModule, setAccessModule] = useState("");
+  const [selectedTab, setSelectedTab] = useState("");
+  const [canView, setCanView] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setName("");
       setDescription("");
+      setAccessModule("");
+      setSelectedTab("");
+      setCanView(false);
+      setCanEdit(false);
+      setCanDelete(false);
     }
   }, [isOpen]);
 
@@ -52,7 +100,19 @@ export function PermissionDialog({
 
     setIsSubmitting(true);
     const endpoint = "/api/permissions/create";
-    const payload = { name, description };
+
+    // Note: the backend accepts name & description right now.
+    // The extra fields are passed here but we'll include them
+    // for validation and potential future backend handling.
+    const payload = {
+      name,
+      description,
+      access_module: accessModule,
+      tab: selectedTab,
+      can_view: canView,
+      can_edit: canEdit,
+      can_delete: canDelete,
+    };
 
     try {
       const response = await fetch(endpoint, {
@@ -77,6 +137,14 @@ export function PermissionDialog({
     }
   };
 
+  const activeModuleTabs =
+    MODULE_OPTIONS.find((m) => m.id === accessModule)?.tabs || [];
+
+  useEffect(() => {
+    // Reset tab selection when module changes
+    setSelectedTab("");
+  }, [accessModule]);
+
   // Handle Ctrl+Enter to submit
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,12 +155,22 @@ export function PermissionDialog({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, name, isSubmitting, handleSubmit]);
+  }, [
+    isOpen,
+    name,
+    description,
+    accessModule,
+    selectedTab,
+    canView,
+    canEdit,
+    canDelete,
+    handleSubmit,
+  ]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[360px]">
-        <div className="bg-slate-50 border-b border-slate-100 px-5 py-4">
+      <DialogContent className="sm:max-w-[480px] p-0 flex flex-col max-h-[85vh] overflow-hidden">
+        <div className="bg-slate-50 border-b border-slate-100 px-5 py-4 shrink-0">
           <DialogHeader>
             <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
               <Plus className="w-5 h-5 text-slate-400" />
@@ -104,12 +182,12 @@ export function PermissionDialog({
           </DialogHeader>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="flex-1 px-5 py-4 space-y-6 overflow-y-auto custom-scrollbar">
           <section>
             <div className="flex items-center gap-1.5 mb-3 border-b border-slate-100">
               <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
                 <KeyRound className="w-3.5 h-3.5 text-blue-500" />
-                <p>Configuration</p>
+                <p>Basic Information</p>
               </h3>
             </div>
             <div className="space-y-4">
@@ -117,7 +195,7 @@ export function PermissionDialog({
                 label="Permission Name"
                 value={name}
                 onChange={handleScrubbedChange}
-                placeholder="e.g. system.manage"
+                placeholder="e.g. property.view"
                 maxLength={50}
                 required
                 validator="permission-&-role-name"
@@ -136,9 +214,139 @@ export function PermissionDialog({
               </div>
             </div>
           </section>
+
+          <section>
+            <div className="flex items-center gap-1.5 mb-3 border-b border-slate-100">
+              <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
+                <LayoutGrid className="w-3.5 h-3.5 text-emerald-500" />
+                <p>Access Module</p>
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {MODULE_OPTIONS.map((mod) => (
+                <label
+                  key={mod.id}
+                  className={cn(
+                    "flex items-center gap-2.5 p-2.5 border rounded-lg cursor-pointer transition-all active:scale-[0.98]",
+                    accessModule === mod.id
+                      ? "bg-blue-50/50 border-blue-300 ring-1 ring-blue-100 shadow-sm"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    className="hidden"
+                    name="module"
+                    value={mod.id}
+                    checked={accessModule === mod.id}
+                    onChange={() => setAccessModule(mod.id)}
+                  />
+                  <div
+                    className={cn(
+                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all",
+                      accessModule === mod.id
+                        ? "border-blue-600 bg-blue-600"
+                        : "border-slate-300 bg-white",
+                    )}
+                  >
+                    {accessModule === mod.id && (
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-xs font-medium font-inter",
+                      accessModule === mod.id
+                        ? "text-blue-700"
+                        : "text-slate-600",
+                    )}
+                  >
+                    {mod.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {accessModule && (
+            <section className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-1.5 mb-3 border-b border-slate-100">
+                <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">
+                  <ToggleLeft className="w-3.5 h-3.5 text-rose-400" />
+                  <p>Capabilities</p>
+                </h3>
+              </div>
+
+              <div className="space-y-4 bg-slate-50/80 border border-slate-200 p-4 rounded-xl">
+                {activeModuleTabs.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-600 font-inter">
+                      Access which tab?
+                    </label>
+                    <select
+                      value={selectedTab}
+                      onChange={(e) => setSelectedTab(e.target.value)}
+                      className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none shadow-sm text-slate-700 cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        Select tab menu...
+                      </option>
+                      {activeModuleTabs.map((tab) => (
+                        <option key={tab} value={tab}>
+                          {tab}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-semibold text-slate-600 font-inter block">
+                    Action Limits
+                  </label>
+                  <div className="flex gap-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={canView}
+                        onChange={(e) => setCanView(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+                        View
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={canEdit}
+                        onChange={(e) => setCanEdit(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+                        Edit
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={canDelete}
+                        onChange={(e) => setCanDelete(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+                        Delete
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
-        <DialogFooter className="bg-slate-50 border-t border-slate-100 px-5 py-3 gap-2">
+        <DialogFooter className="bg-slate-50 border-t border-slate-100 px-5 py-3 gap-2 shrink-0">
           <Button
             variant="ghost"
             onClick={onClose}
