@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 type UpdatePermissionPayload = {
 	id: number;
@@ -10,6 +11,11 @@ type UpdatePermissionPayload = {
 
 export async function POST(request: Request) {
 	try {
+		// 1. Authorize the user (Server-side)
+		if (!(await authorize('user', 'can_edit'))) {
+			return NextResponse.json({ error: 'Unauthorized: You do not have permission to modify system settings.' }, { status: 403 });
+		}
+		
 		const body = (await request.json()) as Partial<UpdatePermissionPayload>;
 		const id = Number(body.id);
 		const name = body.name?.trim() ?? '';
@@ -26,7 +32,7 @@ export async function POST(request: Request) {
 
 		const { data: currentPermission, error: currentPermissionError } = await supabaseAdmin
 			.from('permissions')
-			.select('id, name')
+			.select('id, name, can_view, can_edit, can_delete')
 			.eq('id', id)
 			.maybeSingle();
 
@@ -82,7 +88,10 @@ export async function POST(request: Request) {
 			if (roleIds.length > 0) {
 				const insertRows = roleIds.map(rid => ({
 					role_id: rid,
-					permission_id: id
+					permission_id: id,
+					can_view: currentPermission.can_view ?? false,
+					can_edit: currentPermission.can_edit ?? false,
+					can_delete: currentPermission.can_delete ?? false
 				}));
                 
 				const { error: insertError } = await supabaseAdmin

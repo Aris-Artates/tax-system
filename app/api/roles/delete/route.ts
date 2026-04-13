@@ -5,7 +5,7 @@ import { authorize } from '@/lib/auth-guard';
 export async function POST(request: Request) {
 	try {
 		// 1. Authorize the user (Server-side)
-		if (!(await authorize('User & Role Management', 'can_delete'))) {
+		if (!(await authorize('user', 'can_delete'))) {
 			return NextResponse.json({ error: 'Unauthorized: You do not have permission to delete roles.' }, { status: 403 });
 		}
 

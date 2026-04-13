@@ -12,7 +12,7 @@ type CreateRolePayload = {
 export async function POST(request: Request) {
 	try {
 		// 1. Authorize the user (Server-side)
-		if (!(await authorize('User & Role Management', 'can_edit'))) {
+		if (!(await authorize('user', 'can_edit'))) {
 			return NextResponse.json({ error: 'Unauthorized: You do not have permission to create roles.' }, { status: 403 });
 		}
 

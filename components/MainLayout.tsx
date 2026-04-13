@@ -1,21 +1,12 @@
 // components/MainLayout.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { useSidebar, SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/Sidebar";
 import HeaderComponent from "@/components/HeaderComponent";
 import TopLoader from "@/components/TopLoader";
 import { usePathname } from "next/navigation";
-
-type SessionUser = {
-  empID: string;
-  username: string;
-  name: string;
-  email: string;
-  role: string;
-  role_id: string | number;
-};
+import { useAuth } from "@/context/AuthContext";
 
 export default function MainLayout({
   children,
@@ -23,44 +14,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
-  const [permissions, setPermissions] = useState<Record<string, any>>({});
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadSessionUser = async () => {
-      try {
-        const response = await fetch("/api/auth/session", {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data = await response.json();
-
-        if (isMounted) {
-          setSessionUser(data.user ?? null);
-          setPermissions(data.permissions ?? {});
-        }
-      } catch {
-        if (isMounted) {
-          setSessionUser(null);
-          setPermissions({});
-        }
-      }
-    };
-
-    loadSessionUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { user: sessionUser, permissions } = useAuth();
 
   return (
     <SidebarProvider className="h-screen overflow-hidden print:h-auto print:overflow-visible">
