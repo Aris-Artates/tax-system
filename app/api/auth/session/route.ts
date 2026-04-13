@@ -22,7 +22,7 @@ export async function GET() {
     } else {
       const { data: rolePerms, error } = await supabaseAdmin
         .from('role_permissions')
-        .select('can_view, can_edit, can_delete, permissions(name, access_module)')
+        .select('can_view, can_edit, can_delete, permissions(name, access_module, tab)')
         .eq('role_id', roleId);
 
       if (!error && rolePerms) {
@@ -32,17 +32,37 @@ export async function GET() {
             : rp.permissions;
             
           if (permData) {
-            // We map the key by either access_module (if present) or name
             const permKey = permData.access_module || permData.name;
+            const tabKey = permData.tab;
             
-            // In case there are multiple permissions mapping to the same module, 
-            // we should technically merge their capabilities. 
-            // For now, we take an optimistic true assignment.
-            permissionsMap[permKey] = {
-              can_view: permissionsMap[permKey]?.can_view || rp.can_view,
-              can_edit: permissionsMap[permKey]?.can_edit || rp.can_edit,
-              can_delete: permissionsMap[permKey]?.can_delete || rp.can_delete,
-            };
+            if (!permissionsMap[permKey]) {
+                permissionsMap[permKey] = {
+                    can_view: false,
+                    can_edit: false,
+                    can_delete: false,
+                    tabs: {}
+                };
+            }
+
+            if (tabKey) {
+                // tabKey may be a comma-separated list (multi-tab permission)
+                const tabSlugs = tabKey.split(',').map((t: string) => t.trim()).filter(Boolean);
+                if (!permissionsMap[permKey].tabs) permissionsMap[permKey].tabs = {};
+                tabSlugs.forEach((slug: string) => {
+                    permissionsMap[permKey].tabs[slug] = {
+                        can_view: rp.can_view,
+                        can_edit: rp.can_edit,
+                        can_delete: rp.can_delete,
+                    };
+                });
+                // If a user has access to any tab, they need to see the module parent layout
+                permissionsMap[permKey].can_view = permissionsMap[permKey].can_view || rp.can_view;
+            } else {
+                // Global module permission
+                permissionsMap[permKey].can_view = permissionsMap[permKey].can_view || rp.can_view;
+                permissionsMap[permKey].can_edit = permissionsMap[permKey].can_edit || rp.can_edit;
+                permissionsMap[permKey].can_delete = permissionsMap[permKey].can_delete || rp.can_delete;
+            }
           }
         });
       }

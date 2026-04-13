@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { authorize } from '@/lib/auth-guard';
 
-// ... existing imports
-
 export async function POST(request: Request) {
   try {
     // 1. Authorize the user (Server-side)
