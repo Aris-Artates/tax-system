@@ -38,26 +38,42 @@ const MODULE_OPTIONS = [
   {
     id: "property",
     label: "Property Registry",
-    tabs: ["Land", "Building", "Machinery"],
+    tabs: ["listing", "mapping", "new-td", "reassessment", "reports", "schedules"],
   },
   {
     id: "taxpayers",
     label: "Taxpayer Records",
-    tabs: ["Individual", "Corporate"],
+    tabs: ["linked-properties", "list", "payments", "records", "register", "view-delinquencies"],
   },
   {
     id: "assessment",
     label: "Assessment & Billing",
-    tabs: ["Billing", "Payments"],
+    tabs: ["billing-generation", "discounts-penalties", "or-monitoring", "rpt-assessment", "view-schedule"],
   },
-  { id: "payments", label: "Payments & OR Monitoring", tabs: [] },
-  { id: "barangay", label: "Barangay Performance", tabs: [] },
-  { id: "delinquencies", label: "Delinquencies & Notices", tabs: [] },
-  { id: "document", label: "Document Tracking", tabs: [] },
+  { 
+    id: "payments", 
+    label: "Payments & OR Monitoring", 
+    tabs: ["channels", "logs", "payment", "receipt", "reports", "voided"] 
+  },
+  { 
+    id: "barangay", 
+    label: "Barangay Performance", 
+    tabs: ["barangay-ranking", "barangay-reports", "collection-performance", "deliquency-hotspots", "map", "tax_payer-summary"] 
+  },
+  { 
+    id: "delinquencies", 
+    label: "Delinquencies & Notices", 
+    tabs: ["aging_of_delinquencies", "delinquency_reports", "delinquent_accounts", "notice_distribution", "notice_generation", "reminder_alerts"] 
+  },
+  { 
+    id: "document", 
+    label: "Document Tracking", 
+    tabs: ["document_alerts", "document_register", "incoming_documents", "pending_documents", "routing_and_endorsement", "status_tracking"] 
+  },
   {
     id: "user",
     label: "User & Role Management",
-    tabs: ["User Profiles", "Role Assignments", "System Settings"],
+    tabs: ["activity", "create", "manage", "profile", "settings", "view"],
   },
 ];
 
@@ -71,7 +87,7 @@ export function PermissionDialog({
 
   // New States
   const [accessModule, setAccessModule] = useState("");
-  const [selectedTab, setSelectedTab] = useState("");
+  const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
   const [canView, setCanView] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
@@ -83,12 +99,18 @@ export function PermissionDialog({
       setName("");
       setDescription("");
       setAccessModule("");
-      setSelectedTab("");
+      setSelectedTabs([]);
       setCanView(false);
       setCanEdit(false);
       setCanDelete(false);
     }
   }, [isOpen]);
+
+  const toggleTab = (tab: string) => {
+    setSelectedTabs((prev) =>
+      prev.includes(tab) ? prev.filter((t) => t !== tab) : [...prev, tab]
+    );
+  };
 
   const handleScrubbedChange = (val: string) => {
     const clean = val.replace(/[^a-zA-Z0-9 .\_\-']/g, "");
@@ -101,14 +123,11 @@ export function PermissionDialog({
     setIsSubmitting(true);
     const endpoint = "/api/permissions/create";
 
-    // Note: the backend accepts name & description right now.
-    // The extra fields are passed here but we'll include them
-    // for validation and potential future backend handling.
     const payload = {
       name,
       description,
       access_module: accessModule,
-      tab: selectedTab,
+      tab: selectedTabs.join(','),
       can_view: canView,
       can_edit: canEdit,
       can_delete: canDelete,
@@ -142,7 +161,7 @@ export function PermissionDialog({
 
   useEffect(() => {
     // Reset tab selection when module changes
-    setSelectedTab("");
+    setSelectedTabs([]);
   }, [accessModule]);
 
   // Handle Ctrl+Enter to submit
@@ -160,7 +179,7 @@ export function PermissionDialog({
     name,
     description,
     accessModule,
-    selectedTab,
+    selectedTabs,
     canView,
     canEdit,
     canDelete,
@@ -281,23 +300,53 @@ export function PermissionDialog({
               <div className="space-y-4 bg-slate-50/80 border border-slate-200 p-4 rounded-xl">
                 {activeModuleTabs.length > 0 && (
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold text-slate-600 font-inter">
-                      Access which tab?
-                    </label>
-                    <select
-                      value={selectedTab}
-                      onChange={(e) => setSelectedTab(e.target.value)}
-                      className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-inter focus:ring-2 focus:ring-blue-100 outline-none shadow-sm text-slate-700 cursor-pointer"
-                    >
-                      <option value="" disabled>
-                        Select tab menu...
-                      </option>
-                      {activeModuleTabs.map((tab) => (
-                        <option key={tab} value={tab}>
-                          {tab}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-slate-600 font-inter">
+                        Access which sub-pages?
+                      </label>
+                      {selectedTabs.length > 0 && (
+                        <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                          {selectedTabs.length} selected
+                        </span>
+                      )}
+                    </div>
+                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
+                      {activeModuleTabs.map((tab) => {
+                        const isChecked = selectedTabs.includes(tab);
+                        return (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => toggleTab(tab)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2.5 text-xs font-inter transition-colors text-left border-b border-slate-100 last:border-b-0 focus-visible:outline-none",
+                              isChecked
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                                isChecked
+                                  ? "bg-blue-500 border-blue-600"
+                                  : "bg-white border-slate-300"
+                              )}
+                            >
+                              {isChecked && (
+                                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </div>
+                            <div className="w-5 h-5 bg-slate-100 rounded flex items-center justify-center text-[9px] uppercase font-bold text-slate-400 shrink-0">
+                              {tab.substring(0, 2)}
+                            </div>
+                            <span className="truncate font-medium">{tab}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 

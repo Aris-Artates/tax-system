@@ -56,13 +56,39 @@ export default function ConditionalLayout({
         );
         if (moduleKey) {
           const mod = routeToModule[moduleKey];
-          const hasView = permissions[mod.id]?.can_view || permissions[mod.label]?.can_view;
-          if (!hasView) {
+          const permData = permissions[mod.id] || permissions[mod.label];
+          
+          if (!permData) {
             toast.error(
               `Access Denied: You don't have permission for ${mod.label}`,
             );
             router.push("/dashboard");
             return;
+          }
+
+          // Parent module check
+          if (!permData.can_view) {
+            toast.error(
+              `Access Denied: You don't have permission for ${mod.label}`,
+            );
+            router.push("/dashboard");
+            return;
+          }
+
+          // Deep link / Sub-module check
+          // We find the sub-segment immediately after the module root.
+          // e.g. /user/settings/permission → subTab = "settings"
+          // e.g. /property/new-td → subTab = "new-td"
+          const modSegments = mod.id.split('/').filter(Boolean);
+          const pathSegments = pathname.split('/').filter(Boolean);
+          const subTab = pathSegments[modSegments.length]; // first segment after the module root
+          if (subTab && permData.tabs && Object.keys(permData.tabs).length > 0) {
+            const tabPerm = permData.tabs[subTab];
+            if (!tabPerm || !tabPerm.can_view) {
+              toast.error(`Access Denied: You don't have permission for this sub-module.`);
+              router.push(`/${mod.id}`);
+              return;
+            }
           }
         }
       }
