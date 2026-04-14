@@ -25,6 +25,61 @@ export default function DocumentTrackingPage() {
 		return pm.tabs[tab]?.can_view;
 	};
 
+	const allCards = [
+		{
+			slug: 'incoming_documents',
+			icon: Folder,
+			title: 'Incoming Documents',
+			description: 'View and log incoming requests and submitted records',
+			buttonText: 'Open Inbox',
+			path: '/document/incoming_documents'
+		},
+		{
+			slug: 'document_register',
+			icon: FileText,
+			title: 'Document Register',
+			description: 'Create and manage official document registry entries',
+			buttonText: 'Register Document',
+			path: '/document/document_register'
+		},
+		{
+			slug: 'routing_and_endorsement',
+			icon: Send,
+			title: 'Routing & Endorsement',
+			description: 'Forward documents to offices and assign responsible staff',
+			buttonText: 'Route Document',
+			path: '/document/routing_and_endorsement'
+		},
+		{
+			slug: 'status_tracking',
+			icon: ListChecks,
+			title: 'Status Tracking',
+			description: 'Track document progress from submission to completion',
+			buttonText: 'View Status',
+			path: '/document/status_tracking'
+		},
+		{
+			slug: 'pending_documents',
+			icon: Clock3,
+			title: 'Pending Documents',
+			description: 'Monitor overdue and unresolved documents requiring action',
+			buttonText: 'Review Pending',
+			path: '/document/pending_documents'
+		},
+		{
+			slug: 'document_alerts',
+			icon: CircleAlert,
+			title: 'Document Alerts',
+			description: 'Generate reminders for deadlines and pending endorsements',
+			buttonText: 'View Alerts',
+			path: '/document/document_alerts'
+		}
+	];
+
+	const sortedCards = allCards
+		.map(card => ({ ...card, locked: !hasAccess(card.slug) }))
+		.sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
+
 	return (
 		<div className='flex'>
 			<main className='flex-1'>
@@ -38,63 +93,18 @@ export default function DocumentTrackingPage() {
 				</header>
 
 				<div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-					{hasAccess('incoming_documents') && (
+					{sortedCards.map((card, idx) => (
 						<RegistryCard
-							icon={Folder}
-							title='Incoming Documents'
-							description='View and log incoming requests and submitted records'
-							buttonText='Open Inbox'
-							onButtonClick={() => router.push('/document/incoming_documents')}
+							key={`${card.slug}-${idx}`}
+							icon={card.icon}
+							title={card.title}
+							description={card.description}
+							buttonText={card.buttonText}
+							variant={idx < 3 ? 'primary' : 'secondary'}
+							onButtonClick={() => router.push(card.path)}
+							locked={card.locked}
 						/>
-					)}
-					{hasAccess('document_register') && (
-						<RegistryCard
-							icon={FileText}
-							title='Document Register'
-							description='Create and manage official document registry entries'
-							buttonText='Register Document'
-							onButtonClick={() => router.push('/document/document_register')}
-						/>
-					)}
-					{hasAccess('routing_and_endorsement') && (
-						<RegistryCard
-							icon={Send}
-							title='Routing &amp; Endorsement'
-							description='Forward documents to offices and assign responsible staff'
-							buttonText='Route Document'
-							onButtonClick={() => router.push('/document/routing_and_endorsement')}
-						/>
-					)}
-					{hasAccess('status_tracking') && (
-						<RegistryCard
-							icon={ListChecks}
-							title='Status Tracking'
-							description='Track document progress from submission to completion'
-							buttonText='View Status'
-							variant='secondary'
-							onButtonClick={() => router.push('/document/status_tracking')}
-						/>
-					)}
-					{hasAccess('pending_documents') && (
-						<RegistryCard
-							icon={Clock3}
-							title='Pending Documents'
-							description='Monitor overdue and unresolved documents requiring action'
-							buttonText='Review Pending'
-							variant='secondary'
-							onButtonClick={() => router.push('/document/pending_documents')}
-						/>
-					)}
-					{hasAccess('document_alerts') && (
-						<RegistryCard
-							icon={CircleAlert}
-							title='Document Alerts'
-							description='Generate reminders for deadlines and pending endorsements'
-							buttonText='View Alerts'
-							variant='secondary'
-							onButtonClick={() => router.push('/document/document_alerts')}
-						/>
-					)}
+					))}
 				</div>
 			</main>
 		</div>

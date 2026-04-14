@@ -24,6 +24,61 @@ export default function TaxPayersPage() {
     return pm.tabs[tab]?.can_view;
   };
 
+  const allCards = [
+    {
+      slug: 'list',
+      icon: UsersRound,
+      title: "Taxpayer Master List",
+      description: "View and manage all registered taxpayers",
+      buttonText: "Open Taxpayer List",
+      path: "/taxpayers/list"
+    },
+    {
+      slug: 'register',
+      icon: UserPlus,
+      title: "Register New Taxpayer",
+      description: "Create a new taxpayer profile",
+      buttonText: "Add Taxpayer",
+      path: "/taxpayers/register"
+    },
+    {
+      slug: 'linked-properties',
+      icon: House,
+      title: "Linked Properties",
+      description: "View all properties owned by a taxpayer",
+      buttonText: "View Properties",
+      path: "/taxpayers/linked-properties"
+    },
+    {
+      slug: 'payments',
+      icon: Wallet,
+      title: "Payment History",
+      description: "Track payments and official receipts",
+      buttonText: "View Payments",
+      path: "/taxpayers/payments"
+    },
+    {
+      slug: 'view-delinquencies',
+      icon: TriangleAlert,
+      title: "Delinquent Accounts",
+      description: "Taxpayers with unpaid or overdue RPT",
+      buttonText: "View Delinquencies",
+      path: "/taxpayers/view-delinquencies"
+    },
+    {
+      slug: 'records',
+      icon: FileText,
+      title: "Certifications & Records",
+      description: "Issue certifications and official records",
+      buttonText: "Generate Certificate",
+      path: "/taxpayers/records"
+    }
+  ];
+
+  const sortedCards = allCards
+    .map(card => ({ ...card, locked: !hasAccess(card.slug) }))
+    .sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
+
   return (
     <div className="flex">
       <main className="flex-1">
@@ -37,63 +92,18 @@ export default function TaxPayersPage() {
         </header>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {hasAccess('list') && (
+          {sortedCards.map((card, idx) => (
             <RegistryCard
-              icon={UsersRound}
-              title="Taxpayer Master List"
-              description="View and manage all registered taxpayers"
-              buttonText="Open Taxpayer List"
-              onButtonClick={() => router.push("/taxpayers/list")}
+              key={card.slug}
+              icon={card.icon}
+              title={card.title}
+              description={card.description}
+              buttonText={card.buttonText}
+              variant={idx < 3 ? 'primary' : 'secondary'}
+              onButtonClick={() => router.push(card.path)}
+              locked={card.locked}
             />
-          )}
-          {hasAccess('register') && (
-            <RegistryCard
-              icon={UserPlus}
-              title="Register New Taxpayer"
-              description="Create a new taxpayer profile"
-              buttonText="Add Taxpayer"
-              onButtonClick={() => router.push("/taxpayers/register")}
-            />
-          )}
-          {hasAccess('linked-properties') && (
-            <RegistryCard
-              icon={House}
-              title="Linked Properties"
-              description="View all properties owned by a taxpayer"
-              buttonText="View Properties"
-              onButtonClick={() => router.push("/taxpayers/linked-properties")}
-            />
-          )}
-          {hasAccess('payments') && (
-            <RegistryCard
-              icon={Wallet}
-              title="Payment History"
-              description="Track payments and official receipts"
-              buttonText="View Payments"
-              variant="secondary"
-              onButtonClick={() => router.push("/taxpayers/payments")}
-            />
-          )}
-          {hasAccess('view-delinquencies') && (
-            <RegistryCard
-              icon={TriangleAlert}
-              title="Delinquent Accounts"
-              description="Taxpayers with unpaid or overdue RPT"
-              buttonText="View Delinquencies"
-              variant="secondary"
-              onButtonClick={() => router.push("/taxpayers/view-delinquencies")}
-            />
-          )}
-          {hasAccess('records') && (
-            <RegistryCard
-              icon={FileText}
-              title="Certifications &amp; Records"
-              description="Issue certifications and official records"
-              buttonText="Generate Certificate"
-              variant="secondary"
-              onButtonClick={() => router.push("/taxpayers/records")}
-            />
-          )}
+          ))}
         </div>
       </main>
     </div>

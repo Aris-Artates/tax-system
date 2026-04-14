@@ -17,6 +17,61 @@ export default function BarangayPerformancePage() {
     return pm.tabs[tab]?.can_view;
   };
 
+  const allCards = [
+    {
+      slug: 'collection-performance',
+      icon: ChartColumn, 
+      title: "Collection Performance", 
+      description: "RPT collections per barangay with trend comparison", 
+      buttonText: "View Performance", 
+      path: '/barangay/collection-performance'
+    },
+    {
+      slug: 'barangay-ranking',
+      icon: TrendingUp, 
+      title: "Barangay Ranking", 
+      description: "Rank Barangays by collection efficiency and compliance", 
+      buttonText: "View Rankings", 
+      path: '/barangay/barangay-ranking'
+    },
+    {
+      slug: 'deliquency-hotspots',
+      icon: Type, 
+      title: "Deliquency Hotspots", 
+      description: "Identify barangays with high deliquency rates", 
+      buttonText: "Analyze", 
+      path: '/barangay/deliquency-hotspots'
+    },
+    {
+      slug: 'map',
+      icon: MapPinned,
+      title: "Barangay Map View",
+      description: "Pinned Sta. Rita barangays with quick RPT performance",
+      buttonText: "Open Map",
+      path: '/barangay/map'
+    },
+    {
+      slug: 'tax_payer-summary',
+      icon: Users, 
+      title: "Taxpayer Summary", 
+      description: "Number of taxpayers and properties per barangay", 
+      buttonText: "View Summary", 
+      path: '/barangay/tax_payer-summary'
+    },
+    {
+      slug: 'barangay-reports',
+      icon: FileChartColumnIncreasing, 
+      title: "Barangay Reports", 
+      description: "Export barangay-level performance audit reports", 
+      buttonText: "Generate Reports", 
+      path: '/barangay/barangay-reports'
+    }
+  ];
+
+  const sortedCards = allCards
+    .map(card => ({ ...card, locked: !hasAccess(card.slug) }))
+    .sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
+
   return (
     <div className="flex">
       <main className="flex-1">
@@ -26,63 +81,18 @@ export default function BarangayPerformancePage() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hasAccess('collection-performance') && (
+          {sortedCards.map((card, idx) => (
             <RegistryCard
-              icon={ChartColumn} 
-              title="Collection Performance" 
-              description="RPT collections per barangay with trend comparison" 
-              buttonText="View Performance" 
-              onButtonClick={() => router.push('/barangay/collection-performance')}
+              key={card.slug}
+              icon={card.icon}
+              title={card.title}
+              description={card.description}
+              buttonText={card.buttonText}
+              variant={idx < 3 ? 'primary' : 'secondary'}
+              onButtonClick={() => router.push(card.path)}
+              locked={card.locked}
             />
-          )}
-          {hasAccess('barangay-ranking') && (
-            <RegistryCard 
-              icon={TrendingUp} 
-              title="Barangay Ranking" 
-              description="Rank Barangays by collection efficiency and compliance" 
-              buttonText="View Rankings" 
-              onButtonClick={() => router.push('/barangay/barangay-ranking')}
-            />
-          )}
-          {hasAccess('deliquency-hotspots') && (
-            <RegistryCard 
-              icon={Type} 
-              title="Deliquency Hotspots" 
-              description="Identify barangays with high deliquency rates" 
-              buttonText="Analyze" 
-              onButtonClick={() => router.push('/barangay/deliquency-hotspots')}
-            />
-          )}
-          {hasAccess('map') && (
-            <RegistryCard
-              icon={MapPinned}
-              title="Barangay Map View"
-              description="Pinned Sta. Rita barangays with quick RPT performance"
-              buttonText="Open Map"
-              variant="secondary"
-              onButtonClick={() => router.push('/barangay/map')}
-            />
-          )}
-          {hasAccess('tax_payer-summary') && (
-            <RegistryCard 
-              icon={Users} 
-              title="Taxpayer Summary" 
-              description="Number of taxpayers and properties per barangay" 
-              buttonText="View Summary" 
-              variant="secondary"
-              onButtonClick={() => router.push('/barangay/tax_payer-summary')}
-            />
-          )}
-          {hasAccess('barangay-reports') && (
-            <RegistryCard 
-              icon={FileChartColumnIncreasing} 
-              title="Barangay Reports" 
-              description="Export barangay-level performance audit reports" 
-              buttonText="Generate Reports" 
-              variant="secondary"
-              onButtonClick={() => router.push('/barangay/barangay-reports')}
-            />
-          )}
+          ))}
         </div>
       </main>
     </div>
