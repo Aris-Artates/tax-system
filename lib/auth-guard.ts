@@ -1,5 +1,8 @@
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from './supabaseAdmin';
+import { createHmac } from 'crypto';
+
+const SESSION_SECRET = process.env.SUPABASE_SECRET_KEY || 'tax-system-fallback-secret';
 
 export type PermissionAction = 'can_view' | 'can_edit' | 'can_delete';
 
@@ -14,12 +17,13 @@ export async function authorize(moduleName: string, action: PermissionAction): P
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('tax_session');
 
-    if (!sessionCookie?.value) {
-      console.warn(`[Auth Guard] Unauthorized access attempt: No session cookie found.`);
+    const sessionUser = verifySession(sessionCookie?.value);
+
+    if (!sessionUser) {
+      console.warn(`[Auth Guard] Unauthorized access attempt: Invalid or missing session.`);
       return false;
     }
 
-    const sessionUser = JSON.parse(sessionCookie.value);
     const roleId = Number(sessionUser.role_id);
     const empID = sessionUser.empID;
 
@@ -78,5 +82,38 @@ export async function authorize(moduleName: string, action: PermissionAction): P
   } catch (err) {
     console.error(`[Auth Guard] Error during authorization check:`, err);
     return false;
+  }
+}
+
+/**
+ * Signs session data using a HMAC signature.
+ */
+export function signSession(data: any): string {
+  const serialized = JSON.stringify(data);
+  const signature = createHmac('sha256', SESSION_SECRET).update(serialized).digest('hex');
+  return `${serialized}.${signature}`;
+}
+
+/**
+ * Verifies and parses a signed session string.
+ */
+export function verifySession(signedValue?: string): any {
+  if (!signedValue) return null;
+
+  const [serialized, signature] = signedValue.split('.');
+  if (!serialized || !signature) return null;
+
+  const expectedSignature = createHmac('sha256', SESSION_SECRET).update(serialized).digest('hex');
+
+  // Basic signature check
+  if (signature !== expectedSignature) {
+    console.error('[Auth Guard] Session signature mismatch!');
+    return null;
+  }
+
+  try {
+    return JSON.parse(serialized);
+  } catch {
+    return null;
   }
 }

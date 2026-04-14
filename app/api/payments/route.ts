@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 export async function GET(req: NextRequest) {
   try {
+    if (!(await authorize('payments', 'can_view'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const isNextOrRequest = req.nextUrl.searchParams.get('next-or') === 'true';
 
     if (isNextOrRequest) {

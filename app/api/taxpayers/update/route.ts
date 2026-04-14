@@ -24,9 +24,13 @@ const ALLOWED_OWNER_TYPES = ['Individual', 'Corporate', 'Corporation', 'Governme
 const TIN_PATTERN = /^\d{3}-\d{3}-\d{3}(-\d{3})?$/;
 const PHONE_PATTERN = /^[1-9]\d{2} \d{3} \d{4}$/;
 const EMAIL_PATTERN = /^.+@.+\..+$/;
+import { authorize } from '@/lib/auth-guard';
 
 export async function PUT(req: NextRequest) {
   try {
+    if (!(await authorize('taxpayers', 'can_edit'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const body = (await req.json()) as Partial<UpdateTaxpayerPayload>;
 
     const rawId = body.id;

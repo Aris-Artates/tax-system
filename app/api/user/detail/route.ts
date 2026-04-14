@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 export async function GET(request: Request) {
 	try {
+		if (!(await authorize('user', 'can_view'))) {
+			return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+		}
 		const { searchParams } = new URL(request.url);
 		const empID = searchParams.get('empID')?.trim();
 
