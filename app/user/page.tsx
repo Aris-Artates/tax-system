@@ -10,6 +10,7 @@ import {
 	KeyRound,
 	Activity,
 	Settings,
+	ShieldCheck,
 } from 'lucide-react';
 
 export default function UserRoleManagementPage() {
@@ -23,6 +24,9 @@ export default function UserRoleManagementPage() {
 		if (!pm.tabs || Object.keys(pm.tabs).length === 0) return pm.can_view;
 		return pm.tabs[tab]?.can_view;
 	};
+
+	// Super Admin exclusive card
+	const isSuperAdmin = Number(user?.role_id) === 1;
 
 	const allCards = [
 		{
@@ -72,7 +76,16 @@ export default function UserRoleManagementPage() {
 			description: 'Password policies, session control, and MFA',
 			buttonText: 'Security Options',
 			path: '/user/settings/security'
-		}
+		},
+		// Super Admin only: Access Requests review panel
+		...(isSuperAdmin ? [{
+			slug: 'access-requests',
+			icon: ShieldCheck,
+			title: 'Access Requests',
+			description: 'Review and manage permission requests from users',
+			buttonText: 'Review Requests',
+			path: '/user/access-requests'
+		}] : [])
 	];
 
 	const sortedCards = allCards

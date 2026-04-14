@@ -34,7 +34,8 @@ export default function ConditionalLayout({
       user &&
       pathname !== "/" &&
       pathname !== "/dashboard" &&
-      !pathname.startsWith("/user/profile")
+      !pathname.startsWith("/user/profile") &&
+      !pathname.startsWith("/request_permission")
     ) {
       const roleId = Number(user.role_id);
       if (roleId !== 1) {

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
   const { data: user, error } = await supabaseAdmin
     .from('users')
-    .select('empID, username, firstname, lastname, email, role_id, status, password, temp_pass, roles(name)')
+    .select('id, empID, username, firstname, lastname, email, role_id, status, password, temp_pass, roles(name)')
     .eq('username', username.trim())
     .single();
 
@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     : (user.roles as RoleRecord | null);
 
   const sessionData = {
+    id: user.id,
     empID: user.empID,
     username: user.username,
     name: `${user.firstname} ${user.lastname}`,
