@@ -25,6 +25,61 @@ export default function AssessmentBillingPage() {
 		return pm.tabs[tab]?.can_view;
 	};
 
+	const allCards = [
+		{
+			slug: 'rpt-assessment',
+			icon: Calculator,
+			title: 'RPT Assessment',
+			description: 'Compute real property tax based on assessed values',
+			buttonText: 'Compute Tax',
+			path: '/assessment/rpt-assessment'
+		},
+		{
+			slug: 'billing-generation',
+			icon: FileText,
+			title: 'Billing Generation',
+			description: 'Generate billing statements and assessment notices',
+			buttonText: 'Generate Bill',
+			path: '/assessment/billing-generation'
+		},
+		{
+			slug: 'or-monitoring',
+			icon: Receipt,
+			title: 'Official Receipt Monitoring',
+			description: 'Manage issued ORs and billing references',
+			buttonText: 'View OR',
+			path: '/assessment/or-monitoring'
+		},
+		{
+			slug: 'discounts-penalties',
+			icon: Percent,
+			title: 'Discounts & Penalties',
+			description: 'Apply early payment discounts and late penalties',
+			buttonText: 'Configure',
+			path: '/assessment/discounts-penalties'
+		},
+		{
+			slug: 'view-schedule',
+			icon: CalendarDays,
+			title: 'Billing Schedules',
+			description: 'Manage annual and quarterly billing cycles',
+			buttonText: 'View Schedules',
+			path: '/assessment/view-schedule'
+		},
+		{
+			slug: 'billing-generation', // Map report to generation slug as placeholders for now
+			icon: ClipboardList,
+			title: 'Billing & Assessment Reports',
+			description: 'Generate billing summaries and collection reports',
+			buttonText: 'Generate Reports',
+			path: '/assessment/billing-generation'
+		}
+	];
+
+	const sortedCards = allCards
+		.map(card => ({ ...card, locked: !hasAccess(card.slug) }))
+		.sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
+
 	return (
 		<div className='flex'>
 			<main className='flex-1'>
@@ -38,63 +93,18 @@ export default function AssessmentBillingPage() {
 				</header>
 
 				<div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-					{hasAccess('rpt-assessment') && (
+					{sortedCards.map((card, idx) => (
 						<RegistryCard
-							icon={Calculator}
-							title='RPT Assessment'
-							description='Compute real property tax based on assessed values'
-							buttonText='Compute Tax'
-							onButtonClick={() => router.push('/assessment/rpt-assessment')}
+							key={`${card.slug}-${idx}`}
+							icon={card.icon}
+							title={card.title}
+							description={card.description}
+							buttonText={card.buttonText}
+							variant={idx < 3 ? 'primary' : 'secondary'}
+							onButtonClick={() => router.push(card.path)}
+							locked={card.locked}
 						/>
-					)}
-					{hasAccess('billing-generation') && (
-						<RegistryCard
-							icon={FileText}
-							title='Billing Generation'
-							description='Generate billing statements and assessment notices'
-							buttonText='Generate Bill'
-							onButtonClick={() => router.push('/assessment/billing-generation')}
-						/>
-					)}
-					{hasAccess('or-monitoring') && (
-						<RegistryCard
-							icon={Receipt}
-							title='Official Receipt Monitoring'
-							description='Manage issued ORs and billing references'
-							buttonText='View OR'
-							onButtonClick={() => router.push('/assessment/or-monitoring')}
-						/>
-					)}
-					{hasAccess('discounts-penalties') && (
-						<RegistryCard
-							icon={Percent}
-							title='Discounts &amp; Penalties'
-							description='Apply early payment discounts and late penalties'
-							buttonText='Configure'
-							variant='secondary'
-							onButtonClick={() => router.push('/assessment/discounts-penalties')}
-						/>
-					)}
-					{hasAccess('view-schedule') && (
-						<RegistryCard
-							icon={CalendarDays}
-							title='Billing Schedules'
-							description='Manage annual and quarterly billing cycles'
-							buttonText='View Schedules'
-							variant='secondary'
-							onButtonClick={() => router.push('/assessment/view-schedule')}
-						/>
-					)}
-					{hasAccess('billing-generation') && (
-						<RegistryCard
-							icon={ClipboardList}
-							title='Billing &amp; Assessment Reports'
-							description='Generate billing summaries and collection reports'
-							buttonText='Generate Reports'
-							variant='secondary'
-							onButtonClick={() => router.push('/assessment/billing-generation')}
-						/>
-					)}
+					))}
 				</div>
 			</main>
 		</div>

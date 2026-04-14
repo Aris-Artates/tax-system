@@ -3,7 +3,6 @@
 import RegistryCard from '@/components/RegistryCard';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-
 import {
 	UsersRound,
 	UserRoundPlus,
@@ -25,12 +24,67 @@ export default function UserRoleManagementPage() {
 		return pm.tabs[tab]?.can_view;
 	};
 
+	const allCards = [
+		{
+			slug: 'view',
+			icon: UsersRound,
+			title: 'User Accounts',
+			description: 'Manage system users from Assessor, Treasurer, and Admin',
+			buttonText: 'View Users',
+			path: '/user/view'
+		},
+		{
+			slug: 'create',
+			icon: UserRoundPlus,
+			title: 'Add New User',
+			description: 'Create new user accounts with assigned roles',
+			buttonText: 'Create User',
+			path: '/user/create'
+		},
+		{
+			slug: 'manage',
+			icon: Shield,
+			title: 'Role Management',
+			description: 'Define roles and access permissions per module',
+			buttonText: 'Manage Roles',
+			path: '/user/manage'
+		},
+		{
+			slug: 'settings',
+			icon: KeyRound,
+			title: 'Permission Settings',
+			description: 'Fine-grained access control for system features',
+			buttonText: 'Configure Permissions',
+			path: '/user/settings/permission'
+		},
+		{
+			slug: 'activity',
+			icon: Activity,
+			title: 'User Activity Logs',
+			description: 'Track logins, actions, and system usage',
+			buttonText: 'View Logs',
+			path: '/user/activity/logs'
+		},
+		{
+			slug: 'settings', // Use 'settings' as multiple cards might map to it
+			icon: Settings,
+			title: 'Security Settings',
+			description: 'Password policies, session control, and MFA',
+			buttonText: 'Security Options',
+			path: '/user/settings/security'
+		}
+	];
+
+	const sortedCards = allCards
+		.map(card => ({ ...card, locked: !hasAccess(card.slug) }))
+		.sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
+
 	return (
 		<div className='flex'>
 			<main className='flex-1'>
 				<header className='mb-10'>
 					<h1 className={`font-lexend text-2xl font-bold text-[#595a5d]`}>
-						User Role & Management
+						User Role &amp; Management
 					</h1>
 					<p className={`font-inter mt-1 text-xs text-slate-400`}>
 						System Administrator Module Access Control and Accountability
@@ -38,63 +92,18 @@ export default function UserRoleManagementPage() {
 				</header>
 
 				<div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-					{hasAccess('view') && (
+					{sortedCards.map((card, idx) => (
 						<RegistryCard
-							icon={UsersRound}
-							title='User Accounts'
-							description='Manage system users from Assessor, Treasurer, and Admin'
-							buttonText='View Users'
-							onButtonClick={() => router.push('/user/view')}
+							key={`${card.slug}-${idx}`}
+							icon={card.icon}
+							title={card.title}
+							description={card.description}
+							buttonText={card.buttonText}
+							onButtonClick={() => router.push(card.path)}
+							locked={card.locked}
+							variant={idx < 3 ? 'primary' : 'secondary'}
 						/>
-					)}
-					{hasAccess('create') && (
-						<RegistryCard
-							icon={UserRoundPlus}
-							title='Add New User'
-							description='Create new user accounts with assigned roles'
-							buttonText='Create User'
-							onButtonClick={() => router.push('/user/create')}
-						/>
-					)}
-					{hasAccess('manage') && (
-						<RegistryCard
-							icon={Shield}
-							title='Role Management'
-							description='Define roles and access permissions per module'
-							buttonText='Manage Roles'
-							onButtonClick={() => router.push('/user/manage')}
-						/>
-					)}
-					{hasAccess('settings') && (
-						<RegistryCard
-							icon={KeyRound}
-							title='Permission Settings'
-							description='Fine-grained access control for system features'
-							buttonText='Configure Permissions'
-							onButtonClick={() => router.push('/user/settings/permission')}
-							variant='secondary'
-						/>
-					)}
-					{hasAccess('activity') && (
-						<RegistryCard
-							icon={Activity}
-							title='User Activity Logs'
-							description='Track logins, actions, and system usage'
-							buttonText='View Logs'
-							variant='secondary'
-							onButtonClick={() => router.push('/user/activity/logs')}
-						/>
-					)}
-					{hasAccess('settings') && (
-						<RegistryCard
-							icon={Settings}
-							title='Security Settings'
-							description='Password policies, session control, and MFA'
-							buttonText='Security Options'
-							variant='secondary'
-							onButtonClick={() => router.push('/user/settings/security')}
-						/>
-					)}
+					))}
 				</div>
 			</main>
 		</div>
