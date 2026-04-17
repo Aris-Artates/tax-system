@@ -32,6 +32,8 @@ interface PermissionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialModules?: string[];
+  initialTabs?: string[];
 }
 
 const MODULE_OPTIONS = [
@@ -81,13 +83,15 @@ export function PermissionDialog({
   isOpen,
   onClose,
   onSuccess,
+  initialModules = [],
+  initialTabs = [],
 }: PermissionDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
   // New States
-  const [accessModule, setAccessModule] = useState("");
-  const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
+  const [accessModules, setAccessModules] = useState<string[]>(initialModules);
+  const [selectedTabs, setSelectedTabs] = useState<string[]>(initialTabs);
   const [canView, setCanView] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
@@ -98,13 +102,13 @@ export function PermissionDialog({
     if (isOpen) {
       setName("");
       setDescription("");
-      setAccessModule("");
-      setSelectedTabs([]);
+      setAccessModules(initialModules);
+      setSelectedTabs(initialTabs);
       setCanView(false);
       setCanEdit(false);
       setCanDelete(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialModules, initialTabs]);
 
   const toggleTab = (tab: string) => {
     setSelectedTabs((prev) =>
@@ -126,7 +130,7 @@ export function PermissionDialog({
     const payload = {
       name,
       description,
-      access_module: accessModule,
+      access_module: accessModules.join(','),
       tab: selectedTabs.join(','),
       can_view: canView,
       can_edit: canEdit,
@@ -156,13 +160,14 @@ export function PermissionDialog({
     }
   };
 
-  const activeModuleTabs =
-    MODULE_OPTIONS.find((m) => m.id === accessModule)?.tabs || [];
+  const activeModuleTabs = MODULE_OPTIONS
+    .filter((m) => accessModules.includes(m.id))
+    .flatMap((m) => m.tabs);
 
   useEffect(() => {
-    // Reset tab selection when module changes
-    setSelectedTabs([]);
-  }, [accessModule]);
+    // Keep only selected tabs that belong to currently active modules
+    setSelectedTabs(prev => prev.filter(tab => activeModuleTabs.includes(tab)));
+  }, [accessModules]);
 
   // Handle Ctrl+Enter to submit
   useEffect(() => {
@@ -178,7 +183,7 @@ export function PermissionDialog({
     isOpen,
     name,
     description,
-    accessModule,
+    accessModules,
     selectedTabs,
     canView,
     canEdit,
@@ -243,52 +248,63 @@ export function PermissionDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              {MODULE_OPTIONS.map((mod) => (
-                <label
-                  key={mod.id}
-                  className={cn(
-                    "flex items-center gap-2.5 p-2.5 border rounded-lg cursor-pointer transition-all active:scale-[0.98]",
-                    accessModule === mod.id
-                      ? "bg-blue-50/50 border-blue-300 ring-1 ring-blue-100 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    className="hidden"
-                    name="module"
-                    value={mod.id}
-                    checked={accessModule === mod.id}
-                    onChange={() => setAccessModule(mod.id)}
-                  />
-                  <div
+              {MODULE_OPTIONS.map((mod) => {
+                const isSelected = accessModules.includes(mod.id);
+                return (
+                  <label
+                    key={mod.id}
                     className={cn(
-                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all",
-                      accessModule === mod.id
-                        ? "border-blue-600 bg-blue-600"
-                        : "border-slate-300 bg-white",
+                      "flex items-center gap-2.5 p-2.5 border rounded-lg cursor-pointer transition-all active:scale-[0.98]",
+                      isSelected
+                        ? "bg-blue-50/50 border-blue-300 ring-1 ring-blue-100 shadow-sm"
+                        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                     )}
                   >
-                    {accessModule === mod.id && (
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs font-medium font-inter",
-                      accessModule === mod.id
-                        ? "text-blue-700"
-                        : "text-slate-600",
-                    )}
-                  >
-                    {mod.label}
-                  </span>
-                </label>
-              ))}
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      name="module"
+                      value={mod.id}
+                      checked={isSelected}
+                      onChange={() => {
+                        setAccessModules(prev => 
+                          prev.includes(mod.id) 
+                            ? prev.filter(m => m !== mod.id) 
+                            : [...prev, mod.id]
+                        );
+                      }}
+                    />
+                    <div
+                      className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all",
+                        isSelected
+                          ? "border-blue-600 bg-blue-600"
+                          : "border-slate-300 bg-white",
+                      )}
+                    >
+                      {isSelected && (
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs font-medium font-inter",
+                        isSelected
+                          ? "text-blue-700"
+                          : "text-slate-600",
+                      )}
+                    >
+                      {mod.label}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </section>
 
-          {accessModule && (
+          {accessModules.length > 0 && (
             <section className="animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-center gap-1.5 mb-3 border-b border-slate-100">
                 <h3 className="flex items-center gap-2 text-[11px] font-bold text-slate-700 font-lexend mb-2">

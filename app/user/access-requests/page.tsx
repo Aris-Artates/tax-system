@@ -13,6 +13,7 @@ import {
   ChevronRight,
   User,
   MessageSquare,
+  Settings2,
 } from "lucide-react";
 
 const MODULE_LABELS: Record<string, string> = {
@@ -79,7 +80,13 @@ export default function AccessRequestsPage() {
     }
   };
 
-  const handleReview = async (requestId: string, action: "approved" | "denied") => {
+  const handleReview = async (requestId: string, action: "configure" | "denied") => {
+    if (action === "configure") {
+      // Send to permission settings with query param WITHOUT changing status yet
+      window.location.href = `/user/settings/permission?review_request=${requestId}`;
+      return;
+    }
+
     setProcessingId(requestId);
     try {
       const res = await fetch("/api/requests/review", {
@@ -285,12 +292,12 @@ export default function AccessRequestsPage() {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleReview(req.id, "approved")}
+                              onClick={() => handleReview(req.id, "configure")}
                               disabled={processingId === req.id}
-                              className="flex-1 py-2.5 rounded-lg text-xs font-bold font-inter bg-emerald-600 text-white hover:bg-emerald-700 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              className="flex-1 py-2.5 rounded-lg text-xs font-bold font-inter bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
-                              <CheckCircle2 size={14} />
-                              Approve
+                              <Settings2 size={14} />
+                              Configure
                             </button>
                             <button
                               onClick={() => handleReview(req.id, "denied")}

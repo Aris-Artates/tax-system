@@ -24,7 +24,7 @@ export async function GET() {
     } else {
       const { data: rolePerms, error } = await supabaseAdmin
         .from('role_permissions')
-        .select('can_view, can_edit, can_delete, permissions(name, access_module, tab)')
+        .select('permissions(name, access_module, tab, can_view, can_edit, can_delete)')
         .eq('role_id', roleId);
 
       if (!error && rolePerms) {
@@ -34,37 +34,41 @@ export async function GET() {
             : rp.permissions;
             
           if (permData) {
-            const permKey = permData.access_module || permData.name;
+            const rawPermKey = permData.access_module || permData.name;
             const tabKey = permData.tab;
             
-            if (!permissionsMap[permKey]) {
-                permissionsMap[permKey] = {
-                    can_view: false,
-                    can_edit: false,
-                    can_delete: false,
-                    tabs: {}
-                };
-            }
+            const moduleSlugs = (rawPermKey || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+            
+            moduleSlugs.forEach((permKey: string) => {
+              if (!permissionsMap[permKey]) {
+                  permissionsMap[permKey] = {
+                      can_view: false,
+                      can_edit: false,
+                      can_delete: false,
+                      tabs: {}
+                  };
+              }
 
-            if (tabKey) {
-                // tabKey may be a comma-separated list (multi-tab permission)
-                const tabSlugs = tabKey.split(',').map((t: string) => t.trim()).filter(Boolean);
-                if (!permissionsMap[permKey].tabs) permissionsMap[permKey].tabs = {};
-                tabSlugs.forEach((slug: string) => {
-                    permissionsMap[permKey].tabs[slug] = {
-                        can_view: rp.can_view,
-                        can_edit: rp.can_edit,
-                        can_delete: rp.can_delete,
-                    };
-                });
-                // If a user has access to any tab, they need to see the module parent layout
-                permissionsMap[permKey].can_view = permissionsMap[permKey].can_view || rp.can_view;
-            } else {
-                // Global module permission
-                permissionsMap[permKey].can_view = permissionsMap[permKey].can_view || rp.can_view;
-                permissionsMap[permKey].can_edit = permissionsMap[permKey].can_edit || rp.can_edit;
-                permissionsMap[permKey].can_delete = permissionsMap[permKey].can_delete || rp.can_delete;
-            }
+              if (tabKey) {
+                  // tabKey may be a comma-separated list (multi-tab permission)
+                  const tabSlugs = tabKey.split(',').map((t: string) => t.trim()).filter(Boolean);
+                  if (!permissionsMap[permKey].tabs) permissionsMap[permKey].tabs = {};
+                  tabSlugs.forEach((slug: string) => {
+                      permissionsMap[permKey].tabs[slug] = {
+                          can_view: permData.can_view,
+                          can_edit: permData.can_edit,
+                          can_delete: permData.can_delete,
+                      };
+                  });
+                  // If a user has access to any tab, they need to see the module parent layout
+                  permissionsMap[permKey].can_view = permissionsMap[permKey].can_view || permData.can_view;
+              } else {
+                  // Global module permission
+                  permissionsMap[permKey].can_view = permissionsMap[permKey].can_view || permData.can_view;
+                  permissionsMap[permKey].can_edit = permissionsMap[permKey].can_edit || permData.can_edit;
+                  permissionsMap[permKey].can_delete = permissionsMap[permKey].can_delete || permData.can_delete;
+              }
+            });
           }
         });
       }
