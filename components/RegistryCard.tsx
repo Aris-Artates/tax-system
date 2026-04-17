@@ -1,7 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Lock, ShieldQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RegistryCardProps {
@@ -25,10 +26,12 @@ export default function RegistryCard({
   href,
   locked = false
 }: RegistryCardProps) {
+  const router = useRouter();
+
   const buttonClasses = cn(
     "font-inter w-full py-2 rounded text-[12px] font-medium transition-all active:scale-[0.98]",
     locked 
-      ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200" 
+      ? "bg-blue-50 text-blue-500 border border-blue-200 hover:bg-blue-100 hover:text-blue-700 cursor-pointer" 
       : variant === 'primary' 
         ? "bg-[#0F172A] text-white hover:bg-slate-800 cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" 
         : "bg-white border border-gray-200 text-slate-600 hover:bg-gray-50 cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -74,8 +77,11 @@ export default function RegistryCard({
 
       <div className="relative z-10">
         {locked ? (
-          <button disabled className={buttonClasses}>
-            Access Restricted
+          <button onClick={() => router.push('/request_permission')} className={buttonClasses}>
+            <span className="flex items-center justify-center gap-1.5">
+              <ShieldQuestion size={13} />
+              Request Access
+            </span>
           </button>
         ) : href ? (
           <Link href={href} className={cn(buttonClasses, "inline-flex items-center justify-center")}>

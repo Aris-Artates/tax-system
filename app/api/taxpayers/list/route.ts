@@ -19,9 +19,13 @@ type TaxpayerRow = {
   barangay_id: number | null;
   barangays: BarangayRecord | BarangayRecord[] | null;
 };
+import { authorize } from '@/lib/auth-guard';
 
 export async function GET() {
   try {
+    if (!(await authorize('taxpayers', 'can_view'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const { data, error } = await supabaseAdmin
       .from('taxpayers')
       .select(

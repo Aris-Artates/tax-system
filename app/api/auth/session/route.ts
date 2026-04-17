@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifySession } from '@/lib/auth-guard';
 
 export async function GET() {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('tax_session');
 
-  if (!sessionCookie?.value) {
+  const user = verifySession(sessionCookie?.value);
+
+  if (!user) {
     return NextResponse.json({ user: null }, { status: 200 });
   }
 
   try {
-    const user = JSON.parse(sessionCookie.value);
     const roleId = Number(user.role_id);
 
     let permissionsMap: Record<string, any> = {};

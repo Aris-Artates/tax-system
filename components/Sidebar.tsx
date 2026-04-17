@@ -14,6 +14,7 @@ import {
   Folder,
   UserCog,
   UserCircle2,
+  ShieldQuestion,
 } from "lucide-react";
 import {
   Sidebar,
@@ -145,6 +146,29 @@ export default function AppSidebar({
               </SidebarMenuItem>
             );
           })}
+          {/* Request Permissions — non-Super Admin only */}
+          {sessionUser && Number(sessionUser.role_id) !== 1 && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/request_permission" || pathname.startsWith("/request_permission/")}
+                tooltip="Request Permissions"
+                className="h-auto px-3 text-[#A0A5B2] hover:font-semibold data-[active=true]:bg-blue-50! data-[active=true]:text-blue-600!"
+              >
+                <Link href="/request_permission">
+                  <ShieldQuestion className="shrink-0 text-blue-500" />
+                  <div
+                    className={cn(
+                      "overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-300 ease-in-out",
+                      isCollapsed ? "ml-0 max-w-0 opacity-0" : "ml-1 max-w-56 opacity-100"
+                    )}
+                  >
+                    <span className="text-sm font-medium">Request Permissions</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
 

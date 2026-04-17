@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { authorize } from '@/lib/auth-guard';
 
 /**
  * GET /api/assessment/billing/drafts
@@ -7,6 +8,9 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
  */
 export async function GET() {
   try {
+    if (!(await authorize('assessment', 'can_view'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const { data, error } = await supabaseAdmin
       .from('billing_drafts')
       .select('*')

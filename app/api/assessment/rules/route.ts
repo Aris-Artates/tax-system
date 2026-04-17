@@ -5,8 +5,17 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
  * GET /api/assessment/rules
  * Lists all tax rules with triple-base64 encoding.
  */
+import { authorize } from '@/lib/auth-guard';
+
+/**
+ * GET /api/assessment/rules
+ * Lists all tax rules with triple-base64 encoding.
+ */
 export async function GET() {
   try {
+    if (!(await authorize('assessment', 'can_view'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const { data, error } = await supabaseAdmin
       .from('tax_rules')
       .select('*')
@@ -34,6 +43,9 @@ export async function GET() {
  */
 export async function POST(req: Request) {
   try {
+    if (!(await authorize('assessment', 'can_edit'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const body = await req.json();
     const { id, ...payload } = body;
 
@@ -76,6 +88,9 @@ export async function POST(req: Request) {
  */
 export async function DELETE(req: Request) {
   try {
+    if (!(await authorize('assessment', 'can_delete'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 

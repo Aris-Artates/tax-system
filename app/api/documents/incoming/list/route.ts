@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 
+import { authorize } from '@/lib/auth-guard';
+
 export async function GET() {
+  if (!(await authorize('document', 'can_view'))) {
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+  }
+
   // Mock data simulating Supabase response for incoming documents
   const mockDocuments = [
     {

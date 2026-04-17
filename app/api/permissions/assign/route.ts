@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+import { authorize } from '@/lib/auth-guard';
+
 export async function POST(request: Request) {
 	try {
+		if (!(await authorize('user', 'can_edit'))) {
+			return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+		}
 		const { roleId, permissionId } = await request.json();
 
 		if (!roleId || !permissionId) {
