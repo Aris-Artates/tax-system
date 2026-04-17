@@ -57,9 +57,13 @@ function sanitizeText(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 }
+import { authorize } from '@/lib/auth-guard';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!(await authorize('property', 'can_edit'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const body = (await req.json()) as CreateTaxDeclarationBody;
 
     if (!body.td_number?.trim()) {

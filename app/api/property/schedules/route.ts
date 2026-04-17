@@ -1,8 +1,13 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 
+import { authorize } from "@/lib/auth-guard";
+
 export async function GET() {
   try {
+    if (!(await authorize('property', 'can_view'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     // Fetch all schedule tables in parallel
     const [smvRes, levelRes, depRes] = await Promise.all([
       supabaseAdmin
@@ -44,6 +49,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!(await authorize('property', 'can_edit'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const body = await request.json();
     const { type, data } = body;
 
@@ -72,6 +80,9 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    if (!(await authorize('property', 'can_edit'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const body = await request.json();
     const { type, id, data } = body;
 
@@ -108,6 +119,9 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    if (!(await authorize('property', 'can_delete'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const id = searchParams.get("id");

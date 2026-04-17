@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+import { authorize } from '@/lib/auth-guard';
+
 export async function POST(request: Request) {
   try {
+    if (!(await authorize('property', 'can_edit'))) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const body = await request.json();
     const {
       oldTdId,

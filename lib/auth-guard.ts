@@ -100,7 +100,12 @@ export function signSession(data: any): string {
 export function verifySession(signedValue?: string): any {
   if (!signedValue) return null;
 
-  const [serialized, signature] = signedValue.split('.');
+  const lastDotIndex = signedValue.lastIndexOf('.');
+  if (lastDotIndex === -1) return null;
+  
+  const serialized = signedValue.substring(0, lastDotIndex);
+  const signature = signedValue.substring(lastDotIndex + 1);
+  
   if (!serialized || !signature) return null;
 
   const expectedSignature = createHmac('sha256', SESSION_SECRET).update(serialized).digest('hex');

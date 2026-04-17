@@ -1,23 +1,24 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-
-type ReviewPayload = {
-	request_id: string;
-	action: 'approved' | 'denied';
-	review_note?: string;
-};
+import { verifySession, authorize } from '@/lib/auth-guard';
 
 export async function POST(request: Request) {
 	try {
 		const cookieStore = await cookies();
 		const sessionCookie = cookieStore.get('tax_session');
+		const sessionUser = verifySession(sessionCookie?.value);
 
-		if (!sessionCookie?.value) {
+		if (!sessionUser) {
 			return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 		}
 
-		const sessionUser = JSON.parse(sessionCookie.value);
+		// Only Super Admin can review (Role ID 1)
+		// Using authorize helper for consistency
+		if (!(await authorize('user', 'can_edit'))) {
+			return NextResponse.json({ error: 'Unauthorized: You do not have permission to review requests.' }, { status: 403 });
+		}
+
 		const roleId = Number(sessionUser.role_id);
 
 		// Only Super Admin can review

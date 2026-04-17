@@ -12,16 +12,23 @@ type SubmitPayload = {
 	justification: string;
 };
 
+import { authorize, verifySession } from '@/lib/auth-guard';
+
 export async function POST(request: Request) {
 	try {
 		const cookieStore = await cookies();
 		const sessionCookie = cookieStore.get('tax_session');
+		const sessionUser = verifySession(sessionCookie?.value);
 
-		if (!sessionCookie?.value) {
-			return NextResponse.json({ error: 'Unauthorized: No active session.' }, { status: 401 });
+		if (!sessionUser) {
+			return NextResponse.json({ error: 'Unauthorized: Invalid or missing session.' }, { status: 401 });
 		}
 
-		const sessionUser = JSON.parse(sessionCookie.value);
+		// Baseline check to ensure user is active in DB
+		if (!(await authorize('user', 'can_view'))) {
+			return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+		}
+
 		const empID = sessionUser.empID;
 		const name = sessionUser.name || `${sessionUser.firstname} ${sessionUser.lastname}`;
 		const role = sessionUser.role || 'Unknown';
