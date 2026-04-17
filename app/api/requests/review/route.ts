@@ -3,6 +3,12 @@ import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { verifySession, authorize } from '@/lib/auth-guard';
 
+type ReviewPayload = {
+	request_id: string;
+	action: 'approved' | 'denied';
+	review_note?: string;
+};
+
 export async function POST(request: Request) {
 	try {
 		const cookieStore = await cookies();
@@ -45,7 +51,7 @@ export async function POST(request: Request) {
 				updated_at: new Date().toISOString(),
 			})
 			.eq('id', body.request_id)
-			.eq('status', 'pending') // Can only review pending requests
+			.eq('status', 'pending') 
 			.select('id, status, updated_at')
 			.single();
 

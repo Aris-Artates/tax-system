@@ -11,6 +11,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
     }
     const { searchParams } = new URL(req.url);
+    const barangayId = searchParams.get('barangay_id');
+
+    if (!barangayId) {
+      return NextResponse.json({ error: 'barangay_id is required.' }, { status: 400 });
+    }
     const { data, error } = await supabaseAdmin
       .from('tax_declarations')
       .select(`
