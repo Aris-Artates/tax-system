@@ -9,7 +9,7 @@ export async function GET() {
     }
     const { data: permissions, error: permissionsError } = await supabaseAdmin
       .from("permissions")
-      .select("id, name, description, created_at")
+      .select("id, name, description, access_module, tab, created_at")
       .order("name", { ascending: true });
 
     if (permissionsError) {
@@ -38,7 +38,6 @@ export async function GET() {
       );
     }
 
-    // Map roles to their respective permission ids
     const rolesByPermissionId = new Map<
       number,
       { id: number; name: string }[]
@@ -48,7 +47,6 @@ export async function GET() {
       const permissionId = Number(row.permission_id);
       if (!Number.isInteger(permissionId)) continue;
 
-      // Handle different Supabase relationship response formats
       const roleRecord = Array.isArray(row.roles) ? row.roles[0] : row.roles;
       if (!roleRecord) continue;
 

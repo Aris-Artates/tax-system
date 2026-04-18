@@ -3,6 +3,7 @@
 import RegistryCard from '@/components/RegistryCard';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { usePermission } from '@/hooks/usePermission';
 import {
 	UsersRound,
 	UserRoundPlus,
@@ -15,18 +16,33 @@ import {
 
 export default function UserRoleManagementPage() {
 	const router = useRouter();
-	const { permissions, user } = useAuth();
+	const { permissions, user, isLoading } = useAuth();
+	const { canEdit, isSuperAdmin } = usePermission("user");
 
-	const hasAccess = (tab: string) => {
-		if (Number(user?.role_id) === 1) return true;
+	const hasAccess = (card: any) => {
+		if (isSuperAdmin) return true;
 		const pm = permissions['user'];
 		if (!pm) return false;
-		if (!pm.tabs || Object.keys(pm.tabs).length === 0) return pm.can_view;
-		return pm.tabs[tab]?.can_view;
+
+		// Determine if this card needs Edit or just View
+		const needsEdit = ['create', 'manage', 'settings'].includes(card.slug);
+		
+		if (needsEdit && !pm.can_edit) return false;
+		if (!pm.can_view) return false;
+
+		// Check tab-level if applicable
+		if (pm.tabs && Object.keys(pm.tabs).length > 0) {
+			const tabPerm = pm.tabs[card.slug];
+			if (!tabPerm) return false;
+			if (needsEdit && !tabPerm.can_edit) return false;
+			return tabPerm.can_view;
+		}
+
+		return true;
 	};
 
 	// Super Admin exclusive card
-	const isSuperAdmin = Number(user?.role_id) === 1;
+
 
 	const allCards = [
 		{
@@ -89,7 +105,7 @@ export default function UserRoleManagementPage() {
 	];
 
 	const sortedCards = allCards
-		.map(card => ({ ...card, locked: !hasAccess(card.slug) }))
+		.map(card => ({ ...card, locked: !hasAccess(card) }))
 		.sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
 
 	return (

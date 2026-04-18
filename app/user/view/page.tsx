@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { usePermission } from "@/hooks/usePermission";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -332,6 +333,7 @@ export default function ViewUserPage() {
 
   // --- 3. Added state for our Search Bar ---
   const [globalFilter, setGlobalFilter] = useState("");
+  const { canEdit, canDelete } = usePermission("user");
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -852,15 +854,17 @@ export default function ViewUserPage() {
                 <Activity className="h-3.5 w-3.5" />
                 View Log
               </button>
-              <button
-                type="button"
-                onClick={() => handleEditUser(user.empID)}
-                className={`font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-gray-50 cursor-pointer`}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
-              </button>
-              {Number(currentUser?.role_id) === 1 && (
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => handleEditUser(user.empID)}
+                  className={`font-inter inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-gray-50 cursor-pointer`}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              )}
+              {canDelete && (
                 <button
                   type="button"
                   onClick={() => handleDeleteClick(user.empID, user.name)}
@@ -919,12 +923,14 @@ export default function ViewUserPage() {
               <Undo2 className="h-4 w-4" />
               Back to User Management
             </Button>
-            <Button
-              onClick={handleAddUser}
-              className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add New User
-            </Button>
+            {canEdit && (
+              <Button
+                onClick={handleAddUser}
+                className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add New User
+              </Button>
+            )}
           </div>
         </header>
 

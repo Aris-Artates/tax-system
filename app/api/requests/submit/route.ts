@@ -24,10 +24,8 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Unauthorized: Invalid or missing session.' }, { status: 401 });
 		}
 
-		// Baseline check to ensure user is active in DB
-		if (!(await authorize('user', 'can_view'))) {
-			return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
-		}
+		// We only require a valid session to submit a request.
+		// We do not require any specific module permissions since the user is requesting them!
 
 		const empID = sessionUser.empID;
 		const name = sessionUser.name || `${sessionUser.firstname} ${sessionUser.lastname}`;
