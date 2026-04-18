@@ -417,35 +417,52 @@ function CreateUserForm() {
     { title: "Review", icon: CheckCircle2 },
   ];
 
+  const isLoading = isLoadingUser || isLoadingRoles;
+
   return (
     <div className="mx-auto w-full animate-in fade-in duration-500">
       <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-            {isEditMode ? "Edit User Account" : "Enroll New Personnel"}
-          </h1>
-          <p className="font-inter mt-1 text-xs text-slate-400">
-            {isEditMode
-              ? "Update user credentials and operational placement."
-              : "Complete the phased enrollment to onboard a new team member."}
-          </p>
+          {isLoading ? (
+            <div className="space-y-2 mb-1">
+              <div className="h-8 w-64 animate-pulse rounded bg-slate-300/80" />
+              <div className="h-4 w-96 animate-pulse rounded bg-slate-200" />
+            </div>
+          ) : (
+            <>
+              <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+                {isEditMode ? "Edit User Account" : "Enroll New Personnel"}
+              </h1>
+              <p className="font-inter mt-1 text-xs text-slate-400">
+                {isEditMode
+                  ? "Update user credentials and operational placement."
+                  : "Complete the phased enrollment to onboard a new team member."}
+              </p>
+            </>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
             type="button"
             onClick={() => router.push("/user")}
-            className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 cursor-pointer"
+            className={cn(
+              "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 cursor-pointer",
+              isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
+            )}
           >
-            <Undo2 className="h-4 w-4" />
-            Back to User Management
+            <Undo2 className={cn("h-4 w-4", isLoading && "opacity-0")} />
+            <span className={cn(isLoading && "opacity-0")}>Back to User Management</span>
           </Button>
           <Button
             type="button"
             onClick={() => router.push("/user/view")}
-            className="h-9 rounded-md border border-slate-200 bg-white px-4 text-xs font-semibold text-[#0F172A] shadow-sm transition-all hover:bg-slate-50 cursor-pointer"
+            className={cn(
+              "h-9 rounded-md border border-slate-200 bg-white px-4 text-xs font-semibold text-[#0F172A] shadow-sm transition-all hover:bg-slate-50 cursor-pointer",
+              isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
+            )}
           >
-            <TableIcon className="h-4 w-4" />
-            View User Directory
+            <TableIcon className={cn("h-4 w-4", isLoading && "opacity-0")} />
+            <span className={cn(isLoading && "opacity-0")}>View User Directory</span>
           </Button>
         </div>
       </header>
@@ -486,6 +503,7 @@ function CreateUserForm() {
                 >
                   <StepperTrigger
                     onClick={(e) => {
+                      if (isLoading) return;
                       if (isLocked) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -499,6 +517,7 @@ function CreateUserForm() {
                     className={cn(
                       "group flex flex-col items-center gap-1.5 w-[70px] p-1 rounded-xl transition-all data-[state=active]:bg-white flex-none",
                       isLocked && "opacity-40 cursor-not-allowed",
+                      isLoading && "animate-pulse"
                     )}
                   >
                     <div
@@ -509,9 +528,10 @@ function CreateUserForm() {
                           : isActive
                             ? "bg-[#0F172A] text-white"
                             : "bg-slate-50 text-slate-400 group-hover:bg-slate-100",
+                        isLoading && "bg-slate-100 text-transparent border-none ring-0 shadow-none"
                       )}
                     >
-                      {isCompleted ? (
+                      {isLoading ? null : isCompleted ? (
                         <CheckCircle2 size={14} />
                       ) : (
                         <StepIcon size={14} />
@@ -521,13 +541,17 @@ function CreateUserForm() {
                       className={cn(
                         "font-inter text-[9px] font-bold uppercase tracking-wider whitespace-nowrap",
                         isActive ? "text-[#0F172A]" : "text-slate-400",
+                        isLoading && "bg-slate-100 text-transparent rounded"
                       )}
                     >
                       {s.title}
                     </span>
                   </StepperTrigger>
                   {stepNum < steps.length && (
-                    <StepperSeparator className="flex-1 bg-slate-200/50 h-[1.5px] mx-1 self-center -mt-4" />
+                    <StepperSeparator className={cn(
+                      "flex-1 bg-slate-200/50 h-[1.5px] mx-1 self-center -mt-4",
+                      isLoading && "bg-slate-100"
+                    )} />
                   )}
                 </StepperItem>
               );
@@ -536,8 +560,41 @@ function CreateUserForm() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-5 bg-white">
-          <StepperPanel>
+        <main className="flex-1 p-5 bg-white min-h-[450px]">
+          {isLoading ? (
+            <div className="animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="size-4 animate-pulse rounded bg-slate-200/50" />
+                    <div className="h-4 w-32 animate-pulse rounded bg-slate-200/50" />
+                  </div>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                      <div className="h-9 w-full animate-pulse rounded-md bg-slate-50 border border-slate-100" />
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="size-4 animate-pulse rounded bg-slate-200/50" />
+                    <div className="h-4 w-32 animate-pulse rounded bg-slate-200/50" />
+                  </div>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                      <div className="h-9 w-full animate-pulse rounded-md bg-slate-50 border border-slate-100" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <footer className="pt-8 flex justify-end">
+                <div className="h-9 w-40 animate-pulse rounded-md bg-slate-200/50" />
+              </footer>
+            </div>
+          ) : (
+            <StepperPanel>
             {/* STEP 1: Personal Details */}
             <StepperContent
               value={1}
@@ -1134,8 +1191,9 @@ function CreateUserForm() {
               </footer>
             </StepperContent>
           </StepperPanel>
-        </main>
-      </Stepper>
+        )}
+      </main>
+    </Stepper>
 
       <style jsx global>{`
         .password-disc {
