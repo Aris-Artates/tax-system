@@ -48,7 +48,7 @@ export async function authorize(moduleName: string, action: PermissionAction): P
     // 3. Check for specific module permission
     const { data: rolePerms, error: permsError } = await supabaseAdmin
       .from('role_permissions')
-      .select('can_view, can_edit, can_delete, permissions(name, access_module)')
+      .select('permissions(name, access_module, can_view, can_edit, can_delete)')
       .eq('role_id', dbUser.role_id);
 
     if (permsError || !rolePerms) {
@@ -56,23 +56,30 @@ export async function authorize(moduleName: string, action: PermissionAction): P
       return false;
     }
 
+    let permTarget: any = null;
+
     // Find the relevant permission module
-    const modulePermission = rolePerms.find((rp: any) => {
+    const hasAccess = rolePerms.some((rp: any) => {
       const permData = Array.isArray(rp.permissions) 
         ? rp.permissions[0] 
         : rp.permissions;
         
       if (!permData) return false;
-      const permKey = permData.access_module || permData.name;
-      return permKey === moduleName;
+      const permKeys = (permData.access_module || permData.name || '').split(',').map((s: string) => s.trim());
+      
+      if (permKeys.includes(moduleName)) {
+        permTarget = permData;
+        return true;
+      }
+      return false;
     });
 
-    if (!modulePermission) {
+    if (!hasAccess || !permTarget) {
       console.warn(`[Auth Guard] Unauthorized: Role ${dbUser.role_id} has no entry for module ${moduleName}.`);
       return false;
     }
 
-    const isAuthorized = !!modulePermission[action];
+    const isAuthorized = !!permTarget[action];
     
     if (!isAuthorized) {
       console.warn(`[Auth Guard] Unauthorized: Role ${dbUser.role_id} lacks '${action}' on '${moduleName}'.`);

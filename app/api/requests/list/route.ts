@@ -6,9 +6,9 @@ import { authorize, verifySession } from '@/lib/auth-guard';
 
 export async function GET(request: Request) {
 	try {
-		if (!(await authorize('user', 'can_view'))) {
-			return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
-		}
+		// We do not run authorize('user', 'can_view') here globally.
+		// Normal users need access to this endpoint to view their own pending/historical requests.
+		// Role-scoping is securely handled below.
 
 		const cookieStore = await cookies();
 		const sessionCookie = cookieStore.get('tax_session');
