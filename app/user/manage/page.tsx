@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePermission } from "@/hooks/usePermission";
 import { toast } from "sonner";
 import {
   Undo2,
@@ -164,6 +165,7 @@ export default function ManageRolePage() {
 
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [roles, setRoles] = useState<ListedRole[]>([]);
+  const { canEdit, isSuperAdmin } = usePermission("user");
   const [permissions, setPermissions] = useState<ApiPermission[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
@@ -525,13 +527,15 @@ export default function ManageRolePage() {
           const role = row.original;
           return (
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => openMasterModal(role)}
-                className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 cursor-pointer active:scale-95"
-              >
-                <Settings2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />{" "}
-                Configure
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => openMasterModal(role)}
+                  className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 cursor-pointer active:scale-95"
+                >
+                  <Settings2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />{" "}
+                  Configure
+                </button>
+              )}
             </div>
           );
         },
@@ -585,12 +589,14 @@ export default function ManageRolePage() {
               <Undo2 className="h-4 w-4" />
               Back to User Management
             </Button>
-            <Button
-              onClick={openAddModal}
-              className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add New Role
-            </Button>
+            {canEdit && (
+              <Button
+                onClick={openAddModal}
+                className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add New Role
+              </Button>
+            )}
           </div>
         </header>
 

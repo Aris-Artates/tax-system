@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { usePermission } from "@/hooks/usePermission";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -11,7 +12,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings2,
+  ArrowUpDown,
+  Check,
 } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   useReactTable,
@@ -47,16 +58,47 @@ type Permission = {
   description?: string;
   created_at?: string;
   roles?: { id: number; name: string }[];
+  access_module?: string;
+  tab?: string;
+};
+
+const MODULE_LABELS: Record<string, string> = {
+  property: "Property Registry",
+  taxpayers: "Taxpayer Records",
+  assessment: "Assessment & Billing",
+  payments: "Payments & OR Monitoring",
+  barangay: "Barangay Performance",
+  delinquencies: "Delinquencies & Notices",
+  document: "Document Tracking",
+  user: "User & Role Management",
+};
+
+const getModuleLabel = (slug: string) => {
+  if (!slug) return "";
+  const s = slug.toLowerCase().trim();
+  return MODULE_LABELS[s] || slug;
 };
 
 export default function PermissionSettingsPage() {
   const router = useRouter();
 
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const { canEdit, isSuperAdmin } = usePermission("user");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("perm_sort") || "date_desc";
+    }
+    return "date_desc";
+  });
+  const [isSortOpen, setIsSortOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("perm_sort", sortBy);
+  }, [sortBy]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -445,13 +487,15 @@ export default function PermissionSettingsPage() {
           const p = row.original;
           return (
             <div className="flex justify-end">
-              <button
-                onClick={() => handleOpenSettings(p)}
-                className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 cursor-pointer active:scale-95"
-              >
-                <Settings2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />{" "}
-                Configure
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => handleOpenSettings(p)}
+                  className="font-inter inline-flex min-w-max items-center gap-2 whitespace-nowrap rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 cursor-pointer active:scale-95"
+                >
+                  <Settings2 className="h-3.5 w-3.5 shrink-0 text-slate-500" />{" "}
+                  Configure
+                </button>
+              )}
             </div>
           );
         },
@@ -460,8 +504,37 @@ export default function PermissionSettingsPage() {
     [],
   );
 
+  const SORT_OPTIONS = [
+    { value: "date_desc", label: "Date Created (Newest)" },
+    { value: "date_asc", label: "Date Created (Oldest)" },
+    { value: "alpha_asc", label: "Alphabetical (A–Z)" },
+    { value: "alpha_desc", label: "Alphabetical (Z–A)" },
+    { value: "id_asc", label: "ID (Ascending)" },
+    { value: "id_desc", label: "ID (Descending)" },
+  ];
+
+  const sortedPermissions = useMemo(() => {
+    const sorted = [...permissions];
+    switch (sortBy) {
+      case "date_desc":
+        return sorted.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      case "date_asc":
+        return sorted.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+      case "alpha_asc":
+        return sorted.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      case "alpha_desc":
+        return sorted.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+      case "id_asc":
+        return sorted.sort((a, b) => a.id - b.id);
+      case "id_desc":
+        return sorted.sort((a, b) => b.id - a.id);
+      default:
+        return sorted;
+    }
+  }, [permissions, sortBy]);
+
   const table = useReactTable({
-    data: permissions,
+    data: sortedPermissions,
     columns,
     state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
@@ -493,7 +566,7 @@ export default function PermissionSettingsPage() {
               <Undo2 className="h-4 w-4" />
               Back to User Management
             </Button>
-            {Number(currentUser?.role_id) === 1 && (
+            {canEdit && (
               <Button
                 onClick={handleAddPermission}
                 className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
@@ -523,19 +596,21 @@ export default function PermissionSettingsPage() {
                       key={m}
                       className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 rounded-md border border-blue-200"
                     >
-                      {m}
+                      {getModuleLabel(m)}
                     </span>
                   ))}
                 </div>
               </div>
               <div className="flex flex-col sm:items-end gap-2 shrink-0">
-                <Button
-                  onClick={() => setIsDialogOpen(true)}
-                  className="bg-white text-blue-700 border border-blue-200 hover:bg-blue-100 h-8 text-xs font-bold"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  Auto-Create Custom Permission
-                </Button>
+                {canEdit && (
+                  <Button
+                    onClick={() => setIsDialogOpen(true)}
+                    className="bg-white text-blue-700 border border-blue-200 hover:bg-blue-100 h-8 text-xs font-bold"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Auto-Create Custom Permission
+                  </Button>
+                )}
                 {recommendedPerms.length > 0 && (
                   <Button
                     onClick={() => setIsRecommendedModalOpen(true)}
@@ -565,14 +640,47 @@ export default function PermissionSettingsPage() {
                 Role Permission Matrix
               </h2>
             </div>
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={globalFilter ?? ""}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search permissions..."
-                className="font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={globalFilter ?? ""}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search permissions..."
+                  className="font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none"
+                />
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setIsSortOpen(!isSortOpen)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  {SORT_OPTIONS.find(o => o.value === sortBy)?.label || "Sort"}
+                </button>
+                {isSortOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsSortOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 w-52 rounded-xl border border-slate-200 bg-white shadow-xl py-1.5 animate-in fade-in slide-in-from-top-2">
+                      <p className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sort by</p>
+                      {SORT_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setSortBy(opt.value); setIsSortOpen(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between gap-2 ${
+                            sortBy === opt.value
+                              ? "text-blue-600 bg-blue-50/50"
+                              : "text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {opt.label}
+                          {sortBy === opt.value && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -709,14 +817,21 @@ export default function PermissionSettingsPage() {
         />
       )}
 
-      {isRecommendedModalOpen && recommendedPerms.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in p-4">
-          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
-            
+      <Dialog 
+        open={isRecommendedModalOpen && recommendedPerms.length > 0} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsRecommendedModalOpen(false);
+            setCurrentRecIndex(0);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
+          <div className="bg-white flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50">
               <div>
-                <h2 className="font-lexend text-xl font-bold text-slate-800">Matching Permissions</h2>
-                <p className="text-xs text-slate-500 font-inter mt-1">Review and assign pre-configured access levels that match the user request.</p>
+                <DialogTitle className="font-lexend text-xl font-bold text-slate-800">Matching Permissions</DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 font-inter mt-1">Review and assign pre-configured access levels that match the user request.</DialogDescription>
               </div>
               <span className="text-sm font-bold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
                 {currentRecIndex + 1} of {recommendedPerms.length}
@@ -724,51 +839,57 @@ export default function PermissionSettingsPage() {
             </div>
 
             <div className="flex-1 p-10 relative flex items-center justify-center overflow-y-auto">
-              
               {recommendedPerms.length > 1 && (
                 <button 
                   onClick={() => setCurrentRecIndex(prev => prev === 0 ? recommendedPerms.length - 1 : prev - 1)}
-                  className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-300 border border-transparent hover:border-blue-100 group shadow-sm hover:shadow-md"
+                  className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-300 border border-transparent hover:border-blue-100 group shadow-sm hover:shadow-md z-10"
                 >
                   <ChevronLeft size={28} className="group-active:scale-90 transition-transform" />
                 </button>
               )}
 
-              <div className="flex-1 px-12 text-center max-w-2xl">
-                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 mb-6 shadow-sm border border-blue-200 rotate-3 hover:rotate-0 transition-transform duration-300">
-                   <KeyRound size={32} />
-                 </div>
-                 <h3 className="font-lexend font-extrabold text-slate-900 text-3xl mb-3 tracking-tight">
-                   {recommendedPerms[currentRecIndex].name}
-                 </h3>
-                 <p className="text-sm text-slate-500 font-inter mb-8 leading-relaxed">
-                   {recommendedPerms[currentRecIndex].description || "This permission provides access to specific system modules as defined below."}
-                 </p>
-                 
-                 <div className="space-y-4">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Included Access Modules</p>
-                   <div className="flex flex-wrap justify-center gap-2">
-                      {(() => {
-                         const mods = (recommendedPerms[currentRecIndex].access_module || recommendedPerms[currentRecIndex].name).split(',').map((s:string)=>s.trim());
-                         return mods.map((m: string) => (
-                           <span key={m} className="px-4 py-1.5 text-xs font-bold bg-white text-slate-700 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 hover:text-blue-700 transition-colors">
-                             {m}
-                           </span>
-                         ));
-                      })()}
+              {recommendedPerms[currentRecIndex] ? (
+                <div className="flex-1 px-12 text-center max-w-2xl">
+                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 mb-6 shadow-sm border border-blue-200 rotate-3 hover:rotate-0 transition-transform duration-300">
+                     <KeyRound size={32} />
                    </div>
-                 </div>
-              </div>
+                   <h3 className="font-lexend font-extrabold text-slate-900 text-3xl mb-3 tracking-tight">
+                     {recommendedPerms[currentRecIndex].name}
+                   </h3>
+                   <p className="text-sm text-slate-500 font-inter mb-8 leading-relaxed">
+                     {recommendedPerms[currentRecIndex].description || "This permission provides access to specific system modules as defined below."}
+                   </p>
+                   
+                   <div className="space-y-4">
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Included Access Modules</p>
+                     <div className="flex flex-wrap justify-center gap-2">
+                        {(() => {
+                           const p = recommendedPerms[currentRecIndex];
+                           const mods = (p.access_module || p.name || "").split(',').map((s:string)=>s.trim()).filter(Boolean);
+                           return mods.map((m: string) => (
+                             <span key={m} className="px-4 py-1.5 text-xs font-bold bg-white text-slate-700 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 hover:text-blue-700 transition-colors">
+                               {getModuleLabel(m)}
+                             </span>
+                           ));
+                        })()}
+                     </div>
+                   </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="text-sm font-medium">Processing...</p>
+                </div>
+              )}
 
               {recommendedPerms.length > 1 && (
                 <button 
                   onClick={() => setCurrentRecIndex(prev => prev === recommendedPerms.length - 1 ? 0 : prev + 1)}
-                  className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-300 border border-transparent hover:border-blue-100 group shadow-sm hover:shadow-md"
+                  className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-300 border border-transparent hover:border-blue-100 group shadow-sm hover:shadow-md z-10"
                 >
                   <ChevronRight size={28} className="group-active:scale-90 transition-transform" />
                 </button>
               )}
-
             </div>
 
             <div className="flex justify-center gap-2 pb-8">
@@ -793,9 +914,9 @@ export default function PermissionSettingsPage() {
               </button>
               <div className="flex-1" />
               <button 
-                onClick={() => handleAssignPermissions([recommendedPerms[currentRecIndex].id])}
-                disabled={isAssigning}
-                className="px-8 py-3 text-sm font-bold text-blue-600 bg-white border-2 border-blue-100 hover:border-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                onClick={() => handleAssignPermissions([recommendedPerms[currentRecIndex]?.id].filter(Boolean) as number[])}
+                disabled={isAssigning || !recommendedPerms[currentRecIndex]}
+                className="px-8 py-3 text-sm font-bold text-blue-600 bg-white border-2 border-blue-100 hover:border-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Assign This Permission
               </button>
@@ -809,10 +930,9 @@ export default function PermissionSettingsPage() {
                 </button>
               )}
             </div>
-
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
