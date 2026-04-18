@@ -903,27 +903,45 @@ export default function ViewUserPage() {
       <main className="flex-1 w-full max-w-7xl mx-auto h-auto">
         <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-              View Users
-            </h1>
-            <p className="font-inter mt-1 text-xs text-slate-400">
-              Review user accounts, assigned roles, and account status.
-            </p>
+            {isLoading ? (
+              <div className="space-y-2 mb-1">
+                <div className="h-8 w-44 animate-pulse rounded bg-slate-200/80" />
+                <div className="h-4 w-72 animate-pulse rounded bg-slate-200/50" />
+              </div>
+            ) : (
+              <>
+                <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+                  View Users
+                </h1>
+                <p className="font-inter mt-1 text-xs text-slate-400">
+                  Review user accounts, assigned roles, and account status.
+                </p>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             <Button
               type="button"
+              disabled={isLoading}
               onClick={() => router.push("/user")}
-              className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+              className={cn(
+                "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
+              )}
             >
-              <Undo2 className="h-4 w-4" />
-              Back to User Management
+              <Undo2 className={cn("h-4 w-4", isLoading && "opacity-0")} />
+              <span className={cn(isLoading && "opacity-0")}>Back to User Management</span>
             </Button>
             <Button
+              disabled={isLoading}
               onClick={handleAddUser}
-              className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              className={cn(
+                "h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer",
+                isLoading && "animate-pulse bg-slate-200 text-transparent border-none shadow-none"
+              )}
             >
-              <Plus className="mr-2 h-4 w-4" /> Add New User
+              <Plus className={cn("mr-2 h-4 w-4", isLoading && "opacity-0")} />
+              <span className={cn(isLoading && "opacity-0")}>Add New User</span>
             </Button>
           </div>
         </header>
@@ -931,20 +949,31 @@ export default function ViewUserPage() {
         <div className="mb-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-slate-100 p-2">
-                <UsersRound className="h-4 w-4 text-[#00154A]" />
+              <div className={cn(
+                "rounded-md bg-slate-100 p-2",
+                isLoading && "animate-pulse bg-slate-100"
+              )}>
+                <UsersRound className={cn("h-4 w-4 text-[#00154A]", isLoading && "opacity-0")} />
               </div>
-              <h2 className="font-lexend text-sm font-semibold text-[#848794]">
-                User Directory
-              </h2>
+              {isLoading ? (
+                <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
+              ) : (
+                <h2 className="font-lexend text-sm font-semibold text-[#848794]">
+                  User Directory
+                </h2>
+              )}
             </div>
             <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className={cn("absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400", isLoading && "opacity-0")} />
               <input
+                disabled={isLoading}
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search users..."
-                className="font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none"
+                placeholder={isLoading ? "" : "Search users..."}
+                className={cn(
+                  "font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none",
+                  isLoading && "animate-pulse bg-slate-50/50 border-slate-100 cursor-not-allowed"
+                )}
               />
             </div>
           </div>
@@ -955,16 +984,32 @@ export default function ViewUserPage() {
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id} className="bg-gray-50/50">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  ))}
+                  {headerGroup.headers.map((header) => {
+                    const columnId = header.column.id;
+                    const isImage = columnId === "avatar";
+                    const isActions = columnId === "actions";
+                    
+                    return (
+                      <TableHead 
+                        key={header.id} 
+                        align={isImage ? "center" : isActions ? "right" : "left"}
+                      >
+                        {isLoading ? (
+                          <div className={cn(
+                            "h-3 animate-pulse rounded bg-slate-200/60",
+                            isImage ? "w-8 mx-auto" : isActions ? "w-12 ml-auto" : "w-16"
+                          )} />
+                        ) : (
+                          header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )
+                        )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableHeader>
@@ -972,31 +1017,29 @@ export default function ViewUserPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={`skeleton-${i}`}>
-                    <TableCell>
-                      <div className="flex justify-center">
-                        <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
-                      </div>
+                    <TableCell align="center">
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-slate-100 border border-slate-50 mx-auto" />
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
                     </TableCell>
                     <TableCell>
-                      <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-pulse rounded bg-slate-200" />
-                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="h-6 w-16 animate-pulse rounded bg-slate-200" />
+                      <div className="h-6 w-16 animate-pulse rounded-full bg-slate-100" />
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="right">
                       <div className="flex justify-end gap-2">
-                        <div className="h-[26px] w-[88px] animate-pulse rounded bg-slate-200" />
-                        <div className="h-[26px] w-[62px] animate-pulse rounded bg-slate-200" />
-                        <div className="h-[26px] w-[75px] animate-pulse rounded bg-slate-200" />
+                        <div className="h-[30px] w-24 animate-pulse rounded bg-slate-100" />
+                        <div className="h-[30px] w-16 animate-pulse rounded bg-slate-100" />
+                        <div className="h-[30px] w-20 animate-pulse rounded bg-slate-100" />
                       </div>
                     </TableCell>
                   </TableRow>
