@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "@/hooks/usePermission";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Undo2,
@@ -169,6 +170,7 @@ export default function ManageRolePage() {
   const [permissions, setPermissions] = useState<ApiPermission[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  const isLoading = isLoadingRoles || isLoadingUsers;
 
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -273,9 +275,9 @@ export default function ManageRolePage() {
       const response = await fetch("/api/permissions/list", {
         cache: "no-store",
       });
-      const data = (await response.json()) as { 
+      const data = (await response.json()) as {
         permissions?: ApiPermission[];
-        _data?: string; 
+        _data?: string;
       };
 
       if (!response.ok) {
@@ -283,10 +285,10 @@ export default function ManageRolePage() {
         return;
       }
 
-      const decodedPermissions = data._data 
-        ? JSON.parse(atob(atob(atob(data._data)))) 
+      const decodedPermissions = data._data
+        ? JSON.parse(atob(atob(atob(data._data))))
         : (data.permissions ?? []);
-        
+
       setPermissions(decodedPermissions);
     } catch {
       setPermissions([]);
@@ -309,7 +311,9 @@ export default function ManageRolePage() {
         return;
       }
 
-      const decodedUsers = data._data ? JSON.parse(atob(atob(atob(data._data)))) : (data.users ?? []);
+      const decodedUsers = data._data
+        ? JSON.parse(atob(atob(atob(data._data))))
+        : (data.users ?? []);
       setUsers(decodedUsers);
     } catch {
       setUsers([]);
@@ -573,28 +577,52 @@ export default function ManageRolePage() {
       <main className="flex-1 w-full max-w-7xl mx-auto h-auto">
         <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-              Manage Roles
-            </h1>
-            <p className="font-inter mt-1 text-xs text-slate-400">
-              Create roles, assign permissions, and manage access levels
-            </p>
+            {isLoading ? (
+              <div className="space-y-2 mb-1">
+                <div className="h-8 w-44 animate-pulse rounded bg-slate-300/80" />
+                <div className="h-4 w-72 animate-pulse rounded bg-slate-200" />
+              </div>
+            ) : (
+              <>
+                <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+                  Manage Roles
+                </h1>
+                <p className="font-inter mt-1 text-xs text-slate-400">
+                  Create roles, assign permissions, and manage access levels
+                </p>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             <Button
               type="button"
               onClick={handleBack}
-              className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+              className={cn(
+                "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                isLoading &&
+                  "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none",
+              )}
             >
-              <Undo2 className="h-4 w-4" />
-              Back to User Management
+              <Undo2 className={cn("h-4 w-4", isLoading && "opacity-0")} />
+              <span className={cn(isLoading && "opacity-0")}>
+                Back to User Management
+              </span>
             </Button>
             {canEdit && (
               <Button
                 onClick={openAddModal}
-                className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                className={cn(
+                  "h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer",
+                  isLoading &&
+                    "animate-pulse bg-slate-200 text-transparent border-none shadow-none",
+                )}
               >
-                <Plus className="mr-2 h-4 w-4" /> Add New Role
+                <Plus
+                  className={cn("mr-2 h-4 w-4", isLoading && "opacity-0")}
+                />
+                <span className={cn(isLoading && "opacity-0")}>
+                  Add New Role
+                </span>
               </Button>
             )}
           </div>
@@ -603,12 +631,26 @@ export default function ManageRolePage() {
         <div className="mb-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-slate-100 p-2">
-                <ShieldCheck className="h-4 w-4 text-[#00154A]" />
+              <div
+                className={cn(
+                  "rounded-md bg-slate-100 p-2",
+                  isLoading && "animate-pulse bg-slate-100",
+                )}
+              >
+                <ShieldCheck
+                  className={cn(
+                    "h-4 w-4 text-[#00154A]",
+                    isLoading && "opacity-0",
+                  )}
+                />
               </div>
-              <h2 className="font-lexend text-sm font-semibold text-[#848794]">
-                Role Directory
-              </h2>
+              {isLoading ? (
+                <div className="h-4 w-32 animate-pulse rounded bg-slate-200/50" />
+              ) : (
+                <h2 className="font-lexend text-sm font-semibold text-[#848794]">
+                  Role Directory
+                </h2>
+              )}
             </div>
 
             <div className="relative w-full sm:max-w-xs">
@@ -616,8 +658,11 @@ export default function ManageRolePage() {
               <input
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search roles or permissions..."
-                className="font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none"
+                placeholder={isLoading ? "" : "Search roles or permissions..."}
+                className={cn(
+                  "font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none",
+                  isLoading && "animate-pulse bg-slate-50 border-slate-100",
+                )}
               />
             </div>
           </div>
@@ -630,64 +675,79 @@ export default function ManageRolePage() {
                 <TableRow key={hg.id} className="bg-gray-50/50">
                   {hg.headers.map((header) => (
                     <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
+                      {isLoading ? (
+                        <div
+                          className={cn(
+                            "h-4 animate-pulse rounded bg-slate-200",
+                            header.id === "id"
+                              ? "w-8"
+                              : header.id === "name"
+                                ? "w-20"
+                                : header.id === "permissionNames"
+                                  ? "w-32"
+                                  : header.id === "users"
+                                    ? "w-16"
+                                    : header.id === "createdAt"
+                                      ? "w-24"
+                                      : "w-16 ml-auto",
                           )}
+                        />
+                      ) : (
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )
+                      )}
                     </TableHead>
                   ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
-              {isLoadingRoles ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={`skeleton-${i}`}>
-                    <TableCell>
-                      <div className="h-4 w-8 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
-                        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-5 w-20 animate-pulse rounded-full bg-slate-200" />
-                        <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
-                        <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-[22px] w-[65px] animate-pulse rounded-full bg-slate-200" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <div className="h-[30px] w-[95px] animate-pulse rounded-md bg-slate-200" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
+              {isLoading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell>
+                        <div className="h-4 w-10 animate-pulse rounded bg-slate-200/60" />
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200/60" />
+                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200/60" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-5 w-20 animate-pulse rounded-full bg-slate-200/60" />
+                          <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200/60" />
+                          <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200/60" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-[22px] w-[65px] animate-pulse rounded-full bg-slate-200/60" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200/60" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <div className="h-[30px] w-[95px] animate-pulse rounded-md bg-slate-200/60" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                : table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
 
