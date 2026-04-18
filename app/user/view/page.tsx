@@ -909,8 +909,8 @@ export default function ViewUserPage() {
           <div>
             {isLoading ? (
               <div className="space-y-2 mb-1">
-                <div className="h-8 w-44 animate-pulse rounded bg-slate-200/80" />
-                <div className="h-4 w-72 animate-pulse rounded bg-slate-200/50" />
+                <div className="h-8 w-44 animate-pulse rounded bg-slate-300/80" />
+                <div className="h-4 w-72 animate-pulse rounded bg-slate-200" />
               </div>
             ) : (
               <>
@@ -1136,21 +1136,33 @@ export default function ViewUserPage() {
             {/* Fixed Header */}
             <div className="bg-slate-50/50 border-b border-slate-100 px-6 py-5">
               <DialogHeader>
-                <DialogTitle className="font-lexend text-xl font-bold text-slate-800 flex items-center gap-2">
+                <DialogTitle className="font-lexend text-base font-bold text-slate-800 flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-slate-400" />
-                  {activeEditTab === "personal"
-                    ? "Personal Information"
-                    : activeEditTab === "contact"
-                      ? "Contact & Professional"
-                      : "Security Credentials"}
+                  {isLoadingUser ? (
+                    <div className="h-5 w-40 animate-pulse rounded bg-slate-300/80" />
+                  ) : (
+                    <>
+                      {activeEditTab === "personal"
+                        ? "Personal Information"
+                        : activeEditTab === "contact"
+                          ? "Contact & Professional"
+                          : "Security Credentials"}
+                    </>
+                  )}
                 </DialogTitle>
                 <DialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
-                  {activeEditTab === "personal" &&
-                    "Update user's legal identity and demographic details."}
-                  {activeEditTab === "contact" &&
-                    "Manage employment details and communication channels."}
-                  {activeEditTab === "security" &&
-                    "Securely reset user credentials and password settings."}
+                  {isLoadingUser ? (
+                    <div className="h-3 w-64 animate-pulse rounded bg-slate-200 mt-2" />
+                  ) : (
+                    <>
+                      {activeEditTab === "personal" &&
+                        "Update user's legal identity and demographic details."}
+                      {activeEditTab === "contact" &&
+                        "Manage employment details and communication channels."}
+                      {activeEditTab === "security" &&
+                        "Securely reset user credentials and password settings."}
+                    </>
+                  )}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -1195,13 +1207,20 @@ export default function ViewUserPage() {
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {isLoadingUser ? (
-                <div className="py-20 text-center text-slate-400 font-inter text-sm animate-pulse">
-                  Retrieving user profile...
-                </div>
-              ) : (
-                <div className="py-6 min-h-[300px]">
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {isLoadingUser ? (
+                  <div className="p-8 space-y-8 min-h-[400px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                          <div className="h-9 w-full animate-pulse rounded bg-slate-50 border border-slate-100" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-6 min-h-[300px]">
                   <TabsContent
                     value="personal"
                     className="px-6 space-y-6 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0"
@@ -1476,19 +1495,24 @@ export default function ViewUserPage() {
             </div>
 
             {/* Fixed Footer Actions */}
-            <div className="p-6 pt-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
+            <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-8 py-6 rounded-b-3xl">
               <DialogClose asChild>
                 <Button
                   variant="ghost"
-                  className="h-10 px-6 rounded-lg font-bold text-slate-500 border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300 text-xs cursor-pointer active:scale-95 flex items-center gap-2 focus-visible:ring-0 focus-visible:outline-none"
+                  disabled={isLoadingUser}
+                  className={cn(
+                    "h-10 px-6 rounded-lg font-bold text-slate-500 border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300 text-xs cursor-pointer active:scale-95 flex items-center gap-2 focus-visible:ring-0 focus-visible:outline-none",
+                    isLoadingUser && "animate-pulse bg-slate-50 text-transparent"
+                  )}
                 >
-                  <X className="w-4 h-4" />
-                  Cancel
+                  <X className={cn("w-4 h-4", isLoadingUser && "opacity-0")} />
+                  <span className={cn(isLoadingUser && "opacity-0")}>Cancel</span>
                 </Button>
               </DialogClose>
               <button
                 type="button"
                 disabled={
+                  isLoadingUser ||
                   isSaving ||
                   !hasFormChanges ||
                   !!empIDError ||
@@ -1496,14 +1520,17 @@ export default function ViewUserPage() {
                   Object.values(validationErrors).some((v) => v)
                 }
                 onClick={handleSaveUser}
-                className="font-inter h-10 inline-flex items-center gap-2 rounded bg-[#0F172A] px-5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={cn(
+                  "font-inter h-10 inline-flex items-center gap-2 rounded px-5 text-xs font-medium text-white transition-colors bg-[#0F172A] hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                  isLoadingUser && "animate-pulse bg-slate-200 text-transparent pointer-events-none"
+                )}
               >
                 {isSaving ? (
                   "Saving..."
                 ) : (
                   <>
-                    <FilePenLine className="h-4 w-4" />
-                    Save Changes
+                    <FilePenLine className={cn("h-4 w-4", isLoadingUser && "opacity-0")} />
+                    <span className={cn(isLoadingUser && "opacity-0")}>Save Changes</span>
                   </>
                 )}
               </button>
