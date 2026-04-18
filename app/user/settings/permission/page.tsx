@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { usePermission } from "@/hooks/usePermission";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Undo2,
@@ -550,28 +551,44 @@ export default function PermissionSettingsPage() {
       <main className="flex-1 w-full max-w-7xl mx-auto h-auto">
         <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-              Permission Settings
-            </h1>
-            <p className="font-inter mt-1 text-xs text-slate-400">
-              Configure feature-level access across system modules.
-            </p>
+            {isLoading ? (
+              <div className="space-y-2 mb-1">
+                <div className="h-8 w-64 animate-pulse rounded bg-slate-300/80" />
+                <div className="h-4 w-96 animate-pulse rounded bg-slate-200" />
+              </div>
+            ) : (
+              <>
+                <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+                  Permission Settings
+                </h1>
+                <p className="font-inter mt-1 text-xs text-slate-400">
+                  Configure feature-level access across system modules.
+                </p>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             <Button
               type="button"
               onClick={() => router.push("/user")}
-              className="h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+              className={cn(
+                "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
+              )}
             >
-              <Undo2 className="h-4 w-4" />
-              Back to User Management
+              <Undo2 className={cn("h-4 w-4", isLoading && "opacity-0")} />
+              <span className={cn(isLoading && "opacity-0")}>Back to User Management</span>
             </Button>
             {canEdit && (
               <Button
                 onClick={handleAddPermission}
-                className="h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                className={cn(
+                  "h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer",
+                  isLoading && "animate-pulse bg-slate-200 text-transparent border-none shadow-none"
+                )}
               >
-                <Plus className="mr-2 h-4 w-4" /> Add Permission
+                <Plus className={cn("mr-2 h-4 w-4", isLoading && "opacity-0")} />
+                <span className={cn(isLoading && "opacity-0")}>Add Permission</span>
               </Button>
             )}
           </div>
@@ -633,12 +650,19 @@ export default function PermissionSettingsPage() {
         <div className="mb-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-slate-100 p-2">
-                <KeyRound className="h-4 w-4 text-[#00154A]" />
+              <div className={cn(
+                "rounded-md bg-slate-100 p-2",
+                isLoading && "animate-pulse bg-slate-100"
+              )}>
+                <KeyRound className={cn("h-4 w-4 text-[#00154A]", isLoading && "opacity-0")} />
               </div>
-              <h2 className="font-lexend text-sm font-semibold text-[#848794]">
-                Role Permission Matrix
-              </h2>
+              {isLoading ? (
+                <div className="h-4 w-40 animate-pulse rounded bg-slate-200/50" />
+              ) : (
+                <h2 className="font-lexend text-sm font-semibold text-[#848794]">
+                  Role Permission Matrix
+                </h2>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <div className="relative w-full sm:max-w-xs">
@@ -646,17 +670,24 @@ export default function PermissionSettingsPage() {
                 <input
                   value={globalFilter ?? ""}
                   onChange={(e) => setGlobalFilter(e.target.value)}
-                  placeholder="Search permissions..."
-                  className="font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none"
+                  placeholder={isLoading ? "" : "Search permissions..."}
+                  className={cn(
+                    "font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none",
+                    isLoading && "animate-pulse bg-slate-50 border-slate-100"
+                  )}
                 />
               </div>
               <div className="relative">
                 <button
+                  disabled={isLoading}
                   onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 cursor-pointer whitespace-nowrap",
+                    isLoading && "animate-pulse bg-slate-50 border-slate-100 text-transparent"
+                  )}
                 >
-                  <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                  {SORT_OPTIONS.find(o => o.value === sortBy)?.label || "Sort"}
+                  <ArrowUpDown className={cn("h-3.5 w-3.5 text-slate-400", isLoading && "opacity-0")} />
+                  {isLoading ? "Loading..." : (SORT_OPTIONS.find(o => o.value === sortBy)?.label || "Sort")}
                 </button>
                 {isSortOpen && (
                   <>
@@ -698,12 +729,22 @@ export default function PermissionSettingsPage() {
                 <TableRow key={hg.id} className="bg-gray-50/50">
                   {hg.headers.map((header) => (
                     <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                      {isLoading ? (
+                        <div className={cn(
+                          "h-4 animate-pulse rounded bg-slate-200",
+                          header.id === "id" ? "w-8" :
+                          header.id === "name" ? "w-24" :
+                          header.id === "description" ? "w-40" :
+                          header.id === "roles" ? "w-32" :
+                          header.id === "created_at" ? "w-20" :
+                          "w-16 ml-auto"
+                        )} />
+                      ) : (
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )
+                      )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -714,30 +755,30 @@ export default function PermissionSettingsPage() {
                 ? Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       <TableCell>
-                        <div className="h-4 w-8 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-10 animate-pulse rounded bg-slate-200/60" />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
-                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200/60" />
+                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200/60" />
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-48 animate-pulse rounded bg-slate-200/60" />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
-                          <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200" />
-                          <div className="h-5 w-20 animate-pulse rounded-full bg-slate-200" />
-                          <div className="h-5 w-12 animate-pulse rounded-full bg-slate-200" />
+                          <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200/60" />
+                          <div className="h-5 w-20 animate-pulse rounded-full bg-slate-200/60" />
+                          <div className="h-5 w-12 animate-pulse rounded-full bg-slate-200/60" />
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200/60" />
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end">
-                          <div className="h-[30px] w-[95px] animate-pulse rounded-md bg-slate-200" />
+                          <div className="h-[30px] w-[95px] animate-pulse rounded-md bg-slate-200/60" />
                         </div>
                       </TableCell>
                     </TableRow>
