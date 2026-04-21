@@ -176,7 +176,6 @@ export async function PUT(request: Request) {
 			const extraPhones = body.phones.map((p, idx) => ({
 				user_id: internalUserId,
 				mobile_number: p.trim(),
-				is_primary: idx === 0,
 			})).filter(p => p.mobile_number.length > 0);
 
 			if (extraPhones.length > 0) {

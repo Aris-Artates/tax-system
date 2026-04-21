@@ -214,7 +214,6 @@ export async function POST(request: Request) {
 			const subPhones = body.phones.map((p, idx) => ({
 				user_id: internalUserId,
 				mobile_number: p.trim(),
-				is_primary: idx === 0,
 			})).filter(p => p.mobile_number.length > 0);
 
 			if (subPhones.length > 0) {
