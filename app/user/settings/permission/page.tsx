@@ -133,6 +133,7 @@ export default function PermissionSettingsPage() {
       try {
         if (data._data) {
           const decoded = JSON.parse(atob(atob(atob(data._data))));
+          
           setPermissions(decoded);
         } else {
           setPermissions([]);
@@ -543,7 +544,7 @@ export default function PermissionSettingsPage() {
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     autoResetPageIndex: false,
-    initialState: { pagination: { pageSize: 5 } },
+    initialState: { pagination: { pageSize: 10 } },
   });
 
   return (
@@ -752,7 +753,7 @@ export default function PermissionSettingsPage() {
             </TableHeader>
             <TableBody>
               {isLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
+                ? Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       <TableCell>
                         <div className="h-4 w-10 animate-pulse rounded bg-slate-200/60" />

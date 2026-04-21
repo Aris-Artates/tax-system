@@ -262,6 +262,7 @@ export default function ManageRolePage() {
       const mapped = (data.roles ?? []).map((role, index) =>
         mapRole(role, index),
       );
+
       setRoles(mapped);
     } catch {
       setRoles([]);
@@ -568,7 +569,7 @@ export default function ManageRolePage() {
     state: { globalFilter, sorting },
 
     initialState: {
-      pagination: { pageSize: 5 },
+      pagination: { pageSize: 10 },
     },
   });
 
@@ -705,7 +706,7 @@ export default function ManageRolePage() {
             </TableHeader>
             <TableBody>
               {isLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
+                ? Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       <TableCell>
                         <div className="h-4 w-10 animate-pulse rounded bg-slate-200/60" />

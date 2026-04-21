@@ -381,8 +381,11 @@ export default function ViewUserPage() {
         }
 
         const rawUsers = data.users ?? [];
-
-        const mapped = rawUsers.map((user: ApiUser) => {
+        
+        // --- Expansion Logic ---
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        
+        const baseMapped = rawUsers.map((user: ApiUser) => {
           const fullname = [
             user.firstname?.trim() || "",
             user.middlename?.trim() || "",
@@ -404,7 +407,7 @@ export default function ViewUserPage() {
           } as ListedUser;
         });
 
-        setUsers(mapped);
+        setUsers(baseMapped);
       } catch {
         setLoadError("Unable to connect to server.");
         setUsers([]);
@@ -894,7 +897,7 @@ export default function ViewUserPage() {
     onGlobalFilterChange: setGlobalFilter,
     initialState: {
       pagination: {
-        pageSize: 5,
+        pageSize: 10,
       },
     },
     state: {
@@ -1021,7 +1024,7 @@ export default function ViewUserPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: 10 }).map((_, i) => (
                   <TableRow key={`skeleton-${i}`}>
                     <TableCell align="center">
                       <div className="h-8 w-8 animate-pulse rounded-full bg-slate-100 border border-slate-50 mx-auto" />
