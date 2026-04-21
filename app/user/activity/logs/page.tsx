@@ -3,16 +3,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Undo2,
   Activity,
   Clock,
   ShieldCheck,
   CheckCircle2,
   XCircle,
-  Loader2,
-  Search,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import {
   useReactTable,
@@ -33,7 +32,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
+} from "@/components/table";
 
 type SystemLog = {
   user: string;
@@ -197,16 +196,17 @@ function UserLogsPage() {
           const status = row.original.status;
           return (
             <span
-              className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium ${
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset",
                 status === "Success"
-                  ? "bg-emerald-50 text-emerald-600"
-                  : "bg-red-50 text-red-600"
-              }`}
+                  ? "bg-emerald-50 text-emerald-600 ring-emerald-600/10"
+                  : "bg-rose-50 text-rose-600 ring-rose-600/10"
+              )}
             >
               {status === "Success" ? (
-                <CheckCircle2 className="h-3 w-3" />
+                <CheckCircle2 className="h-2.5 w-2.5" />
               ) : (
-                <XCircle className="h-3 w-3" />
+                <XCircle className="h-2.5 w-2.5" />
               )}
               {status}
             </span>
@@ -238,53 +238,51 @@ function UserLogsPage() {
     <div className="flex w-full overflow-x-hidden">
       <main className="flex-1 w-full">
         {/* Header */}
-        <header className="mb-8">
-          <Button
-            type="button"
-            disabled={isLoading}
-            onClick={() => router.push("/user")}
-            className={cn(
-              "font-lexend mb-5 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700 cursor-pointer h-auto p-0 bg-transparent hover:bg-transparent shadow-none",
-              isLoading && "animate-pulse text-transparent"
+        <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            {isLoading ? (
+              <div className="space-y-2 mb-1">
+                <div className="h-8 w-44 animate-pulse rounded bg-slate-300/80" />
+                <div className="h-4 w-72 animate-pulse rounded bg-slate-200" />
+              </div>
+            ) : (
+              <>
+                <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+                  User Activity Logs
+                </h1>
+                <p className="font-inter mt-1 text-xs text-slate-400">
+                  Monitor system activity, login attempts, and user actions.
+                </p>
+              </>
             )}
-          >
-            <ArrowLeft className={cn("h-4 w-4", isLoading && "opacity-0")} />
-            <span className={cn(isLoading && "opacity-0")}>Back to User Management</span>
-          </Button>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              {isLoading ? (
-                <div className="space-y-2 mb-1">
-                  <div className="h-8 w-48 animate-pulse rounded bg-slate-300/80" />
-                  <div className="h-4 w-80 animate-pulse rounded bg-slate-200" />
-                </div>
-              ) : (
-                <>
-                  <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-                    User Activity Logs
-                  </h1>
-                  <p className="font-inter mt-1 text-xs text-slate-400">
-                    Monitor system activity, login attempts, and user actions.
-                  </p>
-                </>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              disabled={isLoading}
+              onClick={() => router.push("/user")}
+              className={cn(
+                "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
               )}
-            </div>
+            >
+              <Undo2 className={cn("h-4 w-4", isLoading && "opacity-0")} />
+              <span className={cn(isLoading && "opacity-0")}>Back to User Management</span>
+            </Button>
           </div>
         </header>
 
-        {/* Logs Table */}
-        <section className="w-full rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-3 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className={cn(
                 "rounded-md bg-slate-100 p-2",
                 isLoading && "animate-pulse bg-slate-100"
               )}>
-                <Activity className={cn("h-5 w-5 text-[#00154A]", isLoading && "opacity-0")} />
+                <Activity className={cn("h-4 w-4 text-[#00154A]", isLoading && "opacity-0")} />
               </div>
               {isLoading ? (
-                <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-32 animate-pulse rounded bg-slate-200/50" />
               ) : (
                 <h2 className="font-lexend text-sm font-semibold text-[#848794]">
                   Activity Log Directory
@@ -301,21 +299,25 @@ function UserLogsPage() {
                 onChange={(e) => setGlobalFilter(e.target.value)}
                 placeholder={isLoading ? "" : "Search logs..."}
                 className={cn(
-                  "w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-sm font-inter outline-none focus:ring-2 focus:ring-slate-100",
-                  isLoading && "animate-pulse bg-slate-50/50 border-slate-100 cursor-not-allowed"
+                  "font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none",
+                  isLoading && "animate-pulse bg-slate-50 border-slate-100 cursor-not-allowed"
                 )}
               />
             </div>
           </div>
+        </div>
 
-          <TableContainer>
-            <Table className="min-w-175">
+        <TableContainer>
+          <Table zebra className="min-w-175">
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-gray-50/50">
                   {["User", "Action", "Module", "Date / Time", "Status"].map((header) => (
                     <TableHead key={header}>
                       {isLoading ? (
-                        <div className="h-3 w-16 animate-pulse rounded bg-slate-200/60" />
+                        <div className={cn(
+                          "h-4 animate-pulse rounded bg-slate-200",
+                          header === "User" ? "w-20" : header === "Action" ? "w-32" : header === "Module" ? "w-16" : header === "Date / Time" ? "w-24" : "w-12"
+                        )} />
                       ) : (
                         header
                       )}
@@ -381,40 +383,48 @@ function UserLogsPage() {
                 )}
               </TableBody>
             </Table>
-          </TableContainer>
 
           {/* Pagination Controls */}
           {!isLoading && logs.length > 0 && (
-            <div className="mt-4 flex items-center justify-between px-2">
-              <div className="font-inter text-xs text-slate-500">
-                Page{" "}
-                <span className="font-medium text-slate-900">
-                  {table.getState().pagination.pageIndex + 1}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium text-slate-900">
-                  {table.getPageCount()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 bg-gray-50/30 font-inter">
+              <p className="text-[11px] text-slate-400">
+                Showing{" "}
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}
+                -
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  table.getFilteredRowModel().rows.length,
+                )}{" "}
+                of {table.getFilteredRowModel().rows.length} logs
+              </p>
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => table.previousPage()}
                   disabled={!table.getCanPreviousPage()}
-                  className="rounded border border-gray-200 p-1 text-slate-400 transition-colors hover:bg-gray-50 hover:text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  title="Previous Page"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft size={14} />
                 </button>
+                <span className="px-2 text-xs text-slate-500 whitespace-nowrap">
+                  Page {table.getState().pagination.pageIndex + 1} of{" "}
+                  {table.getPageCount() || 1}
+                </span>
                 <button
                   onClick={() => table.nextPage()}
                   disabled={!table.getCanNextPage()}
-                  className="rounded border border-gray-200 p-1 text-slate-400 transition-colors hover:bg-gray-50 hover:text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="cursor-pointer p-1 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  title="Next Page"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight size={14} />
                 </button>
               </div>
             </div>
           )}
-        </section>
+        </TableContainer>
       </main>
     </div>
   );
