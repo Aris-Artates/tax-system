@@ -22,6 +22,9 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
 import {
   Table,
   TableContainer,
@@ -236,23 +239,36 @@ function UserLogsPage() {
       <main className="flex-1 w-full">
         {/* Header */}
         <header className="mb-8">
-          <button
+          <Button
             type="button"
+            disabled={isLoading}
             onClick={() => router.push("/user")}
-            className="font-lexend mb-5 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700 cursor-pointer"
+            className={cn(
+              "font-lexend mb-5 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-700 cursor-pointer h-auto p-0 bg-transparent hover:bg-transparent shadow-none",
+              isLoading && "animate-pulse text-transparent"
+            )}
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to User Management
-          </button>
+            <ArrowLeft className={cn("h-4 w-4", isLoading && "opacity-0")} />
+            <span className={cn(isLoading && "opacity-0")}>Back to User Management</span>
+          </Button>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
-                User Activity Logs
-              </h1>
-              <p className="font-inter mt-1 text-xs text-slate-400">
-                Monitor system activity, login attempts, and user actions.
-              </p>
+              {isLoading ? (
+                <div className="space-y-2 mb-1">
+                  <div className="h-8 w-48 animate-pulse rounded bg-slate-300/80" />
+                  <div className="h-4 w-80 animate-pulse rounded bg-slate-200" />
+                </div>
+              ) : (
+                <>
+                  <h1 className="font-lexend text-2xl font-bold text-[#595a5d]">
+                    User Activity Logs
+                  </h1>
+                  <p className="font-inter mt-1 text-xs text-slate-400">
+                    Monitor system activity, login attempts, and user actions.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -261,22 +277,33 @@ function UserLogsPage() {
         <section className="w-full rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-md bg-slate-100 p-2">
-                <Activity className="h-5 w-5 text-[#00154A]" />
+              <div className={cn(
+                "rounded-md bg-slate-100 p-2",
+                isLoading && "animate-pulse bg-slate-100"
+              )}>
+                <Activity className={cn("h-5 w-5 text-[#00154A]", isLoading && "opacity-0")} />
               </div>
-              <h2 className="font-lexend text-sm font-semibold text-[#848794]">
-                Activity Log Directory
-              </h2>
+              {isLoading ? (
+                <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
+              ) : (
+                <h2 className="font-lexend text-sm font-semibold text-[#848794]">
+                  Activity Log Directory
+                </h2>
+              )}
             </div>
 
             {/* Search Input */}
             <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className={cn("absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400", isLoading && "opacity-0")} />
               <input
+                disabled={isLoading}
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search logs..."
-                className="w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-sm font-inter outline-none focus:ring-2 focus:ring-slate-100"
+                placeholder={isLoading ? "" : "Search logs..."}
+                className={cn(
+                  "w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-sm font-inter outline-none focus:ring-2 focus:ring-slate-100",
+                  isLoading && "animate-pulse bg-slate-50/50 border-slate-100 cursor-not-allowed"
+                )}
               />
             </div>
           </div>
@@ -285,38 +312,42 @@ function UserLogsPage() {
             <Table className="min-w-175">
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Module</TableHead>
-                  <TableHead>Date / Time</TableHead>
-                  <TableHead>Status</TableHead>
+                  {["User", "Action", "Module", "Date / Time", "Status"].map((header) => (
+                    <TableHead key={header}>
+                      {isLoading ? (
+                        <div className="h-3 w-16 animate-pulse rounded bg-slate-200/60" />
+                      ) : (
+                        header
+                      )}
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
+                  Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
-                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-100" />
+                          <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-48 animate-pulse rounded bg-slate-100" />
                       </TableCell>
                       <TableCell>
-                        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-200" />
-                          <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                          <div className="h-4 w-4 animate-pulse rounded-sm bg-slate-100" />
+                          <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="h-6 w-20 animate-pulse rounded-md bg-slate-200" />
+                        <div className="h-6 w-20 animate-pulse rounded-md bg-slate-100" />
                       </TableCell>
                     </TableRow>
                   ))
