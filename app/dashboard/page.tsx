@@ -24,12 +24,13 @@ export default function Dashboard() {
     loadSession();
   }, []);
 
-  const hasDelinquencyAccess = roleId === 1 || permissions["Taxpayer Records"]?.can_view;
+  const hasDelinquencyAccess =
+    roleId === 1 || permissions["Taxpayer Records"]?.can_view;
 
   return (
     <main>
-      <div className="w-full mb-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="w-full mb-3.5">
+        <div className="flex justify-between items-center mb-3.5">
           <h1 className={`font-lexend gi text-2xl font-bold text-[#595a5d]`}>
             Dashboard Overview
           </h1>
@@ -74,12 +75,14 @@ export default function Dashboard() {
               disabled={!hasDelinquencyAccess}
               onClick={() => router.push("/taxpayers/view-delinquencies")}
               className={`font-inter w-full text-xs font-semibold py-2 px-4 rounded-sm transition-all shadow-sm ${
-                hasDelinquencyAccess 
-                  ? "bg-[#0f1729] hover:bg-slate-800 text-[#949ba3] cursor-pointer" 
+                hasDelinquencyAccess
+                  ? "bg-[#0f1729] hover:bg-slate-800 text-[#949ba3] cursor-pointer"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed grayscale"
               }`}
             >
-              {hasDelinquencyAccess ? "View Delinquencies" : "Access Restricted"}
+              {hasDelinquencyAccess
+                ? "View Delinquencies"
+                : "Access Restricted"}
             </button>
           </div>
         </div>
