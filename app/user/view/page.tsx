@@ -43,6 +43,7 @@ import {
   LayoutDashboard,
   PiggyBank,
   Settings2,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -1141,22 +1142,14 @@ export default function ViewUserPage() {
               <DialogHeader>
                 <DialogTitle className="font-lexend text-base font-bold text-slate-800 flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-slate-400" />
-                  {isLoadingUser ? (
-                    <div className="h-5 w-40 animate-pulse rounded bg-slate-300/80" />
-                  ) : (
-                    <>
-                      {activeEditTab === "personal"
-                        ? "Personal Information"
-                        : activeEditTab === "contact"
-                          ? "Contact & Professional"
-                          : "Security Credentials"}
-                    </>
-                  )}
+                  {activeEditTab === "personal"
+                    ? "Personal Information"
+                    : activeEditTab === "contact"
+                      ? "Contact & Professional"
+                      : "Security Credentials"}
                 </DialogTitle>
                 <DialogDescription className="font-inter text-[11px] text-slate-500 mt-1">
-                  {isLoadingUser ? (
-                    <div className="h-3 w-64 animate-pulse rounded bg-slate-200 mt-2" />
-                  ) : (
+                  {!isLoadingUser && (
                     <>
                       {activeEditTab === "personal" &&
                         "Update user's legal identity and demographic details."}
@@ -1212,14 +1205,11 @@ export default function ViewUserPage() {
             {/* Scrollable Content Area */}
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {isLoadingUser ? (
-                  <div className="p-8 space-y-8 min-h-[400px]">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="space-y-2">
-                          <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
-                          <div className="h-9 w-full animate-pulse rounded bg-slate-50 border border-slate-100" />
-                        </div>
-                      ))}
+                  <div className="p-8 flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                    <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin" />
+                    <div className="text-center space-y-1">
+                      <p className="text-sm font-bold text-slate-700">Fetching Details</p>
+                      <p className="text-xs text-slate-400">Please wait while we prepare the user information...</p>
                     </div>
                   </div>
                 ) : (
@@ -1503,13 +1493,10 @@ export default function ViewUserPage() {
                 <Button
                   variant="ghost"
                   disabled={isLoadingUser}
-                  className={cn(
-                    "h-10 px-6 rounded-lg font-bold text-slate-500 border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300 text-xs cursor-pointer active:scale-95 flex items-center gap-2 focus-visible:ring-0 focus-visible:outline-none",
-                    isLoadingUser && "animate-pulse bg-slate-50 text-transparent"
-                  )}
+                  className="h-10 px-6 rounded-lg font-bold text-slate-500 border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300 text-xs cursor-pointer active:scale-95 flex items-center gap-2 focus-visible:ring-0 focus-visible:outline-none"
                 >
-                  <X className={cn("w-4 h-4", isLoadingUser && "opacity-0")} />
-                  <span className={cn(isLoadingUser && "opacity-0")}>Cancel</span>
+                  <X className="w-4 h-4" />
+                  <span>Cancel</span>
                 </Button>
               </DialogClose>
               <button
@@ -1523,17 +1510,14 @@ export default function ViewUserPage() {
                   Object.values(validationErrors).some((v) => v)
                 }
                 onClick={handleSaveUser}
-                className={cn(
-                  "font-inter h-10 inline-flex items-center gap-2 rounded px-5 text-xs font-medium text-white transition-colors bg-[#0F172A] hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                  isLoadingUser && "animate-pulse bg-slate-200 text-transparent pointer-events-none"
-                )}
+                className="font-inter h-10 inline-flex items-center gap-2 rounded px-5 text-xs font-medium text-white transition-colors bg-[#0F172A] hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   "Saving..."
                 ) : (
                   <>
-                    <FilePenLine className={cn("h-4 w-4", isLoadingUser && "opacity-0")} />
-                    <span className={cn(isLoadingUser && "opacity-0")}>Save Changes</span>
+                    <FilePenLine className="h-4 w-4" />
+                    <span>Save Changes</span>
                   </>
                 )}
               </button>
