@@ -445,6 +445,7 @@ function CreateUserForm() {
           <Button
             type="button"
             onClick={() => router.push("/user")}
+            disabled={isLoading}
             className={cn(
               "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 cursor-pointer",
               isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
@@ -456,6 +457,7 @@ function CreateUserForm() {
           <Button
             type="button"
             onClick={() => router.push("/user/view")}
+            disabled={isLoading}
             className={cn(
               "h-9 rounded-md border border-slate-200 bg-white px-4 text-xs font-semibold text-[#0F172A] shadow-sm transition-all hover:bg-slate-50 cursor-pointer",
               isLoading && "animate-pulse bg-slate-100 border-slate-200 text-transparent shadow-none"
@@ -496,6 +498,7 @@ function CreateUserForm() {
                 <StepperItem
                   key={stepNum}
                   step={stepNum}
+                  disabled={isLoading || isLocked}
                   className={cn(
                     "flex items-center",
                     stepNum < steps.length ? "flex-1" : "flex-none",

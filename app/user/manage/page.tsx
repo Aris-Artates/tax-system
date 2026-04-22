@@ -598,6 +598,7 @@ export default function ManageRolePage() {
             <Button
               type="button"
               onClick={handleBack}
+              disabled={isLoading}
               className={cn(
                 "h-9 rounded-md border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
                 isLoading &&
@@ -612,6 +613,7 @@ export default function ManageRolePage() {
             {canEdit && (
               <Button
                 onClick={openAddModal}
+                disabled={isLoading}
                 className={cn(
                   "h-9 rounded-md bg-[#0F172A] px-5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer",
                   isLoading &&
@@ -659,6 +661,7 @@ export default function ManageRolePage() {
               <input
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
+                disabled={isLoading}
                 placeholder={isLoading ? "" : "Search roles or permissions..."}
                 className={cn(
                   "font-inter w-full rounded-md border border-gray-200 py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-slate-100 outline-none",
