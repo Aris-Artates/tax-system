@@ -134,6 +134,8 @@ type ApiUserDetails = {
   position?: string;
   status?: boolean;
   image_path?: string;
+  user_emails?: { email: string; is_primary: boolean }[];
+  user_mobile_numbers?: { mobile_number: string; is_primary: boolean }[];
 };
 
 type FormState = {
@@ -148,8 +150,8 @@ type FormState = {
   sex: boolean;
   temp_pass: string;
   password: string;
-  email: string;
-  phone: string;
+  emails: string[];
+  phones: string[];
   role_id: string;
   department: string;
   position: string;
@@ -176,8 +178,8 @@ const initialFormState: FormState = {
   sex: true,
   temp_pass: "",
   password: "",
-  email: "",
-  phone: "",
+  emails: [""],
+  phones: [""],
   role_id: "",
   department: "",
   position: "",
@@ -537,6 +539,26 @@ export default function ViewUserPage() {
       }
 
       const user = data.user as ApiUserDetails;
+
+      // Extract emails and phones properly
+      let emails: string[] = [""];
+      if (user.user_emails && user.user_emails.length > 0) {
+        // Sort to put primary first if needed, though they should be mapped correctly
+        emails = user.user_emails
+          .sort((a, b) => (a.is_primary === b.is_primary ? 0 : a.is_primary ? -1 : 1))
+          .map((e) => e.email.trim());
+      } else if (user.email) {
+        emails = [user.email.trim()];
+      }
+
+      let phones: string[] = [""];
+      if (user.user_mobile_numbers && user.user_mobile_numbers.length > 0) {
+        phones = user.user_mobile_numbers
+          .map((p) => p.mobile_number.trim());
+      } else if (user.mobile_number) {
+        phones = [user.mobile_number.trim()];
+      }
+
       const mapped: FormState = {
         empID: user.empID?.trim() ?? "",
         username: user.username?.trim() || user.empID?.trim() || "",
@@ -549,8 +571,8 @@ export default function ViewUserPage() {
         sex: typeof user.sex === "boolean" ? user.sex : true,
         temp_pass: "",
         password: "",
-        email: user.email?.trim() ?? "",
-        phone: user.mobile_number?.trim() ?? "",
+        emails: emails,
+        phones: phones,
         role_id: typeof user.role_id === "number" ? String(user.role_id) : "",
         department: user.department?.trim() ?? "",
         position: user.position?.trim() ?? "",
@@ -591,8 +613,8 @@ export default function ViewUserPage() {
       birthdate: value.birthdate ? format(value.birthdate, "yyyy-MM-dd") : "",
       age: value.age.trim(),
       sex: value.sex,
-      email: value.email.trim(),
-      phone: value.phone.trim(),
+      emails: value.emails.map((e) => e.trim()),
+      phones: value.phones.map((p) => p.trim()),
       role_id: value.role_id.trim(),
       department: value.department.trim(),
       position: value.position.trim(),
@@ -636,8 +658,8 @@ export default function ViewUserPage() {
         birthdate: form.birthdate ? format(form.birthdate, "yyyy-MM-dd") : null,
         age: form.age,
         sex: form.sex,
-        emails: [form.email],
-        phones: [form.phone],
+        emails: form.emails,
+        phones: form.phones,
         role_id: Number(form.role_id),
         department: form.department,
         position: form.position,
@@ -685,7 +707,7 @@ export default function ViewUserPage() {
                 roles.find((r) => String(r.id) === form.role_id)?.icon ??
                 u.role_icon,
               status: form.status ? "Active" : "Inactive",
-              email: form.email,
+              email: form.emails[0],
               sex: form.sex,
               image_path: u.image_path,
             } as ListedUser;
@@ -1382,73 +1404,168 @@ export default function ViewUserPage() {
                     value="contact"
                     className="px-6 space-y-6 outline-none animate-in fade-in slide-in-from-left-4 duration-300 m-0 text-left"
                   >
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <ValidatedInput
-                        label="Email"
-                        type="email"
-                        required
-                        value={form.email}
-                        leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
-                        onChange={(v, isValid) =>
-                          updateField("email", v, isValid)
-                        }
-                      />
-                      <ValidatedInput
-                        label="Phone"
-                        type="phone"
-                        required
-                        value={form.phone}
-                        leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
-                        onChange={(v, isValid) =>
-                          updateField("phone", v, isValid)
-                        }
-                      />
-                      <div className="pt-2.5">
-                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                          Role <span className="text-rose-500">*</span>
-                        </label>
-                        <Combobox
-                          options={roles.map((r) => ({
-                            value: String(r.id),
-                            label: r.name,
-                          }))}
-                          value={form.role_id}
-                          onChange={(val) => updateField("role_id", val)}
-                          placeholder="Select role"
-                          searchPlaceholder="Search role..."
-                          triggerClassName="h-9 text-xs"
-                        />
+                    <div className="space-y-6">
+                      {/* Email Addresses */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Mail className="size-4 text-slate-400" />
+                            <h3 className="font-bold text-slate-700 font-lexend text-xs">
+                              Email Addresses
+                            </h3>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                emails: [...prev.emails, ""],
+                              }))
+                            }
+                            className="h-7 text-[10px] font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
+                          >
+                            + Add Email
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {form.emails.map((email, idx) => (
+                            <div key={idx} className="flex gap-2 items-start group">
+                              <div className="flex-1">
+                                <ValidatedInput
+                                  label={idx === 0 ? "Primary Email" : `Secondary Email ${idx}`}
+                                  type="email"
+                                  required={idx === 0}
+                                  value={email}
+                                  onChange={(v, isValid) => {
+                                    const newEmails = [...form.emails];
+                                    newEmails[idx] = v;
+                                    updateField("emails", newEmails, isValid);
+                                  }}
+                                />
+                              </div>
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newEmails = form.emails.filter((_, i) => i !== idx);
+                                    updateField("emails", newEmails);
+                                  }}
+                                  className="mt-7 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <Field
-                        label="Department"
-                        required
-                        value={form.department}
-                        leftIcon={
-                          <Building2 className="h-4 w-4 text-slate-400" />
-                        }
-                        onChange={(v) => updateField("department", v)}
-                      />
-                      <Field
-                        label="Position"
-                        required
-                        value={form.position}
-                        onChange={(v) => updateField("position", v)}
-                      />
-                      <div className="pt-2.5">
-                        <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
-                          Status <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="flex gap-2">
-                          <BooleanChip
-                            label="Active"
-                            checked={form.status}
-                            onClick={() => updateField("status", true)}
+
+                      {/* Phone Numbers */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Phone className="size-4 text-slate-400" />
+                            <h3 className="font-bold text-slate-700 font-lexend text-xs">
+                              Phone Numbers
+                            </h3>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                phones: [...prev.phones, ""],
+                              }))
+                            }
+                            className="h-7 text-[10px] font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
+                          >
+                            + Add Phone
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {form.phones.map((phone, idx) => (
+                            <div key={idx} className="flex gap-2 items-start group">
+                              <div className="flex-1">
+                                <ValidatedInput
+                                  label={idx === 0 ? "Primary Phone" : `Secondary Phone ${idx}`}
+                                  type="phone"
+                                  required={idx === 0}
+                                  value={phone}
+                                  onChange={(v, isValid) => {
+                                    const newPhones = [...form.phones];
+                                    newPhones[idx] = v;
+                                    updateField("phones", newPhones, isValid);
+                                  }}
+                                />
+                              </div>
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newPhones = form.phones.filter((_, i) => i !== idx);
+                                    updateField("phones", newPhones);
+                                  }}
+                                  className="mt-7 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Role and Department */}
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="pt-1">
+                          <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                            Role <span className="text-rose-500">*</span>
+                          </label>
+                          <Combobox
+                            options={roles.map((r) => ({
+                              value: String(r.id),
+                              label: r.name,
+                            }))}
+                            value={form.role_id}
+                            onChange={(val) => updateField("role_id", val)}
+                            placeholder="Select role"
+                            searchPlaceholder="Search role..."
+                            triggerClassName="h-9 text-xs"
                           />
-                          <BooleanChip
-                            label="Inactive"
-                            checked={!form.status}
-                            onClick={() => updateField("status", false)}
-                          />
+                        </div>
+                        <Field
+                          label="Department"
+                          required
+                          value={form.department}
+                          leftIcon={
+                            <Building2 className="h-4 w-4 text-slate-400" />
+                          }
+                          onChange={(v) => updateField("department", v)}
+                        />
+                        <Field
+                          label="Position"
+                          required
+                          value={form.position}
+                          onChange={(v) => updateField("position", v)}
+                        />
+                        <div className="pt-1">
+                          <label className="font-inter text-xs font-medium text-slate-600 block mb-1">
+                            Status <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="flex gap-2">
+                            <BooleanChip
+                              label="Active"
+                              checked={form.status}
+                              onClick={() => updateField("status", true)}
+                            />
+                            <BooleanChip
+                              label="Inactive"
+                              checked={!form.status}
+                              onClick={() => updateField("status", false)}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
