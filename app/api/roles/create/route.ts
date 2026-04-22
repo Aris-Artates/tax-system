@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 type CreateRolePayload = {
 	name: string;
@@ -102,12 +103,32 @@ export async function POST(request: Request) {
 			}
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'CREATE',
+				'Role Management',
+				`Created new role: ${name}`
+			);
+		}
+
 		return NextResponse.json({
 			message: 'Role created successfully.',
 			role: data,
 			permission_ids: permissionIds,
 		});
-	} catch {
+	} catch (err: any) {
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'CREATE',
+				'Role Management',
+				`Error creating role: ${err.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
 		return NextResponse.json(
 			{ error: 'Unable to process request.' },
 			{ status: 500 },

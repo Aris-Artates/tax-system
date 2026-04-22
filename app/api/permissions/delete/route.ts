@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 type DeletePermissionPayload = {
 	id: number;
@@ -66,8 +67,28 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: deletePermissionError.message }, { status: 400 });
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'DELETE',
+				'Permission Management',
+				`Deleted permission: ${permission.name}`
+			);
+		}
+
 		return NextResponse.json({ message: 'Permission deleted successfully.' });
-	} catch {
+	} catch (err: any) {
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'DELETE',
+				'Permission Management',
+				`Error deleting permission: ${err.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
 		return NextResponse.json({ error: 'Unable to process request.' }, { status: 500 });
 	}
 }

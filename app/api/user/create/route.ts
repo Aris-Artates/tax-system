@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 type CreateUserPayload = {
 	empID: string;
@@ -221,12 +222,34 @@ export async function POST(request: Request) {
 			}
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'CREATE',
+				'User Management',
+				`Created new user: ${body.firstname} ${body.lastname} (${empID})`
+			);
+		}
+
 		return NextResponse.json({
 			message: 'User created successfully.',
 			userId: authUserId,
 		});
 	} catch (error: any) {
 		console.error('Create User Error:', error);
+		
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'CREATE',
+				'User Management',
+				`Failed to create user: ${error.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
+
 		return NextResponse.json(
 			{ error: 'Unable to process request.' },
 			{ status: 500 },

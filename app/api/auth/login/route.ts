@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { cookies } from 'next/headers';
 import { signSession } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 type RoleRecord = { name: string };
 
@@ -23,6 +24,13 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !user) {
+    await logActivity(
+      null,
+      'LOGIN',
+      'Authentication',
+      `Failed login attempt: Username not found (${username})`,
+      'Failed'
+    );
     return NextResponse.json(
       { error: 'Invalid username or password' },
       { status: 401 }
@@ -30,6 +38,13 @@ export async function POST(request: Request) {
   }
 
   if (!user.status) {
+    await logActivity(
+      user.id,
+      'LOGIN',
+      'Authentication',
+      `Failed login attempt: Account is inactive (${username})`,
+      'Failed'
+    );
     return NextResponse.json(
       { error: 'Your account is inactive. Contact your administrator.' },
       { status: 403 }
@@ -40,6 +55,13 @@ export async function POST(request: Request) {
     user.password === password || user.temp_pass === password;
 
   if (!passwordMatch) {
+    await logActivity(
+      user.id,
+      'LOGIN',
+      'Authentication',
+      `Failed login attempt: Incorrect password (${username})`,
+      'Failed'
+    );
     return NextResponse.json(
       { error: 'Invalid username or password' },
       { status: 401 }
@@ -70,6 +92,13 @@ export async function POST(request: Request) {
     maxAge: 60 * 60 * 8, // 8 hours
     path: '/',
   });
+
+  await logActivity(
+    user.id,
+    'LOGIN',
+    'Authentication',
+    `User logged in: ${user.firstname} ${user.lastname} (${user.username})`
+  );
 
   return NextResponse.json({ success: true, user: sessionData });
 }
