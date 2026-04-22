@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 type UpdatePermissionPayload = {
 	id: number;
@@ -104,8 +105,29 @@ export async function POST(request: Request) {
 			}
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'UPDATE',
+				'Permission Management',
+				`Updated permission: ${name}`
+			);
+		}
+
 		return NextResponse.json({ message: 'Permission updated successfully.', permission: data });
 	} catch (e: any) {
+		console.error('Update permission error:', e);
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'UPDATE',
+				'Permission Management',
+				`Error updating permission: ${e.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
 		return NextResponse.json(
 			{ error: 'Unable to process request: ' + e.message },
 			{ status: 500 },

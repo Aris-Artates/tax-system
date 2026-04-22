@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 type UpdateUserPayload = {
 	originalEmpID: string;
@@ -123,6 +124,10 @@ export async function PUT(request: Request) {
 			.single();
 
 		if (existingError || !existingUser) {
+			const currentUser = await getCurrentUser();
+			if (currentUser) {
+				await logActivity(currentUser.id, 'UPDATE', 'User Management', `Failed to update user: User with empID ${body.originalEmpID} not found.`, 'Failed');
+			}
 			return NextResponse.json({ error: 'User not found.' }, { status: 404 });
 		}
 
@@ -183,11 +188,31 @@ export async function PUT(request: Request) {
 			}
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'UPDATE',
+				'User Management',
+				`Updated user details for: ${body.firstname} ${body.lastname} (${body.empID})`
+			);
+		}
+
 		return NextResponse.json({
 			message: 'User updated successfully.',
 		});
 	} catch (error: any) {
 		console.error('Update user detail error:', error);
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'UPDATE',
+				'User Management',
+				`Error updating user: ${error.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
 		return NextResponse.json(
 			{ error: `Unable to process request: ${error.message || 'Unknown error'}` },
 			{ status: 500 },

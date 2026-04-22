@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 export async function POST(request: Request) {
 	try {
@@ -24,8 +24,28 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: error.message }, { status: 400 });
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'DELETE',
+				'Permission Management',
+				`Removed permission (ID: ${permissionId}) from role (ID: ${roleId})`
+			);
+		}
+
 		return NextResponse.json({ message: 'Permission removed from role successfully.' });
-	} catch (error) {
+	} catch (error: any) {
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'DELETE',
+				'Permission Management',
+				`Error removing permission: ${error.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
 		return NextResponse.json(
 			{ error: 'Unable to process request.' },
 			{ status: 500 },

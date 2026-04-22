@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { authorize } from '@/lib/auth-guard';
+import { authorize, getCurrentUser } from '@/lib/auth-guard';
+import { logActivity } from '@/lib/activity-log';
 
 export async function POST(request: Request) {
 	try {
@@ -73,8 +74,28 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: deleteRoleError.message }, { status: 400 });
 		}
 
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'DELETE',
+				'Role Management',
+				`Deleted role: ${name}`
+			);
+		}
+
 		return NextResponse.json({ message: 'Role deleted successfully.' });
-	} catch {
+	} catch (err: any) {
+		const currentUser = await getCurrentUser();
+		if (currentUser) {
+			await logActivity(
+				currentUser.id,
+				'DELETE',
+				'Role Management',
+				`Error deleting role: ${err.message || 'Unknown error'}`,
+				'Failed'
+			);
+		}
 		return NextResponse.json({ error: 'Unable to process request.' }, { status: 500 });
 	}
 }

@@ -93,6 +93,15 @@ export async function authorize(moduleName: string, action: PermissionAction): P
 }
 
 /**
+ * Retrieves the current session user data.
+ */
+export async function getCurrentUser(): Promise<any | null> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('tax_session');
+  return verifySession(sessionCookie?.value);
+}
+
+/**
  * Signs session data using a HMAC signature.
  */
 export function signSession(data: any): string {

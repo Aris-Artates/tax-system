@@ -35,29 +35,20 @@ import {
 } from "@/components/table";
 
 type SystemLog = {
-  user: string;
-  action: string;
+  id: number;
+  user_id: number;
+  action_type: string;
   module: string;
+  description: string;
   status: "Success" | "Failed";
-  time: string;
+  created_at: string;
+  users: {
+    firstname: string;
+    middlename?: string;
+    lastname: string;
+    suffix?: string;
+  };
 };
-
-const ACTIONS = [
-  { action: "Created New Assessment", module: "Assessment" },
-  { action: "Approved Payment", module: "Collections" },
-  { action: "Updated Role Permissions", module: "User Management" },
-  { action: "Failed Login Attempt", module: "Authentication" },
-  { action: "Deleted Property Profile", module: "Property" },
-  { action: "Modified Tax Declaration", module: "Taxation" },
-  { action: "Generated Revenue Report", module: "Reports" },
-];
-
-const STATUSES: ("Success" | "Failed")[] = [
-  "Success",
-  "Success",
-  "Success",
-  "Failed",
-];
 
 function UserLogsPage() {
   const router = useRouter();
@@ -72,76 +63,11 @@ function UserLogsPage() {
     const fetchLogs = async () => {
       setIsLoading(true);
       try {
-        // Simulated dataset load
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        const response = await fetch("/api/user/list", { cache: "no-store" });
+        const response = await fetch("/api/user/activity/list", { cache: "no-store" });
         const data = await response.json();
 
-        const decodedUsers = data._data
-          ? JSON.parse(atob(atob(atob(data._data))))
-          : (data.users ?? []);
-
-        if (response.ok && decodedUsers) {
-          const fetchedUsers = decodedUsers.map((u: any) => {
-            return (
-              [
-                u.firstname?.trim() || "",
-                u.middlename?.trim() || "",
-                u.lastname?.trim() || "",
-                u.suffix?.trim() || "",
-              ]
-                .filter(Boolean)
-                .join(" ") || "System Admin"
-            );
-          });
-
-          // Generate random logs for current users
-          const generatedLogs: SystemLog[] = [];
-
-          // If no users, fallback to some mock names
-          const userList =
-            fetchedUsers.length > 0 ? fetchedUsers : ["Admin", "System"];
-
-          for (let i = 0; i < 15; i++) {
-            const randomUser =
-              userList[Math.floor(Math.random() * userList.length)];
-            const randomEntry =
-              ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
-            const randomStatus =
-              STATUSES[Math.floor(Math.random() * STATUSES.length)];
-
-            // Generate a random time in the last 3 days
-            const date = new Date();
-            date.setMinutes(
-              date.getMinutes() - Math.floor(Math.random() * 4320),
-            );
-            const timeStr = date
-              .toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-              .replace(",", " -");
-
-            generatedLogs.push({
-              user: randomUser,
-              action: randomEntry.action,
-              module: randomEntry.module,
-              status: randomStatus,
-              time: timeStr,
-            });
-          }
-
-          setLogs(
-            generatedLogs.sort(
-              (a, b) =>
-                new Date(b.time.replace(" -", ",")).getTime() -
-                new Date(a.time.replace(" -", ",")).getTime(),
-            ),
-          );
+        if (response.ok && data.logs) {
+          setLogs(data.logs);
         }
       } catch (error) {
         console.error("Failed to fetch logs:", error);
@@ -158,20 +84,29 @@ function UserLogsPage() {
       {
         accessorKey: "user",
         header: "User",
-        cell: ({ row }: any) => (
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-slate-400" />
-            <span className="text-slate-700 font-medium">
-              {row.original.user}
-            </span>
-          </div>
-        ),
+        cell: ({ row }: any) => {
+          const user = row.original.users;
+          const fullName = user
+            ? [user.firstname, user.middlename, user.lastname, user.suffix]
+                .filter(Boolean)
+                .join(" ")
+            : "System";
+          
+          return (
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-slate-400" />
+              <span className="text-slate-700 font-medium">
+                {fullName}
+              </span>
+            </div>
+          );
+        },
       },
       {
-        accessorKey: "action",
+        accessorKey: "description",
         header: "Action",
         cell: ({ row }: any) => (
-          <span className="text-sm text-slate-600">{row.original.action}</span>
+          <span className="text-sm text-slate-600">{row.original.description}</span>
         ),
       },
       {
@@ -182,14 +117,28 @@ function UserLogsPage() {
         ),
       },
       {
-        accessorKey: "time",
+        accessorKey: "created_at",
         header: "Date / Time",
-        cell: ({ row }: any) => (
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Clock className="h-4 w-4 text-slate-400" />
-            {row.original.time}
-          </div>
-        ),
+        cell: ({ row }: any) => {
+          const date = new Date(row.original.created_at);
+          const timeStr = date
+            .toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            .replace(",", " -");
+
+          return (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Clock className="h-4 w-4 text-slate-400" />
+              {timeStr}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "status",
